@@ -71,6 +71,8 @@ from tastypie.utils import dict_strip_unicode_keys
 
 
 
+
+
 class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -108,6 +110,7 @@ class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
             updated_bundle = self.full_dehydrate(updated_bundle)
             updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
             return self.create_response(request, updated_bundle, response_class=http.HttpCreated, location=location)
+
 
 
     def base_urls(self):
@@ -158,3 +161,9 @@ class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
             url(r"^(?P<resource_name>%s)\.(?P<format>json|xml)$" % self._meta.resource_name,
                 self.wrap_view('dispatch_compounds'), name="api_dispatch_compounds"),
         ]
+
+
+
+
+
+
