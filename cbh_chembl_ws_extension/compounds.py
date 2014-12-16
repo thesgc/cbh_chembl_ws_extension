@@ -9,6 +9,8 @@ from django.http import HttpResponse
 import base64
 import time
 from collections import OrderedDict
+from tastypie.resources import ModelResource
+
 try:
     from rdkit import Chem
     from rdkit.Chem import AllChem
@@ -61,15 +63,13 @@ except AttributeError:
 
 from chembl_webservices.compounds import CompoundsResource
 from chembl_webservices.base import ChEMBLApiSerializer
-from cbh_chembl_ws_extension.base import CBHApiBase
+from cbh_chembl_ws_extension.base import CBHApiBase, CamelCaseJSONSerializer
 from tastypie.utils import dict_strip_unicode_keys
-
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-
+from tastypie.serializers import Serializer
+from django.core.serializers.json import DjangoJSONEncoder
+from tastypie import fields, utils
+from cbh_chembl_model_extension.models import CBHCompoundBatch
+from tastypie.authentication import SessionAuthentication
 
 
 
@@ -166,4 +166,59 @@ class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 
 
 
+
+class CBHCompoundBatchResource(ModelResource):
+    ctab = fields.CharField()
+    editable_by = fields.DictField()
+    viewable_by = fields.DictField() 
+    filter_hits = fields.DictField() 
+    standardiser = fields.DictField() 
+    custom_fields = fields.DictField()
+
+    class Meta:
+        queryset = CBHCompoundBatch.objects.all()
+        resource_name = 'cbh_compound_batches'
+        authorization = Authorization()
+        include_resource_uri = False
+        paginator_class = None
+        serializer = CamelCaseJSONSerializer()
+        allowed_methods = ['get', 'post', 'put']
+        default_format = 'application/json'
+        authentication = SessionAuthentication()
+
+
+
+
+    def post_list_validate(self, request, **kwargs):
+        """Runs the validation for a single or small set of molecules"""
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+
+        updated_bundle = self.obj_build(bundle, dict_strip_unicode_keys(deserialized))
+        bundle.obj.validate()
+        dictdata = bundle.obj.__dict__
+        dictdata.pop("_state")
+        updated_bundle = self.build_bundle(obj=bundle.obj, data=dictdata)
+        return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
+
+
+
+    def obj_build(self, bundle, kwargs):
+        """
+        A ORM-specific implementation of ``obj_create``.
+        """
+        bundle.obj = self._meta.object_class()
+        for key, value in kwargs.items():
+            setattr(bundle.obj, key, value)
+        setattr(bundle.obj, "id", -1)
+        
+        return bundle
+
+    def prepend_urls(self):
+        return [
+        url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,
+                self.wrap_view('post_list_validate'), name="api_validate_compound_batch"),
+        ]
 

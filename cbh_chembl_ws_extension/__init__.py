@@ -11,7 +11,9 @@ from chembl_webservices.base import ChEMBLApi
 # from chembl_webservices.targets import *
 # from chembl_webservices.bioactivities import *
 # from chembl_webservices.drugs import *
+from cbh_chembl_model_extension.models import CBHCompoundBatch
 from cbh_chembl_ws_extension.compounds import *
+from cbh_chembl_ws_extension.base import *
 from django.conf import settings
 
 DEFAULT_API_NAME='chemblws'
@@ -24,3 +26,4 @@ except AttributeError:
 api = ChEMBLApi(api_name=api_name)
 
 api.register(CBHCompoundsReadResource())
+api.register(CBHCompoundBatchResource())

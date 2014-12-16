@@ -24,7 +24,9 @@ import urlparse
 from django.conf import settings
 from django.http import HttpResponseNotFound
 from tastypie.exceptions import NotFound
-
+from django.views.generic import FormView, View
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import login as auth_login, logout as auth_logout
 # If ``csrf_exempt`` isn't present, stub it.
 try:
     from django.views.decorators.csrf import csrf_exempt
@@ -52,8 +54,72 @@ except AttributeError:
 
 from chembl_webservices.base import ChEMBLApiBase
 
+from tastypie.authentication import SessionAuthentication
+
+from tastypie.serializers import Serializer
+
+
+import re
+import json
+
+class CamelCaseJSONSerializer(Serializer):
+    formats = ['json']
+    content_types = {
+        'json': 'application/json',
+    }
+
+    def to_json(self, data, options=None):
+        # Changes underscore_separated names to camelCase names to go from python convention to javacsript convention
+        data = self.to_simple(data, options)
+
+        def underscoreToCamel(match):
+            return match.group()[0] + match.group()[2].upper()
+
+        def camelize(data):
+            if isinstance(data, dict):
+                new_dict = {}
+                for key, value in data.items():
+                    new_key = re.sub(r"[a-z]_[a-z]", underscoreToCamel, key)
+                    new_dict[new_key] = camelize(value)
+                return new_dict
+            if isinstance(data, (list, tuple)):
+                for i in range(len(data)):
+                    data[i] = camelize(data[i])
+                return data
+            return data
+
+        camelized_data = camelize(data)
+
+        return json.dumps(camelized_data, sort_keys=True)
+
+    def from_json(self, content):
+        # Changes camelCase names to underscore_separated names to go from javascript convention to python convention
+        data = json.loads(content)
+
+        def camelToUnderscore(match):
+            return match.group()[0] + "_" + match.group()[1].lower()
+
+        def underscorize(data):
+            if isinstance(data, dict):
+                new_dict = {}
+                for key, value in data.items():
+                    new_key = re.sub(r"[a-z][A-Z]", camelToUnderscore, key)
+                    new_dict[new_key] = underscorize(value)
+                return new_dict
+            if isinstance(data, (list, tuple)):
+                for i in range(len(data)):
+                    data[i] = underscorize(data[i])
+                return data
+            return data
+
+        underscored_data = underscorize(data)
+
+        return underscored_data
+
+
 
 class CBHApiBase(ChEMBLApiBase):
+    authentication = SessionAuthentication()
 
 
     def __init__(self):
@@ -117,3 +183,47 @@ class CBHApiBase(ChEMBLApiBase):
         return bundle, in_cache
 
 #-----------------------------------------------------------------------------------------------------------------------
+
+
+
+class Login(FormView):
+    form_class = AuthenticationForm
+    template_name = "cbh_chembl_ws_extension/login.html"
+    logout = None
+    def get(self, request, *args, **kwargs):
+        print AuthenticationForm()
+        # logout = None
+        # if logout in kwargs:
+        #     logout = kwargs.pop("logout")
+        #     print logout
+        redirect_to = settings.LOGIN_REDIRECT_URL
+        '''Borrowed from django base detail view'''
+        # username = request.META.get('REMOTE_USER', None)
+        # if not username:
+        #     username = request.META.get('HTTP_X_WEBAUTH_USER', None)
+        # if  username:
+        #     return HttpResponseRedirect(reverse("webauth:login"))
+        context = self.get_context_data(form=self.get_form(self.get_form_class()))
+        context["logout"] = self.logout
+        return self.render_to_response(context)
+
+
+    def form_valid(self, form):
+        redirect_to = settings.LOGIN_REDIRECT_URL
+        auth_login(self.request, form.get_user())
+        if self.request.session.test_cookie_worked():
+            self.request.session.delete_test_cookie()
+        return HttpResponseRedirect(redirect_to)
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+    # def dispatch(self, request, *args, **kwargs):
+    #     request.session.set_test_cookie()
+    #     return super(Login, self).dispatch(request, *args, **kwargs)
+
+class Logout(View):
+    def get(self, request, *args, **kwargs):
+        auth_logout(request)
+        return HttpResponseRedirect(settings.LOGOUT_REDIRECT_URL)
+
