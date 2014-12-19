@@ -14,7 +14,7 @@ spore_context={
 }
 
 urlpatterns = patterns('',
-    url(r'^%s/login^$',Login.as_view(), name="login"),
+    url(r'^%s/login' % api_name ,Login.as_view(), name="login"),
     url(r'^%s/docs' % api_name, DirectTemplateView.as_view(template_name="docs.html"), name='ws_docs'),
     url(r'^%s/spore' % api_name, DirectTemplateView.as_view(template_name="ws_spore.json" , extra_context=spore_context), name='ws_spore_endpoint'),
 )

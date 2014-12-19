@@ -89,7 +89,13 @@ class CamelCaseJSONSerializer(Serializer):
             return data
 
         camelized_data = camelize(data)
-
+        for key, value in camelized_data.iteritems():
+            try:
+                dictd = json.loads(value)
+                if isinstance(dictd, dict):
+                    camelized_data[key] = dictd
+            except:
+                pass
         return json.dumps(camelized_data, sort_keys=True)
 
     def from_json(self, content):

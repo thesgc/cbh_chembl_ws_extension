@@ -73,7 +73,6 @@ M  END"""
             'editable_by': {"fdsfsdf":4324234},
             'viewable_by': {},
         }
-        print "MY test"
 
     def setup_session(self):
         self.api_client.client.login(username=self.username, password=self.password)
@@ -101,4 +100,17 @@ M  END"""
         # Check how many are there first.
         resp = self.api_client.post('/chemblws/cbh_compound_batches/validate/', format='json', data=self.post_data)
         self.assertHttpAccepted(resp)
-        print resp.content
+
+
+    def test_post_list(self):
+        self.setup_session()
+
+        # Check how many are there first.
+        self.assertEqual(CBHCompoundBatch.objects.count(),0)
+        resp = self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data)
+        self.assertHttpCreated(resp)
+        self.assertEqual(CBHCompoundBatch.objects.count(),1)
+        c = CBHCompoundBatch.objects.filter(warnings__contains={"pains_count":"1"})
+        self.assertEqual(c.count(),1)
+        print resp.__dict__
+

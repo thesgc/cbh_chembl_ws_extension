@@ -70,7 +70,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from tastypie import fields, utils
 from cbh_chembl_model_extension.models import CBHCompoundBatch
 from tastypie.authentication import SessionAuthentication
-
+import json
 
 
 class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
@@ -168,12 +168,14 @@ class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 
 
 class CBHCompoundBatchResource(ModelResource):
-    ctab = fields.CharField()
-    editable_by = fields.DictField()
-    viewable_by = fields.DictField() 
-    filter_hits = fields.DictField() 
-    standardiser = fields.DictField() 
-    custom_fields = fields.DictField()
+    #ctab = fields.CharField()
+    # editable_by = fields.DictField()
+    # viewable_by = fields.DictField() 
+    # filter_hits = fields.DictField() 
+    #warnings = fields.DictField() 
+    #custom_fields = fields.DictField()
+
+
 
     class Meta:
         queryset = CBHCompoundBatch.objects.all()
@@ -185,7 +187,6 @@ class CBHCompoundBatchResource(ModelResource):
         allowed_methods = ['get', 'post', 'put']
         default_format = 'application/json'
         authentication = SessionAuthentication()
-
 
 
 
@@ -204,6 +205,12 @@ class CBHCompoundBatchResource(ModelResource):
         return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
 
 
+    def full_hydrate(self, bundle):
+        '''As the object is created we run the validate code on it'''
+        bundle = super(CBHCompoundBatchResource, self).full_hydrate(bundle)
+        bundle.obj.validate()
+        return bundle
+
 
     def obj_build(self, bundle, kwargs):
         """
@@ -221,4 +228,5 @@ class CBHCompoundBatchResource(ModelResource):
         url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,
                 self.wrap_view('post_list_validate'), name="api_validate_compound_batch"),
         ]
+
 
