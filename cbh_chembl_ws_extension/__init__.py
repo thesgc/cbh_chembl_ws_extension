@@ -27,3 +27,4 @@ api = ChEMBLApi(api_name=api_name)
 
 api.register(CBHCompoundsReadResource())
 api.register(CBHCompoundBatchResource())
+api.register(UserResource())

@@ -27,6 +27,8 @@ from tastypie.exceptions import NotFound
 from django.views.generic import FormView, View
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login as auth_login, logout as auth_logout
+from tastypie.resources import ModelResource
+
 # If ``csrf_exempt`` isn't present, stub it.
 try:
     from django.views.decorators.csrf import csrf_exempt
@@ -57,10 +59,22 @@ from chembl_webservices.base import ChEMBLApiBase
 from tastypie.authentication import SessionAuthentication
 
 from tastypie.serializers import Serializer
-
+from django.contrib.auth import get_user_model
 
 import re
 import json
+
+
+class UserResource(ModelResource):
+    class Meta:
+        queryset = get_user_model().objects.all()
+        resource_name = 'user'
+        excludes = ['email', 'password', 'is_active', 'is_staff', 'is_superuser']
+
+
+    def apply_authorization_limits(self, request, object_list):
+        return object_list.get(pk=request.user.id)
+
 
 class CamelCaseJSONSerializer(Serializer):
     formats = ['json']
@@ -232,4 +246,6 @@ class Logout(View):
     def get(self, request, *args, **kwargs):
         auth_logout(request)
         return HttpResponseRedirect(settings.LOGOUT_REDIRECT_URL)
+
+
 
