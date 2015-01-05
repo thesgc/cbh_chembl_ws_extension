@@ -89,27 +89,6 @@ class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-    def post_list(self, request, **kwargs):
-        """
-        Creates a new resource/object with the provided data.
-        Calls ``obj_create`` with the provided data and returns a response
-        with the new resource's location.
-        If a new resource is created, return ``HttpCreated`` (201 Created).
-        If ``Meta.always_return_data = True``, there will be a populated body
-        of serialized data.
-        """
-        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
-        deserialized = self.alter_deserialized_detail_data(request, deserialized)
-        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
-        updated_bundle = self.obj_create(bundle, **self.remove_api_resource_names(kwargs))
-        location = self.get_resource_uri(updated_bundle)
-
-        if not self._meta.always_return_data:
-            return http.HttpCreated(location=location)
-        else:
-            updated_bundle = self.full_dehydrate(updated_bundle)
-            updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
-            return self.create_response(request, updated_bundle, response_class=http.HttpCreated, location=location)
 
 
 
@@ -168,14 +147,6 @@ class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 
 
 class CBHCompoundBatchResource(ModelResource):
-    #ctab = fields.CharField()
-    # editable_by = fields.DictField()
-    # viewable_by = fields.DictField() 
-    # filter_hits = fields.DictField() 
-    #warnings = fields.DictField() 
-    #custom_fields = fields.DictField()
-
-
 
     class Meta:
         queryset = CBHCompoundBatch.objects.all()
@@ -187,7 +158,6 @@ class CBHCompoundBatchResource(ModelResource):
         allowed_methods = ['get', 'post', 'put']
         default_format = 'application/json'
         authentication = SessionAuthentication()
-
 
 
     def post_list_validate(self, request, **kwargs):
@@ -204,6 +174,9 @@ class CBHCompoundBatchResource(ModelResource):
         updated_bundle = self.build_bundle(obj=bundle.obj, data=dictdata)
         return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
 
+
+    def save_related(self, bundle):
+        bundle.object.generate_structure_and_dictionary()
 
     def full_hydrate(self, bundle):
         '''As the object is created we run the validate code on it'''
