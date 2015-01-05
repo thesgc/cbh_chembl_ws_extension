@@ -71,7 +71,7 @@ from tastypie import fields, utils
 from cbh_chembl_model_extension.models import CBHCompoundBatch
 from tastypie.authentication import SessionAuthentication
 import json
-
+from tastypie.paginator import Paginator
 
 class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 
@@ -149,15 +149,34 @@ class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 class CBHCompoundBatchResource(ModelResource):
 
     class Meta:
+        always_return_data = True
+        prefix = "related_molregno"
+        fieldnames = [('chembl_id', 'chemblId'),
+                  ('pref_name', 'preferredCompoundName'),
+                  ('max_phase', 'knownDrug'),
+                  ('compoundproperties.med_chem_friendly', 'medChemFriendly'),
+                  ('compoundproperties.ro3_pass', 'passesRuleOfThree'),
+                  ('compoundproperties.full_molformula', 'molecularFormula'),
+                  ('compoundstructures.canonical_smiles', 'smiles'),
+                  ('compoundstructures.standard_inchi_key', 'stdInChiKey'),
+                  ('compoundproperties.molecular_species', 'species'),
+                  ('compoundproperties.num_ro5_violations', 'numRo5Violations'),
+                  ('compoundproperties.rtb', 'rotatableBonds'),
+                  ('compoundproperties.mw_freebase', 'molecularWeight'),
+                  ('compoundproperties.alogp', 'alogp'),
+                  ('compoundproperties.acd_logp', 'acdLogp'),
+                  ('compoundproperties.acd_logd', 'acdLogd'),
+                  ('compoundproperties.acd_most_apka', 'acdAcidicPka'),
+                  ('compoundproperties.acd_most_bpka', 'acdBasicPka')]
         queryset = CBHCompoundBatch.objects.all()
         resource_name = 'cbh_compound_batches'
         authorization = Authorization()
         include_resource_uri = False
-        paginator_class = None
         serializer = CamelCaseJSONSerializer()
         allowed_methods = ['get', 'post', 'put']
         default_format = 'application/json'
         authentication = SessionAuthentication()
+        paginator_class = Paginator
 
 
     def post_list_validate(self, request, **kwargs):
@@ -176,7 +195,8 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def save_related(self, bundle):
-        bundle.object.generate_structure_and_dictionary()
+        bundle.obj.generate_structure_and_dictionary()
+        
 
     def full_hydrate(self, bundle):
         '''As the object is created we run the validate code on it'''
@@ -203,3 +223,24 @@ class CBHCompoundBatchResource(ModelResource):
         ]
 
 
+    def dehydrate(self, bundle):
+        data = bundle.obj.related_molregno
+        for names in self.Meta.fieldnames:
+            
+            bundle.data[names[1]] = deepgetattr(data, names[0], None)
+        return bundle
+
+
+    def get_object_list(self, request):
+        return super(CBHCompoundBatchResource, self).get_object_list(request).select_related("related_molregno", "related_molregno__compound_properties")
+
+
+
+def deepgetattr(obj, attr, ex):
+    """Recurses through an attribute chain to get the ultimate value."""
+    try:
+        return reduce(getattr, attr.split('.'), obj)
+
+    except:
+        print attr
+        return ex
