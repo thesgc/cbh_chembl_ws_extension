@@ -41,7 +41,7 @@ from tastypie.exceptions import ImmediateHttpResponse
 from django.db.utils import DatabaseError
 from django.db import transaction
 from django.db import connection
-
+from chembl_beaker.beaker.core_apps.svgImages.impl import _ctab2svg
 try:
     from chembl_compatibility.models import MoleculeDictionary
     from chembl_compatibility.models import CompoundMols
@@ -220,8 +220,15 @@ class CBHCompoundBatchResource(ModelResource):
         return [
         url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,
                 self.wrap_view('post_list_validate'), name="api_validate_compound_batch"),
+        url(r"^(?P<resource_name>%s)/svg/(?P<chemblid>\w[\w-]*)/$" % self._meta.resource_name,
+                self.wrap_view('svg'), name="svg"),
         ]
 
+
+    def svg(self, request, **kwargs):
+        chemblid = kwargs.get('chemblid', '')
+        ctab = self.queryset.get(related_molregno__chembl_id=chemblid)
+        return _ctab2svg(ctab, 400, '')
 
     def dehydrate(self, bundle):
         data = bundle.obj.related_molregno
