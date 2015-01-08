@@ -41,7 +41,7 @@ from tastypie.exceptions import ImmediateHttpResponse
 from django.db.utils import DatabaseError
 from django.db import transaction
 from django.db import connection
-from chembl_beaker.beaker.core_apps.svgImages.impl import _ctab2svg
+from chembl_beaker.beaker.core_apps.rasterImages.impl import _ctab2image
 try:
     from chembl_compatibility.models import MoleculeDictionary
     from chembl_compatibility.models import CompoundMols
@@ -227,8 +227,9 @@ class CBHCompoundBatchResource(ModelResource):
 
     def svg(self, request, **kwargs):
         chemblid = kwargs.get('chemblid', '')
-        ctab = self.queryset.get(related_molregno__chembl_id=chemblid)
-        return _ctab2svg(ctab, 400, '')
+        ctab = self.get_object_list(request).filter(related_molregno__chembl_id=chemblid)[0].ctab
+        svg = _ctab2image(ctab, 400, '')
+        return HttpResponse(svg)
 
     def dehydrate(self, bundle):
         data = bundle.obj.related_molregno
