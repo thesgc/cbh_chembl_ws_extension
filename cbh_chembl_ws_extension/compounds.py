@@ -9,7 +9,7 @@ from django.http import HttpResponse
 import base64
 import time
 from collections import OrderedDict
-from tastypie.resources import ModelResource
+from tastypie.resources import Resource, ModelResource
 
 try:
     from rdkit import Chem
@@ -72,6 +72,8 @@ from cbh_chembl_model_extension.models import CBHCompoundBatch
 from tastypie.authentication import SessionAuthentication
 import json
 from tastypie.paginator import Paginator
+
+from flowjs.models import FlowFile
 
 class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 
@@ -193,6 +195,9 @@ class CBHCompoundBatchResource(ModelResource):
         updated_bundle = self.build_bundle(obj=bundle.obj, data=dictdata)
         return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
 
+    def get_project_custom_field_names(self, request, **kwargs):
+        return HttpResponse("{ field_names: [ {'name': 'test1', 'count': 1, 'last_used': ''}, {'name': 'test2', 'count': 1, 'last_used': ''} ] }")
+
 
     def save_related(self, bundle):
         bundle.obj.generate_structure_and_dictionary()
@@ -244,3 +249,43 @@ def deepgetattr(obj, attr, ex):
     except:
         print attr
         return ex
+
+
+
+
+
+
+
+
+
+
+class CBHCompoundBatchUpload(ModelResource):
+
+    class Meta:
+        always_return_data = True
+        #fieldnames = [('files', 'files')]
+        queryset = FlowFile.objects.all()
+        resource_name = 'cbh_batch_upload'
+        authorization = Authorization()
+        include_resource_uri = False
+        # serializer = CamelCaseJSONSerializer()
+        allowed_methods = ['get', 'post', 'put']
+        default_format = 'application/json'
+        #default_format = 'text/html'
+        authentication = SessionAuthentication()
+        # paginator_class = Paginator
+
+    def prepend_urls(self):
+        return [
+        url(r"^(?P<resource_name>%s)/headers/$" % self._meta.resource_name,
+                self.wrap_view('dummy_response'), name="api_compound_batch_headers"),
+        ]
+
+    def dummy_reponse(self, request, **kwargs):
+        #obj = self.queryset[0].name
+        
+        return self.create_response(request, "obj", response_class=http.HttpAccepted)
+
+
+    # def get_object_list(self, request):
+    #     return super(CBHCompoundBatchUpload, self).get_object_list(request)
