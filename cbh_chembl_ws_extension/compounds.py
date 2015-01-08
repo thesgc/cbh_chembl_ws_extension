@@ -271,29 +271,56 @@ class CBHCompoundBatchUpload(ModelResource):
 
     class Meta:
         always_return_data = True
-        #fieldnames = [('files', 'files')]
+        fieldnames = [('chembl_id', 'chemblId')],
         queryset = FlowFile.objects.all()
         resource_name = 'cbh_batch_upload'
         authorization = Authorization()
         include_resource_uri = False
-        # serializer = CamelCaseJSONSerializer()
         allowed_methods = ['get', 'post', 'put']
         default_format = 'application/json'
-        #default_format = 'text/html'
         authentication = SessionAuthentication()
-        # paginator_class = Paginator
 
     def prepend_urls(self):
         return [
         url(r"^(?P<resource_name>%s)/headers/$" % self._meta.resource_name,
-                self.wrap_view('dummy_response'), name="api_compound_batch_headers"),
+                self.wrap_view('return_headers'), name="api_compound_batch_headers"),
         ]
 
-    def dummy_reponse(self, request, **kwargs):
+    def return_headers(self, request, **kwargs):
         #obj = self.queryset[0].name
-        
-        return self.create_response(request, "obj", response_class=http.HttpAccepted)
+        request_json = json.loads(request.body)
+
+        file_name = request_json['file_name']
+        correct_file = self.get_object_list(request).filter(original_filename=file_name)[0]
+        headers = []
+        header_json = { }
+
+        #get this into a datastructure if excel
+
+        #or just use rdkit if SD file
+        if (correct_file.extension == ".sdf"):
+            #read in the file
+            print("Getting here")
+            suppl = Chem.ForwardSDMolSupplier(correct_file)
+            #read the headers from the first molecule
+            print("getting past rdkit reader")
+            
+            #this is breaking - caauses server to hang
+
+            # for mol in suppl:
+            #     if mol is None: continue
+            #     if not headers: headers = list(mol.GetPropNames())
+
+            
+            print("getting past mol loop")
+            #headers = list(suppl[0].GetPropNames())
+            #convert to json
+            header_json = JSONEncoder.encode(headers)
+            print("getting past json encoder")
+            #send back
+
+        return self.create_response(request, header_json, response_class=http.HttpAccepted)
 
 
     # def get_object_list(self, request):
-    #     return super(CBHCompoundBatchUpload, self).get_object_list(request)
+    #     return super(CBHCompoundBatchUpload, self).get_object_list(request).filter()
