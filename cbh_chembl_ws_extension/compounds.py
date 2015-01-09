@@ -9,11 +9,8 @@ from django.http import HttpResponse
 import base64
 import time
 from collections import OrderedDict
-<<<<<<< HEAD
 from tastypie.resources import ModelResource, Resource
-=======
-from tastypie.resources import Resource, ModelResource
->>>>>>> 914f88f1b4ff4fb7246f5ed850ce56e67093d9e6
+
 
 try:
     from rdkit import Chem
