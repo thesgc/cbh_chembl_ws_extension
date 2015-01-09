@@ -9,7 +9,7 @@ from django.http import HttpResponse
 import base64
 import time
 from collections import OrderedDict
-from tastypie.resources import ModelResource
+from tastypie.resources import ModelResource, Resource
 
 try:
     from rdkit import Chem
@@ -72,7 +72,7 @@ from cbh_chembl_model_extension.models import CBHCompoundBatch
 from tastypie.authentication import SessionAuthentication
 import json
 from tastypie.paginator import Paginator
-
+from chembl_beaker.beaker.core_apps.conversions.impl import _smiles2ctab, _apply
 class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -146,6 +146,7 @@ class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 
 
 
+
 class CBHCompoundBatchResource(ModelResource):
 
     class Meta:
@@ -179,7 +180,8 @@ class CBHCompoundBatchResource(ModelResource):
         paginator_class = Paginator
 
 
-    def post_list_validate(self, request, **kwargs):
+
+    def post_validate(self, request, **kwargs):
         """Runs the validation for a single or small set of molecules"""
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         
@@ -219,17 +221,37 @@ class CBHCompoundBatchResource(ModelResource):
     def prepend_urls(self):
         return [
         url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,
-                self.wrap_view('post_list_validate'), name="api_validate_compound_batch"),
+                self.wrap_view('post_validate'), name="api_validate_compound_batch"),
+        url(r"^(?P<resource_name>%s)/validate_list/$" % self._meta.resource_name,
+                self.wrap_view('post_validate_list'), name="api_validate_compound_list"),
+                
         url(r"^(?P<resource_name>%s)/svg/(?P<chemblid>\w[\w-]*)/$" % self._meta.resource_name,
                 self.wrap_view('svg'), name="svg"),
         ]
 
+    def post_validate_list(self, request, **kwargs):
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        type = bundle.data.get("type",None).lower()
+        objects =  bundle.data.get("objects", [])
+       
+        mols = []
+        if type == "smiles":
+            mols = _apply(objects,Chem.MolFromSmiles)
+        elif type == "inchi":
+            mols = _apply(objects,Chem.MolFromInchi)
+        batches = [CBHCompoundBatch.objects.from_rd_mol(mol) for mol in mols]
+        bundle.data["objects"] = []
+        for batch in batches:
+            batch = batch.__dict__
+            batch.pop("_state")
+            bundle.data["objects"].append(batch)
+        return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
-    def svg(self, request, **kwargs):
-        chemblid = kwargs.get('chemblid', '')
-        ctab = self.get_object_list(request).filter(related_molregno__chembl_id=chemblid)[0].ctab
-        svg = _ctab2image(ctab, 400, '')
-        return HttpResponse(svg)
+
+
 
     def dehydrate(self, bundle):
         data = bundle.obj.related_molregno
