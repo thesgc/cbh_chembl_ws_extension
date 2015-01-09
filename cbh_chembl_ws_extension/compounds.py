@@ -294,28 +294,29 @@ class CBHCompoundBatchUpload(ModelResource):
         correct_file = self.get_object_list(request).filter(original_filename=file_name)[0]
         headers = []
         header_json = { }
-
+        print(correct_file)
         #get this into a datastructure if excel
 
         #or just use rdkit if SD file
         if (correct_file.extension == ".sdf"):
             #read in the file
             print("Getting here")
-            suppl = Chem.ForwardSDMolSupplier(correct_file)
+            suppl = Chem.ForwardSDMolSupplier(correct_file.file)
+
             #read the headers from the first molecule
             print("getting past rdkit reader")
             
             #this is breaking - caauses server to hang
 
-            # for mol in suppl:
-            #     if mol is None: continue
-            #     if not headers: headers = list(mol.GetPropNames())
+            for mol in suppl:
+                if mol is None: continue
+                if not headers: headers = list(mol.GetPropNames())
 
-            
+
             print("getting past mol loop")
             #headers = list(suppl[0].GetPropNames())
             #convert to json
-            header_json = JSONEncoder.encode(headers)
+            header_json = json.JSONEncoder().encode(headers)
             print("getting past json encoder")
             #send back
 
