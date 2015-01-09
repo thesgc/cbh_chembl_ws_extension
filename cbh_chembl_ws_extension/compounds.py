@@ -312,7 +312,12 @@ class CBHCompoundBatchUpload(ModelResource):
 
     def return_headers(self, request, **kwargs):
         #obj = self.queryset[0].name
-        request_json = json.loads(request.body)
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+
+        request_json = bundle.data
 
         file_name = request_json['file_name']
         correct_file = self.get_object_list(request).filter(original_filename=file_name)[0]
@@ -324,27 +329,22 @@ class CBHCompoundBatchUpload(ModelResource):
         #or just use rdkit if SD file
         if (correct_file.extension == ".sdf"):
             #read in the file
-            print("Getting here")
             suppl = Chem.ForwardSDMolSupplier(correct_file.file)
 
             #read the headers from the first molecule
-            print("getting past rdkit reader")
-            
-            #this is breaking - caauses server to hang
 
             for mol in suppl:
                 if mol is None: continue
                 if not headers: headers = list(mol.GetPropNames())
+                else: break
 
-
-            print("getting past mol loop")
-            #headers = list(suppl[0].GetPropNames())
             #convert to json
-            header_json = json.JSONEncoder().encode(headers)
-            print("getting past json encoder")
+            #header_json = json.JSONEncoder().encode(headers)
+            bundle.data["headers"] = headers
+
             #send back
 
-        return self.create_response(request, header_json, response_class=http.HttpAccepted)
+        return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
     # def get_object_list(self, request):
