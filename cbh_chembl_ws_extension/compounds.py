@@ -76,6 +76,10 @@ from tastypie.paginator import Paginator
 from chembl_beaker.beaker.core_apps.conversions.impl import _smiles2ctab, _apply
 
 from flowjs.models import FlowFile
+import xlrd
+import pandas as pd
+import numpy as np
+
 
 class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 
@@ -335,12 +339,17 @@ class CBHCompoundBatchUpload(ModelResource):
 
             for mol in suppl:
                 if mol is None: continue
-                if not headers: headers = list(mol.GetPropNames())
-                else: break
+                if not headers: 
+                    headers = list(mol.GetPropNames())
+                    break
 
-            #convert to json
-            #header_json = json.JSONEncoder().encode(headers)
-            bundle.data["headers"] = headers
+        elif(correct_file.extension in (".xls", ".xlsx")):
+            #do something
+            df = pd.read_excel(correct_file.file)
+            headers = list(df)
+
+        #this converts to json in preparation to be added to the response
+        bundle.data["headers"] = headers
 
             #send back
 
