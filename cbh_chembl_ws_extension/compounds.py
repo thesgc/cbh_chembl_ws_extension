@@ -77,6 +77,10 @@ from tastypie.paginator import Paginator
 from chembl_beaker.beaker.core_apps.conversions.impl import _smiles2ctab, _apply
 
 from flowjs.models import FlowFile
+import xlrd
+import pandas as pd
+import numpy as np
+
 
 
 
@@ -206,7 +210,17 @@ class CBHCompoundBatchResource(ModelResource):
         return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
 
     def get_project_custom_field_names(self, request, **kwargs):
-        return HttpResponse("{ field_names: [ {'name': 'test1', 'count': 1, 'last_used': ''}, {'name': 'test2', 'count': 1, 'last_used': ''} ] }")
+        # deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'text/plain'))
+        
+        # deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(request=request)
+
+        fields = CBHCompoundBatch.objects.get_all_keys()
+        bundle.data['field_names'] =[{'name': item, 'count': 1, 'last_used': ''} for item in fields]        
+        return self.create_response(request, bundle, response_class=http.HttpAccepted)
+
+
+        #return HttpResponse("{ 'field_names': [ {'name': 'test1', 'count': 1, 'last_used': ''}, {'name': 'test2', 'count': 1, 'last_used': ''} ] }")
 
 
     def save_related(self, bundle):
@@ -238,6 +252,8 @@ class CBHCompoundBatchResource(ModelResource):
                 self.wrap_view('post_validate'), name="api_validate_compound_batch"),
         url(r"^(?P<resource_name>%s)/validate_list/$" % self._meta.resource_name,
                 self.wrap_view('post_validate_list'), name="api_validate_compound_list"),
+        url(r"^(?P<resource_name>%s)/existing/$" % self._meta.resource_name,
+                self.wrap_view('get_project_custom_field_names'), name="api_batch_existing_fields"),
                 
         url(r"^(?P<resource_name>%s)/svg/(?P<chemblid>\w[\w-]*)/$" % self._meta.resource_name,
                 self.wrap_view('svg'), name="svg"),
@@ -365,38 +381,44 @@ class CBHCompoundBatchUpload(ModelResource):
 
     def return_headers(self, request, **kwargs):
         #obj = self.queryset[0].name
-        request_json = json.loads(request.body)
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+
+        request_json = bundle.data
 
         file_name = request_json['file_name']
         correct_file = self.get_object_list(request).filter(original_filename=file_name)[0]
         headers = []
         header_json = { }
-
+        print(correct_file)
         #get this into a datastructure if excel
 
         #or just use rdkit if SD file
         if (correct_file.extension == ".sdf"):
             #read in the file
-            print("Getting here")
-            suppl = Chem.ForwardSDMolSupplier(correct_file)
+            suppl = Chem.ForwardSDMolSupplier(correct_file.file)
+
             #read the headers from the first molecule
-            print("getting past rdkit reader")
-            
-            #this is breaking - caauses server to hang
 
-            # for mol in suppl:
-            #     if mol is None: continue
-            #     if not headers: headers = list(mol.GetPropNames())
+            for mol in suppl:
+                if mol is None: continue
+                if not headers: 
+                    headers = list(mol.GetPropNames())
+                    break
 
-            
-            print("getting past mol loop")
-            #headers = list(suppl[0].GetPropNames())
-            #convert to json
-            header_json = JSONEncoder.encode(headers)
-            print("getting past json encoder")
+        elif(correct_file.extension in (".xls", ".xlsx")):
+            #do something
+            df = pd.read_excel(correct_file.file)
+            headers = list(df)
+
+        #this converts to json in preparation to be added to the response
+        bundle.data["headers"] = headers
+
             #send back
 
-        return self.create_response(request, header_json, response_class=http.HttpAccepted)
+        return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
     # def get_object_list(self, request):
