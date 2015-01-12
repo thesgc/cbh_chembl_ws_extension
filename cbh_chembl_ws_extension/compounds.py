@@ -209,7 +209,8 @@ class CBHCompoundBatchResource(ModelResource):
         # deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(request=request)
 
-        bundle.data['field_names'] = [ {'name': 'test1', 'count': 1, 'last_used': ''}, {'name': 'test2', 'count': 1, 'last_used': ''} ]
+        fields = CBHCompoundBatch.objects.hkeys(id__gte=0, attr="custom_fields")
+        bundle.data['field_names'] =[{'name': item, 'count': 1, 'last_used': ''} for item in fields]        
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
