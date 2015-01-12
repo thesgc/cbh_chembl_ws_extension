@@ -204,7 +204,16 @@ class CBHCompoundBatchResource(ModelResource):
         return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
 
     def get_project_custom_field_names(self, request, **kwargs):
-        return HttpResponse("{ field_names: [ {'name': 'test1', 'count': 1, 'last_used': ''}, {'name': 'test2', 'count': 1, 'last_used': ''} ] }")
+        # deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'text/plain'))
+        
+        # deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(request=request)
+
+        bundle.data['field_names'] = [ {'name': 'test1', 'count': 1, 'last_used': ''}, {'name': 'test2', 'count': 1, 'last_used': ''} ]
+        return self.create_response(request, bundle, response_class=http.HttpAccepted)
+
+
+        #return HttpResponse("{ 'field_names': [ {'name': 'test1', 'count': 1, 'last_used': ''}, {'name': 'test2', 'count': 1, 'last_used': ''} ] }")
 
 
     def save_related(self, bundle):
@@ -235,6 +244,8 @@ class CBHCompoundBatchResource(ModelResource):
                 self.wrap_view('post_validate'), name="api_validate_compound_batch"),
         url(r"^(?P<resource_name>%s)/validate_list/$" % self._meta.resource_name,
                 self.wrap_view('post_validate_list'), name="api_validate_compound_list"),
+        url(r"^(?P<resource_name>%s)/existing/$" % self._meta.resource_name,
+                self.wrap_view('get_project_custom_field_names'), name="api_batch_existing_fields"),
                 
         url(r"^(?P<resource_name>%s)/svg/(?P<chemblid>\w[\w-]*)/$" % self._meta.resource_name,
                 self.wrap_view('svg'), name="svg"),
