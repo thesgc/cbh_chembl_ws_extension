@@ -1,3 +1,4 @@
+from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from django.conf import settings
 from chembl_webservices.base import ChEMBLApiBase
 from tastypie.utils import trailing_slash
@@ -69,13 +70,15 @@ from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
 from django.core.serializers.json import DjangoJSONEncoder
 from tastypie import fields, utils
-from cbh_chembl_model_extension.models import CBHCompoundBatch
+from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch
 from tastypie.authentication import SessionAuthentication
 import json
 from tastypie.paginator import Paginator
 from chembl_beaker.beaker.core_apps.conversions.impl import _smiles2ctab, _apply
 
 from flowjs.models import FlowFile
+
+
 
 class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 
@@ -154,6 +157,9 @@ class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
 class CBHCompoundBatchResource(ModelResource):
 
     class Meta:
+        filtering = {
+            "multiple_batch_id": ALL,
+        }
         always_return_data = True
         prefix = "related_molregno"
         fieldnames = [('chembl_id', 'chemblId'),
@@ -204,6 +210,7 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def save_related(self, bundle):
+        #bundle.obj.created_by = request.user.
         bundle.obj.generate_structure_and_dictionary()
         
 
@@ -234,7 +241,55 @@ class CBHCompoundBatchResource(ModelResource):
                 
         url(r"^(?P<resource_name>%s)/svg/(?P<chemblid>\w[\w-]*)/$" % self._meta.resource_name,
                 self.wrap_view('svg'), name="svg"),
+        url(r"^(?P<resource_name>%s)/multi_batch_save/$" % self._meta.resource_name,
+                self.wrap_view('multi_batch_save'), name="multi_batch_save"),
         ]
+
+    def multi_batch_save(self, request, **kwargs):
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        id = bundle.data["current_batch"]
+        batches = CBHCompoundMultipleBatch.objects.get(pk=id).uploaded_data
+        bundle.data["saved"] = 0
+        bundle.data["errors"] = []
+        for batch in batches:
+            try:
+
+                batch = batch.save(validate=False)
+                bundle.data["saved"] += 1
+            except Exception , e:
+                bundle.data["errors"] += e
+        return self.create_response(request, bundle, response_class=http.HttpCreated)
+
+
+
+
+
+
+    def validate_multi_batch(self,multi_batch, bundle, request):
+        total = len(multi_batch.uploaded_data)
+        bundle.data["objects"] = {"pains" :[], "changed" : [], "errors" :[]}
+        for batch in multi_batch.uploaded_data:
+
+            batch = batch.__dict__
+            batch.pop("_state")
+            if batch["warnings"]["pains_count"] != "0":
+                bundle.data["objects"]["pains"].append(batch)
+            if batch["errors"] != {}:
+                bundle.data["objects"]["errors"].append(batch)
+                total = total - 1
+
+            if batch["warnings"]["hasChanged"].lower() == "true":
+                bundle.data["objects"]["changed"].append(batch)  
+
+        bundle.data["objects"]["total"] = total
+
+        bundle.data["current_batch"] = multi_batch.pk
+        return self.create_response(request, bundle, response_class=http.HttpAccepted)
+
+
 
     def post_validate_list(self, request, **kwargs):
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
@@ -244,32 +299,30 @@ class CBHCompoundBatchResource(ModelResource):
         type = bundle.data.get("type",None).lower()
         objects =  bundle.data.get("objects", [])
        
-        mols = []
+        batches = []
         if type == "smiles":
-            mols = _apply(objects,Chem.MolFromSmiles)
+            batches = [CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(obj), smiles=obj) for obj in objects ]
+
         elif type == "inchi":
             mols = _apply(objects,Chem.MolFromInchi)
-        batches = [CBHCompoundBatch.objects.from_rd_mol(mol) for mol in mols]
-        bundle.data["objects"] = []
-        for batch in batches:
-            batch = batch.__dict__
-            batch.pop("_state")
-            bundle.data["objects"].append(batch)
-        return self.create_response(request, bundle, response_class=http.HttpAccepted)
-
-
+            batches = [CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol)) for mol in mols]
+        # for b in batches:
+        #     b["created_by"] = request.user.username
+        multiple_batch = CBHCompoundMultipleBatch.objects.create(uploaded_data=batches)
+        return self.validate_multi_batch(multiple_batch, bundle, request)
 
 
     def dehydrate(self, bundle):
         data = bundle.obj.related_molregno
         for names in self.Meta.fieldnames:
-            
             bundle.data[names[1]] = deepgetattr(data, names[0], None)
         return bundle
 
 
     def get_object_list(self, request):
         return super(CBHCompoundBatchResource, self).get_object_list(request).select_related("related_molregno", "related_molregno__compound_properties")
+
+
 
 
 
