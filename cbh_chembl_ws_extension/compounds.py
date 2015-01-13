@@ -162,7 +162,9 @@ class CBHCompoundBatchResource(ModelResource):
 
     class Meta:
         filtering = {
-            "multiple_batch_id": ALL,
+            "std_ctab": ALL_WITH_RELATIONS,
+            "ctab": ALL,
+            "multiple_batch_id": ALL_WITH_RELATIONS,
         }
         always_return_data = True
         prefix = "related_molregno"
@@ -270,13 +272,17 @@ class CBHCompoundBatchResource(ModelResource):
         batches = CBHCompoundMultipleBatch.objects.get(pk=id).uploaded_data
         bundle.data["saved"] = 0
         bundle.data["errors"] = []
+        print "this many batches"
+        print len(batches)
         for batch in batches:
             try:
 
-                batch = batch.save(validate=False)
+                batch.save(validate=False)
+                batch.generate_structure_and_dictionary()
                 bundle.data["saved"] += 1
             except Exception , e:
                 bundle.data["errors"] += e
+
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
 
@@ -324,15 +330,32 @@ class CBHCompoundBatchResource(ModelResource):
             batches = [CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol)) for mol in mols]
         # for b in batches:
         #     b["created_by"] = request.user.username
-        multiple_batch = CBHCompoundMultipleBatch.objects.create(uploaded_data=batches)
+
+        multiple_batch = CBHCompoundMultipleBatch.objects.create()
+        for b in batches:
+            b.multiple_batch_id = multiple_batch.pk
+
+        multiple_batch.uploaded_data=batches
+        multiple_batch.save()
         return self.validate_multi_batch(multiple_batch, bundle, request)
 
 
     def dehydrate(self, bundle):
-        data = bundle.obj.related_molregno
-        for names in self.Meta.fieldnames:
-            bundle.data[names[1]] = deepgetattr(data, names[0], None)
+
+        try:
+            data = bundle.obj.related_molregno
+            for names in self.Meta.fieldnames:
+                bundle.data[names[1]] = deepgetattr(data, names[0], None)
+
+            mynames = ["editable_by","viewable_by", "warnings", "properties", "custom_fields", "errors"]
+            for name in mynames:
+                bundle.data[name] = json.loads(bundle.data[name]) 
+        except:
+            pass
+    
         return bundle
+
+
 
 
     def get_object_list(self, request):
@@ -348,7 +371,6 @@ def deepgetattr(obj, attr, ex):
         return reduce(getattr, attr.split('.'), obj)
 
     except:
-        print attr
         return ex
 
 
