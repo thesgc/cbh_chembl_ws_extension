@@ -265,6 +265,8 @@ class CBHCompoundBatchResource(ModelResource):
                 self.wrap_view('svg'), name="svg"),
         url(r"^(?P<resource_name>%s)/multi_batch_save/$" % self._meta.resource_name,
                 self.wrap_view('multi_batch_save'), name="multi_batch_save"),
+        url(r"^(?P<resource_name>%s)/multi_batch_custom_fields/$" % self._meta.resource_name,
+                self.wrap_view('multi_batch_custom_fields'), name="multi_batch_custom_fields"),
         ]
 
     def multi_batch_save(self, request, **kwargs):
@@ -290,7 +292,21 @@ class CBHCompoundBatchResource(ModelResource):
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
 
+    def multi_batch_custom_fields(self, request, **kwargs):
+        '''Save custom fields from the mapping section when adding ID/SMILES list'''
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
+        id = bundle.data["current_batch"]
+
+        mb = CBHCompoundMultipleBatch.objects.get(pk=id)
+        for b in mb.uploaded_data:
+            b.custom_fields = bundle.data["custom_fields"]
+        mb.save()
+
+        return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
 
@@ -307,8 +323,8 @@ class CBHCompoundBatchResource(ModelResource):
                 bundle.data["objects"]["errors"].append(batch)
                 total = total - 1
 
-            if batch["warnings"]["hasChanged"].lower() == "true":
-                bundle.data["objects"]["changed"].append(batch)  
+            # if batch["warnings"]["hasChanged"].lower() == "true":
+            #     bundle.data["objects"]["changed"].append(batch)  
 
         bundle.data["objects"]["total"] = total
 
@@ -406,7 +422,6 @@ class CBHCompoundBatchUpload(ModelResource):
         ]
 
     def return_headers(self, request, **kwargs):
-        #obj = self.queryset[0].name
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
@@ -435,7 +450,7 @@ class CBHCompoundBatchUpload(ModelResource):
                     break
 
         elif(correct_file.extension in (".xls", ".xlsx")):
-            #do something
+            #read in excel file, use pandas to read the headers
             df = pd.read_excel(correct_file.file)
             headers = list(df)
 
