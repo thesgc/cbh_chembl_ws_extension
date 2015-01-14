@@ -263,6 +263,8 @@ class CBHCompoundBatchResource(ModelResource):
                 self.wrap_view('multi_batch_save'), name="multi_batch_save"),
         url(r"^(?P<resource_name>%s)/multi_batch_custom_fields/$" % self._meta.resource_name,
                 self.wrap_view('multi_batch_custom_fields'), name="multi_batch_custom_fields"),
+        url(r"^(?P<resource_name>%s)/validate_files/$" % self._meta.resource_name,
+                self.wrap_view('post_validate_files'), name="api_compound_validate_files"),
         ]
 
     def multi_batch_save(self, request, **kwargs):
@@ -356,6 +358,45 @@ class CBHCompoundBatchResource(ModelResource):
         return self.validate_multi_batch(multiple_batch, bundle, request)
 
 
+    def post_validate_files(self, request, **kwargs):
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+
+        request_json = bundle.data
+
+        file_name = request_json['file_name']
+        correct_file = FlowFile.objects.filter(original_filename=file_name)[0]
+
+        batches = []
+
+        if (correct_file.extension == ".sdf"):
+            #read in the file
+            suppl = Chem.ForwardSDMolSupplier(correct_file.file)
+
+            #read the headers from the first molecule
+
+            for mol in suppl:
+                if mol is None: continue
+                batches.append(CBHCompoundBatch.objects.from_rd_mol(mol))
+                
+
+        elif(correct_file.extension in (".xls", ".xlsx")):
+            #we need to know which column contains structural info - this needs to be defined on the mapping page and passed here
+            df = pd.read_excel(correct_file.file)
+            #headers = list(df)
+            #read the smiles string value out of here, when we know which column it is.
+
+        multiple_batch = CBHCompoundMultipleBatch.objects.create()
+        for b in batches:
+            b.multiple_batch_id = multiple_batch.pk
+
+        multiple_batch.uploaded_data=batches
+        multiple_batch.save()
+        return self.validate_multi_batch(multiple_batch, bundle, request)
+
+
     def dehydrate(self, bundle):
 
         try:
@@ -429,7 +470,6 @@ class CBHCompoundBatchUpload(ModelResource):
         correct_file = self.get_object_list(request).filter(original_filename=file_name)[0]
         headers = []
         header_json = { }
-        print(correct_file)
         #get this into a datastructure if excel
 
         #or just use rdkit if SD file
@@ -457,6 +497,5 @@ class CBHCompoundBatchUpload(ModelResource):
 
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
+    
 
-    # def get_object_list(self, request):
-    #     return super(CBHCompoundBatchUpload, self).get_object_list(request).filter()
