@@ -197,6 +197,10 @@ class CBHCompoundBatchResource(ModelResource):
 
 
 
+    def get_image_from_pipe():
+        ''' svg from mol
+        babel input.smi  -xCe -osvg'''
+
     def post_validate(self, request, **kwargs):
         """Runs the validation for a single or small set of molecules"""
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
