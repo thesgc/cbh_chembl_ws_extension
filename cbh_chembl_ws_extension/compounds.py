@@ -80,6 +80,7 @@ from flowjs.models import FlowFile
 import xlrd
 import pandas as pd
 import numpy as np
+import urllib
 
 
 
@@ -197,9 +198,7 @@ class CBHCompoundBatchResource(ModelResource):
 
 
 
-    def get_image_from_pipe():
-        ''' svg from mol
-        babel input.smi  -xCe -osvg'''
+
 
     def post_validate(self, request, **kwargs):
         """Runs the validation for a single or small set of molecules"""
@@ -261,12 +260,13 @@ class CBHCompoundBatchResource(ModelResource):
         url(r"^(?P<resource_name>%s)/existing/$" % self._meta.resource_name,
                 self.wrap_view('get_project_custom_field_names'), name="api_batch_existing_fields"),
                 
-        url(r"^(?P<resource_name>%s)/svg/(?P<chemblid>\w[\w-]*)/$" % self._meta.resource_name,
-                self.wrap_view('svg'), name="svg"),
+
         url(r"^(?P<resource_name>%s)/multi_batch_save/$" % self._meta.resource_name,
                 self.wrap_view('multi_batch_save'), name="multi_batch_save"),
         url(r"^(?P<resource_name>%s)/multi_batch_custom_fields/$" % self._meta.resource_name,
                 self.wrap_view('multi_batch_custom_fields'), name="multi_batch_custom_fields"),
+        url(r"^(?P<resource_name>%s)/smiles2svg/(?P<structure>\w[\w-]*)/$" % 
+                self._meta.resource_name, self.wrap_view('get_image_from_pipe'),name="smiles2svg")
         ]
 
     def multi_batch_save(self, request, **kwargs):
