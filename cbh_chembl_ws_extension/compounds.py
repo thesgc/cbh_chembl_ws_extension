@@ -279,13 +279,13 @@ class CBHCompoundBatchResource(ModelResource):
         print "this many batches"
         print len(batches)
         for batch in batches:
-            try:
+
 
                 batch.save(validate=False)
                 batch.generate_structure_and_dictionary()
                 bundle.data["saved"] += 1
-            except Exception , e:
-                bundle.data["errors"] += e
+  #          except Exception , e:
+   #             bundle.data["errors"] += e
 
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
@@ -364,29 +364,66 @@ class CBHCompoundBatchResource(ModelResource):
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
-        request_json = bundle.data
-
-        file_name = request_json['file_name']
+        file_name = bundle.data['file_name']
+        mappings = bundle.data['mapping']
         correct_file = FlowFile.objects.filter(original_filename=file_name)[0]
 
         batches = []
+        headers = []
 
         if (correct_file.extension == ".sdf"):
             #read in the file
             suppl = Chem.ForwardSDMolSupplier(correct_file.file)
 
             #read the headers from the first molecule
-
             for mol in suppl:
                 if mol is None: continue
-                batches.append(CBHCompoundBatch.objects.from_rd_mol(mol))
+                if not headers: 
+                    headers = list(mol.GetPropNames())
+                b = CBHCompoundBatch.objects.from_rd_mol(mol)
+                custom_fields = {}
+                for hdr in headers:
+                    if hdr in mappings["ignored_fields"]:
+                        continue
+                    elif hdr in mappings["new_fields"]:
+                        custom_fields[hdr] = mol.GetProp(hdr) 
+                    else:
+                        for key, mapping in mappings["remapped_fields"].iteritems():
+                            if hdr in mapping:
+                                custom_fields[key] = mol.GetProp(hdr)
+
+                b.custom_fields = custom_fields
+                batches.append(b)
                 
 
         elif(correct_file.extension in (".xls", ".xlsx")):
             #we need to know which column contains structural info - this needs to be defined on the mapping page and passed here
+            #read in the specified structural column
+            structure_col = bundle.data["struc_col"]
             df = pd.read_excel(correct_file.file)
-            #headers = list(df)
             #read the smiles string value out of here, when we know which column it is.
+            row_iterator = df.iterrows()
+            headers = list(df)
+            for index, row in row_iterator:
+                smiles_str = row[structure_col]
+                b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles_str), smiles=smiles_str)
+                #work out custom fields from mapping object
+                #new_fields, remapped_fields, ignored_fields
+                
+                custom_fields = {}
+                for hdr in headers:
+                    if hdr in mappings["ignored_fields"]:
+                        continue
+                    elif hdr in mappings["new_fields"]:
+                        custom_fields[ hdr] = row[hdr] 
+                    else:
+                        for key, mapping in mappings["remapped_fields"].iteritems():
+                            if hdr in mapping:
+                                custom_fields[key] = row[hdr]
+
+                b.custom_fields = custom_fields
+                batches.append(b)
+
 
         multiple_batch = CBHCompoundMultipleBatch.objects.create()
         for b in batches:
