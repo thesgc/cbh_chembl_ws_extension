@@ -6,6 +6,9 @@ from chembl_webservices import api_name
 from chembl_core_db.utils import DirectTemplateView
 from django.conf import settings
 from flowjs import urls as flow
+from django.contrib import admin
+
+admin.autodiscover()
 
 spore_context={
     "WS_VERSION": ws_version,
@@ -18,6 +21,7 @@ urlpatterns = patterns('',
     url(r'^%s/docs' % api_name, DirectTemplateView.as_view(template_name="docs.html"), name='ws_docs'),
     url(r'^%s/spore' % api_name, DirectTemplateView.as_view(template_name="ws_spore.json" , extra_context=spore_context), name='ws_spore_endpoint'),
     url(r'^%s/flow/' % api_name, include(flow)), #adding this to allow configured upload URL within django-flowjs
+    url(r'^%s/admin/' % api_name, include(admin.site.urls)),
 
 )
 urlpatterns += webservices.urls
