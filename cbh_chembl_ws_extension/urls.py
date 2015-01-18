@@ -22,6 +22,6 @@ urlpatterns = patterns('',
     url(r'^%s/spore' % api_name, DirectTemplateView.as_view(template_name="ws_spore.json" , extra_context=spore_context), name='ws_spore_endpoint'),
     url(r'^%s/flow/' % api_name, include(flow)), #adding this to allow configured upload URL within django-flowjs
     url(r'^%s/admin/' % api_name, include(admin.site.urls)),
-
+url(r'^grappelli/', include('grappelli.urls')),
 )
 urlpatterns += webservices.urls

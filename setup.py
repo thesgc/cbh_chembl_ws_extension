@@ -36,6 +36,8 @@ setup(
     ],
     include_package_data=True,
     install_requires=[
+    'django-guardian',
+    'django-grappelli==2.4.12',
     ],
     license="MIT",
     zip_safe=False,
