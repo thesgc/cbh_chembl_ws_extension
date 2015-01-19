@@ -65,7 +65,9 @@ except AttributeError:
 
 from chembl_webservices.compounds import CompoundsResource
 from chembl_webservices.base import ChEMBLApiSerializer
-from cbh_chembl_ws_extension.base import CBHApiBase, CamelCaseJSONSerializer
+from cbh_chembl_ws_extension.base import CBHApiBase
+from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer
+
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
 from django.core.serializers.json import DjangoJSONEncoder
@@ -149,7 +151,7 @@ class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
             #     name="api_dispatch_compounds"),
             url(r"^(?P<resource_name>%s)$" % self._meta.resource_name, self.wrap_view('post_list'),
                 name="api_post_list"),
-            url(r"^(?P<resource_name>%s)\.(?P<format>json|xml)$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)\.(?P<format>json|xml|csv|xls)$" % self._meta.resource_name,
                 self.wrap_view('dispatch_compounds'), name="api_dispatch_compounds"),
         ]
 
@@ -186,18 +188,27 @@ class CBHCompoundBatchResource(ModelResource):
                   ('compoundproperties.acd_logd', 'acdLogd'),
                   ('compoundproperties.acd_most_apka', 'acdAcidicPka'),
                   ('compoundproperties.acd_most_bpka', 'acdBasicPka')]
+        csv_fieldnames = [('chembl_id', 'UOX ID'),
+                  ('pref_name', 'Preferred Name'),
+                  ('max_phase', 'Known Drug'),
+                  ('compoundproperties.med_chem_friendly', 'MedChem Friendly'),
+                  ('compoundproperties.ro3_pass', 'passesRuleOfThree'),
+                  ('compoundproperties.full_molformula', 'Mol Formula'),
+                  ('compoundstructures.canonical_smiles', 'SMILES'),
+                  ('compoundstructures.standard_inchi_key', 'Std InChiKey'),
+                  ('compoundproperties.num_ro5_violations', 'Rule of 5 violations'),
+                  ('compoundproperties.rtb', 'Rotatable Bonds'),
+                  ('compoundproperties.mw_freebase', 'Mol Weight')]
+        
         queryset = CBHCompoundBatch.objects.all()
         resource_name = 'cbh_compound_batches'
         authorization = Authorization()
         include_resource_uri = False
-        serializer = CamelCaseJSONSerializer()
+        serializer = CBHCompoundBatchSerializer()
         allowed_methods = ['get', 'post', 'put']
         default_format = 'application/json'
         authentication = SessionAuthentication()
         paginator_class = Paginator
-
-
-
 
 
     def post_validate(self, request, **kwargs):
@@ -267,6 +278,8 @@ class CBHCompoundBatchResource(ModelResource):
                 self.wrap_view('multi_batch_custom_fields'), name="multi_batch_custom_fields"),
         url(r"^(?P<resource_name>%s)/validate_files/$" % self._meta.resource_name,
                 self.wrap_view('post_validate_files'), name="api_compound_validate_files"),
+        url(r"^(?P<resource_name>%s)/export_file/$" % self._meta.resource_name,
+                self.wrap_view('export_file'), name="api_compound_export_file"),
         url(r"^(?P<resource_name>%s)/smiles2svg/(?P<structure>\w[\w-]*)/$" % 
                 self._meta.resource_name, self.wrap_view('get_image_from_pipe'),name="smiles2svg"),
         ]
@@ -437,9 +450,64 @@ class CBHCompoundBatchResource(ModelResource):
         multiple_batch.save()
         return self.validate_multi_batch(multiple_batch, bundle, request)
 
+    def alter_list_data_to_serialize(self, request, data):
+        '''use the request type to determine which fields should be limited for file download,
+           add extra fields if needed (eg images) and enumerate the custom fields into the 
+           rest of the calculated fields'''
+        # for names in self.Meta.fieldnames:
+        #     data[names[1]] = deepgetattr(data, names[0], None)
+        #objs = json.loads(data["objects"])
+        # for key, val in json.loads(data["objects"]).iteritems():
+        #     print(val)
+        print(self.determine_format(request))
+
+        if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
+            fields_to_keep = {'chemblId':'UOx ID',
+                              'canonical_smiles':'SMILES',
+                              'knownDrug':'Known Drug',
+                              'medChemFriendly':'MedChem Friendly',
+                              'standard_inchi':'Std InChi',
+                              'custom_fields':'custom_fields'}
+
+            for index, b in enumerate(data["objects"]):
+                #print(b.data['standard_inchi'])
+                #remove items which are not listed as being kept
+                new_data = {}
+                for k, v in b.data.iteritems():
+                    for name, display_name in fields_to_keep.iteritems():
+                        if k == name:
+                            #b.data[display_name] = v
+                            #del(b.data[k])
+                            new_data[display_name] = v
+
+
+
+                for field, value in b.data['custom_fields'].iteritems():
+                    new_data[field] = value
+                #now remove custom_fields
+                del(new_data['custom_fields'])
+                b.data = new_data
+
+
+        return data
+
+    def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
+        """
+        Extracts the common "which-format/serialize/return-response" cycle.
+        Mostly a useful shortcut/hook.
+        """
+
+        desired_format = self.determine_format(request)
+        serialized = self.serialize(request, data, desired_format)
+        rc = response_class(content=serialized, content_type=build_content_type(desired_format), **response_kwargs)
+
+        if(desired_format == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
+            rc['Content-Disposition'] = 'attachment; filename=export.xlsx'
+        return rc
+
 
     def dehydrate(self, bundle):
-
+        
         try:
             data = bundle.obj.related_molregno
             for names in self.Meta.fieldnames:
@@ -452,6 +520,33 @@ class CBHCompoundBatchResource(ModelResource):
             pass
     
         return bundle
+
+    def get_list(self, request, **kwargs):
+        """
+        Returns a serialized list of resources.
+        Calls ``obj_get_list`` to provide the data, then handles that result
+        set and serializes it.
+        Should return a HttpResponse (200 OK).
+        """
+        # TODO: Uncached for now. Invalidation that works for everyone may be
+        #       impossible.
+        base_bundle = self.build_bundle(request=request)
+        objects = self.obj_get_list(bundle=base_bundle, **self.remove_api_resource_names(kwargs))
+        sorted_objects = self.apply_sorting(objects, options=request.GET)
+
+        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
+        to_be_serialized = paginator.page()
+
+        # Dehydrate the bundles in preparation for serialization.
+        bundles = []
+
+        for obj in to_be_serialized[self._meta.collection_name]:
+            bundle = self.build_bundle(obj=obj, request=request)
+            bundles.append(self.full_dehydrate(bundle, for_list=True))
+
+        to_be_serialized[self._meta.collection_name] = bundles
+        to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
+        return self.create_response(request, to_be_serialized)
 
 
 
