@@ -25,7 +25,7 @@ class ProjectAuthorization(Authorization):
         if not hasattr(request, 'user'):
             return False
 
-        if not data.get("project_id", None):
+        if not data.get("project_key", None):
             return False
 
 
