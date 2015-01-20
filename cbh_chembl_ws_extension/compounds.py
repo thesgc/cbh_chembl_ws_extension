@@ -1,6 +1,5 @@
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from django.conf import settings
-from chembl_webservices.base import ChEMBLApiBase
 from tastypie.utils import trailing_slash
 from django.conf.urls import *
 from django.core.exceptions import ObjectDoesNotExist
@@ -34,7 +33,6 @@ except ImportError:
     indigo = None
     indigo_renderer = None
 
-from chembl_webservices.cache import ChemblCache
 
 from tastypie.exceptions import BadRequest
 from chembl_core_db.chemicalValidators import validateSmiles, validateChemblId, validateStandardInchiKey
@@ -63,14 +61,14 @@ try:
 except AttributeError:
     WS_DEBUG = False
 
-from chembl_webservices.compounds import CompoundsResource
-from chembl_webservices.base import ChEMBLApiSerializer
-from cbh_chembl_ws_extension.base import CBHApiBase, CamelCaseJSONSerializer
+from cbh_chembl_ws_extension.base import  CamelCaseJSONSerializer
+from cbh_chembl_ws_extension.authorization import ProjectAuthorization
+
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
 from django.core.serializers.json import DjangoJSONEncoder
 from tastypie import fields, utils
-from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch
+from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project
 from tastypie.authentication import SessionAuthentication
 import json
 from tastypie.paginator import Paginator
@@ -85,82 +83,14 @@ import urllib
 
 
 
-class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
-
-#-----------------------------------------------------------------------------------------------------------------------
+class ProjectResource(ModelResource):
 
     class Meta:
-        resource_name = 'compounds'
-        authorization = Authorization()
-        include_resource_uri = False
-        paginator_class = None
-        serializer = ChEMBLApiSerializer('compound')
-        allowed_methods = ['get']
-        default_format = 'application/xml'
-        cache = ChemblCache()
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-
-
-    def base_urls(self):
-        return [
-            url(r"^(?P<resource_name>%s)/stdinchikey/(?P<stdinchikey>\w[\w-]*)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_detail'),
-                name="api_dispatch_detail"),
-            url(r"^(?P<resource_name>%s)/stdinchikey/(?P<stdinchikey>\w[\w-]*)\.(?P<format>json|xml)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_detail'),
-                name="api_dispatch_detail"),
-            url(r"^(?P<resource_name>%s)/smiles/?(?P<smiles>[\S]*)\.(?P<format>json|xml)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_list'),
-                name="api_dispatch_list"),
-            url(r"^(?P<resource_name>%s)/smiles/?(?P<smiles>[\S]*)%s$" % (self._meta.resource_name, trailing_slash()),
-                self.wrap_view('dispatch_list'),
-                name="api_dispatch_list"),
-            url(r"^(?P<resource_name>%s)/substructure/?(?P<smiles>[\S]*)\.(?P<format>json|xml)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
-                name="api_get_substructure"),
-            url(r"^(?P<resource_name>%s)/substructure/?(?P<smiles>[\S]*)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
-                name="api_get_substructure"),
-            url(r"^(?P<resource_name>%s)/similarity/(?P<smiles>[\S]*)/(?P<simscore>\d+)\.(?P<format>json|xml)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
-                name="api_get_similarity"),
-            url(r"^(?P<resource_name>%s)/similarity/(?P<smiles>[\S]*)/(?P<simscore>\d+)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
-                name="api_get_similarity"),
-            url(r"^(?P<resource_name>%s)/similarity.(?P<format>json|xml)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
-                name="api_get_similarity"),
-            url(r"^(?P<resource_name>%s)/similarity%s$" % (self._meta.resource_name, trailing_slash()),
-                self.wrap_view('dispatch_sim'),
-                name="api_get_similarity"),
-            url(r"^(?P<resource_name>%s)/(?P<chemblid>\w[\w-]*)\.(?P<format>json|xml)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_detail'),
-                name="api_dispatch_detail"),
-            url(r"^(?P<resource_name>%s)/(?P<chemblid>\w[\w-]*)%s$" % (self._meta.resource_name, trailing_slash()),
-                self.wrap_view('dispatch_detail'),
-                name="api_dispatch_detail"),
-            url(r"^(?P<resource_name>%s)/(?P<chemblid>\w[\w-]*)/image%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('get_cached_image'),
-                name="api_get_image"),
-            # url(r"^(?P<resource_name>%s)$" % self._meta.resource_name, self.wrap_view('dispatch_compounds'),
-            #     name="api_dispatch_compounds"),
-            url(r"^(?P<resource_name>%s)$" % self._meta.resource_name, self.wrap_view('post_list'),
-                name="api_post_list"),
-            url(r"^(?P<resource_name>%s)\.(?P<format>json|xml)$" % self._meta.resource_name,
-                self.wrap_view('dispatch_compounds'), name="api_dispatch_compounds"),
-        ]
-
-
-
-
-
+        queryset = Project.objects.all()
 
 
 class CBHCompoundBatchResource(ModelResource):
-
+    project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
     class Meta:
         filtering = {
             "std_ctab": ALL_WITH_RELATIONS,
@@ -188,7 +118,7 @@ class CBHCompoundBatchResource(ModelResource):
                   ('compoundproperties.acd_most_bpka', 'acdBasicPka')]
         queryset = CBHCompoundBatch.objects.all()
         resource_name = 'cbh_compound_batches'
-        authorization = Authorization()
+        authorization = ProjectAuthorization()
         include_resource_uri = False
         serializer = CamelCaseJSONSerializer()
         allowed_methods = ['get', 'post', 'put']
@@ -198,14 +128,19 @@ class CBHCompoundBatchResource(ModelResource):
 
 
 
-
-
     def post_validate(self, request, **kwargs):
         """Runs the validation for a single or small set of molecules"""
+        #self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
+
+
+
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
-        
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        if bundle.obj.pk:
+            self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
+        else:
+            self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
 
         updated_bundle = self.obj_build(bundle, dict_strip_unicode_keys(deserialized))
         bundle.obj.validate()
@@ -220,9 +155,12 @@ class CBHCompoundBatchResource(ModelResource):
         # deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(request=request)
 
+
         fields = CBHCompoundBatch.objects.get_all_keys()
-        bundle.data['field_names'] =[{'name': item, 'count': 1, 'last_used': ''} for item in fields]        
-        return self.create_response(request, bundle, response_class=http.HttpAccepted)
+        bundle.data['field_names'] =[{'name': item, 'count': 1, 'last_used': ''} for item in fields]      
+
+        return "This needs moving to the project resource"
+        #return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
         #return HttpResponse("{ 'field_names': [ {'name': 'test1', 'count': 1, 'last_used': ''}, {'name': 'test2', 'count': 1, 'last_used': ''} ] }")
@@ -274,6 +212,10 @@ class CBHCompoundBatchResource(ModelResource):
         
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        if bundle.obj.pk:
+            self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
+        else:
+            self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
         id = bundle.data["current_batch"]
         batches = CBHCompoundMultipleBatch.objects.get(pk=id).uploaded_data
         bundle.data["saved"] = 0
@@ -298,7 +240,10 @@ class CBHCompoundBatchResource(ModelResource):
         
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
-
+        if bundle.obj.pk:
+            self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
+        else:
+            self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
         id = bundle.data["current_batch"]
 
         mb = CBHCompoundMultipleBatch.objects.get(pk=id)
@@ -338,6 +283,10 @@ class CBHCompoundBatchResource(ModelResource):
         
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        if bundle.obj.pk:
+            self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
+        else:
+            self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
         type = bundle.data.get("type",None).lower()
         objects =  bundle.data.get("objects", [])
        

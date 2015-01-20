@@ -1,9 +1,9 @@
 from django.contrib import admin
 from cbh_chembl_model_extension.models import Project
 
-from guardian.admin import GuardedModelAdmin
+from django.contrib.admin import ModelAdmin
 
-class ProjectAdmin(GuardedModelAdmin):
+class ProjectAdmin(ModelAdmin):
     prepopulated_fields = {"project_key": ("name",)}
     list_display = ('name', 'project_key', 'created')
     search_fields = ('name',)

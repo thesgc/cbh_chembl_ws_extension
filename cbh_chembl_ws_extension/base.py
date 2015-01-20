@@ -54,7 +54,6 @@ try:
 except AttributeError:
     WS_DEBUG = False
 
-from chembl_webservices.base import ChEMBLApiBase
 
 from tastypie.authentication import SessionAuthentication
 
@@ -138,69 +137,6 @@ class CamelCaseJSONSerializer(Serializer):
 
 
 
-class CBHApiBase(ChEMBLApiBase):
-    authentication = SessionAuthentication()
-
-
-    def __init__(self):
-        self.log = logging.getLogger(__name__)
-        super(Resource, self).__init__()
-
-    def cached_obj_get_list(self, request=None, **kwargs):
-        """
-        A version of ``obj_get_list`` that uses the cache as a means to get
-        commonly-accessed data faster.
-        """
-        cache_key = self.generate_cache_key('list', **kwargs)
-        get_failed = False
-        in_cache = True
-
-        try:
-            obj_list = self._meta.cache.get(cache_key)
-        except Exception:
-            obj_list = None
-            get_failed = True
-            self.log.error('Caching get exception', exc_info=True, extra={'request': request,})
-
-        if obj_list is None:
-            in_cache = False
-            obj_list = self.obj_get_list(request=request, **kwargs)
-            if not get_failed:
-                try:
-                    self._meta.cache.set(cache_key, obj_list)
-                except Exception:
-                    self.log.error('Caching set exception', exc_info=True, extra={'request': request,})
-
-        return obj_list, in_cache
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-    def cached_obj_get(self, request=None, **kwargs):
-        """
-        A version of ``obj_get`` that uses the cache as a means to get
-        commonly-accessed data faster.
-        """
-        cache_key = self.generate_cache_key('detail', **kwargs)
-        get_failed = False
-        in_cache = True
-
-        try:
-            bundle = self._meta.cache.get(cache_key)
-        except Exception:
-            bundle = None
-            get_failed = True
-            self.log.error('Caching get exception', exc_info=True, extra={'request': request,})
-
-        if bundle is None:
-            in_cache = False
-            bundle = self.obj_get(request=request, **kwargs)
-            if not get_failed:
-                try:
-                    self._meta.cache.set(cache_key, bundle)
-                except Exception:
-                    self.log.error('Caching set exception', exc_info=True, extra={'request': request,})
-
-        return bundle, in_cache
 
 #-----------------------------------------------------------------------------------------------------------------------
 
