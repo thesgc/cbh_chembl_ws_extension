@@ -151,7 +151,7 @@ class CBHCompoundsReadResource(CBHApiBase, CompoundsResource):
             #     name="api_dispatch_compounds"),
             url(r"^(?P<resource_name>%s)$" % self._meta.resource_name, self.wrap_view('post_list'),
                 name="api_post_list"),
-            url(r"^(?P<resource_name>%s)\.(?P<format>json|xml|csv|xls)$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)\.(?P<format>json|xml|csv|xls|sdf)$" % self._meta.resource_name,
                 self.wrap_view('dispatch_compounds'), name="api_dispatch_compounds"),
         ]
 
@@ -461,7 +461,7 @@ class CBHCompoundBatchResource(ModelResource):
         #     print(val)
         print(self.determine_format(request))
 
-        if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
+        if(self.determine_format(request) == ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or 'chemical/x-mdl-sdfile') ):
             fields_to_keep = {'chemblId':'UOx ID',
                               'canonical_smiles':'SMILES',
                               'knownDrug':'Known Drug',
@@ -503,6 +503,8 @@ class CBHCompoundBatchResource(ModelResource):
 
         if(desired_format == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
             rc['Content-Disposition'] = 'attachment; filename=export.xlsx'
+        elif(desired_format == 'chemical/x-mdl-sdfile'):
+            rc['Content-Disposition'] = 'attachment: filename=export.sdf'
         return rc
 
 

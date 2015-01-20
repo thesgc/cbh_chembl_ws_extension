@@ -14,6 +14,9 @@ import json
 import xlsxwriter
 import os
 
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
 
 def flatten_dict(d, base=None):
     """Converts a dictionary of dictionaries or lists into a simple
@@ -141,14 +144,14 @@ class CSVSerializer(Serializer):
         return raw_data
 
 class XLSSerializer(Serializer):
-    formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv', 'xls']
-    content_types = {'json': 'application/json',
-                     'jsonp': 'text/javascript',
-                     'xml': 'application/xml',
-                     'yaml': 'text/yaml',
-                     'html': 'text/html',
-                     'csv': 'text/csv',
-                     'xls': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}
+    # formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv', 'xls']
+    # content_types = {'json': 'application/json',
+    #                  'jsonp': 'text/javascript',
+    #                  'xml': 'application/xml',
+    #                  'yaml': 'text/yaml',
+    #                  'html': 'text/html',
+    #                  'csv': 'text/csv',
+    #                  'xls': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}
 
     def to_xls(self, data, options=None):
         '''write excel file here'''
@@ -157,17 +160,7 @@ class XLSSerializer(Serializer):
         workbook = xlsxwriter.Workbook(output)
         worksheet = workbook.add_worksheet('results sheet')
 
-        #print(data)
-        # index = 0
-        # for d in enumerate(data):
-        #     idx = 0
-        #     for k, v in d.data.iteritems():
-        #         if index == 0:
-        #             worksheet.write(0, idx, k, bold) 
-        #         worksheet.write(index+1, idx, v)
-        #         idx = idx + 1
-        #     index = index + 1
-        #print(data['objects'])
+        
         index = 0
         try:
             for d in data.get('objects',[]):
@@ -186,6 +179,46 @@ class XLSSerializer(Serializer):
         workbook.close()
 
         return output.getvalue()
+
+
+class SDFSerializer(Serializer):
+    '''For exporting query sets as SD/Mol files'''
+    formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv', 'xls', 'sdf']
+    content_types = {'json': 'application/json',
+                     'jsonp': 'text/javascript',
+                     'xml': 'application/xml',
+                     'yaml': 'text/yaml',
+                     'html': 'text/html',
+                     'csv': 'text/csv',
+                     'xls': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                     'sdf': 'chemical/x-mdl-sdfile'}
+
+    def to_sdf(self, data, options=None):
+        '''Convert to SDF'''
+        sio = cStringIO.StringIO()
+        w = Chem.SDWriter(sio)
+        mols = []
+        index = 0
+        try:
+            for d in data.get('objects',[]):
+                m = Chem.MolFromSmiles(d.data['canonical_smiles'])
+                #idx = 0
+                for k, v in d.data.iteritems():
+                    m.SetProp(k,v)
+                    #worksheet.write(index+1, idx, v)
+                    #idx = idx + 1
+                #index = index + 1
+                mols.append(m)
+        except Exception , e:
+            print e
+
+
+
+
+        for m in mols: 
+            w.write(m)
+        w.flush()
+        return sio.getvalue()
 
 
 
@@ -279,5 +312,5 @@ class CamelCaseJSONSerializer(Serializer):
         return underscored_data
 
 
-class CBHCompoundBatchSerializer(CamelCaseJSONSerializer,CSVSerializer,XLSSerializer):
+class CBHCompoundBatchSerializer(CamelCaseJSONSerializer,CSVSerializer,XLSSerializer,SDFSerializer):
     pass
