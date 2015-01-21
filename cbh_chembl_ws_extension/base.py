@@ -67,7 +67,8 @@ import json
 class UserResource(ModelResource):
     class Meta:
         queryset = get_user_model().objects.all()
-        resource_name = 'user'
+        resource_name = 'users'
+        allowed_methods = ["get",] 
         excludes = ['email', 'password', 'is_active', 'is_staff', 'is_superuser']
 
 

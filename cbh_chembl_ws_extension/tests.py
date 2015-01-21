@@ -20,7 +20,7 @@ UserResource
 import datetime
 from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCase
-from cbh_chembl_model_extension.models import CBHCompoundBatch
+from cbh_chembl_model_extension.models import CBHCompoundBatch, Project
 from django.db import connection
 
 
@@ -70,9 +70,22 @@ class CompoundBatchResourceTest(ResourceTestCase):
 M  END"""
 
         ,
-            'editable_by': {"fdsfsdf":4324234},
-            'viewable_by': {},
         }
+        self.project = None
+        self.project_key = "valid-key"
+        self.project_name = "Valid Name"
+
+
+
+
+
+
+
+
+    def setup_project(self):
+        self.project = Project.objects.create(project_key=self.project_key, name=self.project_name, created_by=self.user)
+        self.project.sync_permissions()
+        self.post_data["project_key"] = self.project.project_key
 
     def setup_session(self):
         self.api_client.client.login(username=self.username, password=self.password)
@@ -80,37 +93,98 @@ M  END"""
     def get_credentials(self):
         return self.create_basic(username=self.username, password=self.password)
 
-    def test_post_list_unauthenticated(self):
+    def test_save_single_unauthenticated(self):
+        """
+        I do not log in and do not have a project but have a valid single ctab
+        I try to create a new batch
+        I expect to be blocked because I am not authorized
+        """
         self.assertHttpUnauthorized(self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data))
 
-    def test_post_list(self):
+
+    def test_save_single_without_valid_project(self):
+        """
+        I log in but have an invalid project
+        I try to create a new batch
+        I expect to be blocked because I am not authorized
+        """
         self.setup_session()
+        self.post_data["project_key"] = "a project that does not exist"
+        self.assertHttpUnauthorized(self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data))
+
+
+
+
+    def test_save_single_with_valid_project(self):
+        self.setup_session()
+        #create a project for which the user is not authorized
+        self.setup_project()
+
+
+        resp = self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data)
+        print resp.__dict__
+        self.assertHttpUnauthorized(resp)
+        self.project.make_viewer(self.user)
+        self.assertHttpUnauthorized(self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data))
+        
+        self.project.make_editor(self.user)
 
         # Check how many are there first.
         self.assertEqual(CBHCompoundBatch.objects.count(), 0)
-        self.assertHttpCreated(self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data))
+        resp = self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data)
+        print resp.__dict__
+        self.assertHttpCreated(resp)
         # Verify a new one has been added.
         self.assertEqual(CBHCompoundBatch.objects.count(), 1)
+        self.project.delete()
 
 
 
-    def test_post_list_validate(self):
-        self.setup_session()
-
-        # Check how many are there first.
-        resp = self.api_client.post('/chemblws/cbh_compound_batches/validate/', format='json', data=self.post_data)
-        self.assertHttpAccepted(resp)
 
 
-    def test_post_list(self):
-        self.setup_session()
 
-        # Check how many are there first.
-        self.assertEqual(CBHCompoundBatch.objects.count(),0)
-        resp = self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data)
-        self.assertHttpCreated(resp)
-        self.assertEqual(CBHCompoundBatch.objects.count(),1)
-        c = CBHCompoundBatch.objects.filter(warnings__contains={"pains_count":"1"})
-        self.assertEqual(c.count(),1)
-        print resp.__dict__
+
+
+
+
+
+
+    # def test_post_validate_without_valid_project(self):
+    #      """
+    #     I log in but do not have a project but have a valid single ctab
+    #     I try to validate a new batch
+    #     I expect to be blocked because I am not authorized
+    #     """
+    #     self.setup_session()
+
+    #     # Check how many are there first.
+    #     resp = self.api_client.post('/chemblws/cbh_compound_batches/validate/', format='json', data=self.post_data)
+    #     self.assertHttpUnauthorized(resp)
+
+
+
+
+
+
+    # def test_post_list_validate(self):
+    #     self.setup_session()
+    #     self.setup_project()
+
+    #     # Check how many are there first.
+    #     resp = self.api_client.post('/chemblws/cbh_compound_batches/validate/', format='json', data=self.post_data)
+    #     self.assertHttpAccepted(resp)
+
+
+    # def test_post_list(self):
+    #     self.setup_session()
+    #     self.setup_project()
+
+    #     # Check how many are there first.
+    #     self.assertEqual(CBHCompoundBatch.objects.count(),0)
+    #     resp = self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data)
+    #     self.assertHttpCreated(resp)
+    #     self.assertEqual(CBHCompoundBatch.objects.count(),1)
+    #     c = CBHCompoundBatch.objects.filter(warnings__contains={"pains_count":"1"})
+    #     self.assertEqual(c.count(),1)
+    #     print resp.__dict__
 

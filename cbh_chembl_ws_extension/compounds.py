@@ -90,7 +90,7 @@ class ProjectResource(ModelResource):
 
 
 class CBHCompoundBatchResource(ModelResource):
-    project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
+    #project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
     class Meta:
         filtering = {
             "std_ctab": ALL_WITH_RELATIONS,
@@ -174,6 +174,13 @@ class CBHCompoundBatchResource(ModelResource):
     def full_hydrate(self, bundle):
         '''As the object is created we run the validate code on it'''
         bundle = super(CBHCompoundBatchResource, self).full_hydrate(bundle)
+        try:
+            pid = Project.objects.get(project_key=bundle.data["project_key"]).id
+            bundle.obj.project_id = pid
+            bundle.data["project_id"] = pid
+            #deserialized["project"] = 
+        except Exception, e:
+            pass
         bundle.obj.validate()
         return bundle
 
@@ -220,8 +227,7 @@ class CBHCompoundBatchResource(ModelResource):
         batches = CBHCompoundMultipleBatch.objects.get(pk=id).uploaded_data
         bundle.data["saved"] = 0
         bundle.data["errors"] = []
-        print "this many batches"
-        print len(batches)
+
         for batch in batches:
             try:
 
@@ -382,7 +388,6 @@ class CBHCompoundBatchUpload(ModelResource):
         correct_file = self.get_object_list(request).filter(original_filename=file_name)[0]
         headers = []
         header_json = { }
-        print(correct_file)
         #get this into a datastructure if excel
 
         #or just use rdkit if SD file
