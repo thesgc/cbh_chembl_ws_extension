@@ -9,10 +9,10 @@ Feature: CBH Compound Batch
         Given a User
         When <dologin> log in
         and I have a valid molfile
-        and I have a valid project key
-        and I have <editor> editor privileges 
-        and I have <viewer> viewer privileges 
-        when I save my cbh_compound_batch
+        and I have a valid project key proja
+        and I have <editor> editor privileges for proja
+        and I have <viewer> viewer privileges for proja
+        when I save my cbh_compound_batch to proja
         Then the response code will be <responsecode>
 
         Examples: Tests
@@ -34,4 +34,6 @@ Feature: CBH Compound Batch
 
 
 
+
     #Scenario Outline: Other project privileges, ivladifd project key
+
