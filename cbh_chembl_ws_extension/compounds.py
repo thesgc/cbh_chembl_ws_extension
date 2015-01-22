@@ -87,6 +87,26 @@ class ProjectResource(ModelResource):
 
     class Meta:
         queryset = Project.objects.all()
+        authentication = SessionAuthentication()
+        paginator_class = Paginator
+        allowed_methods = ['get']        
+        #serializer = CamelCaseJSONSerializer()
+        resource_name = 'cbh_projects'
+        #authorization = ProjectAuthorization()
+        include_resource_uri = False
+        default_format = 'application/json'
+
+    def prepend_urls(self):
+        return [
+        url(r"^(?P<resource_name>%s)/$" % self._meta.resource_name,
+                self.wrap_view('dispatch_list'), name="api_fetch_projects")
+        ]
+
+    def get_projects(self, request, **kwargs):
+
+        self.build_bundle()
+
+        return self.create_response(request, bundle, response_class=http.HttpCreated)
 
 
 class CBHCompoundBatchResource(ModelResource):
