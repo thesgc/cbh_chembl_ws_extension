@@ -13,3 +13,4 @@ Feature: Demonstrate how to use the mechanize browser to do useful things.
     Given a user
     When I do not log in
     Then I see a json response with only the logged in users name in it
+
