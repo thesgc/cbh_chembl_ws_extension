@@ -467,7 +467,11 @@ class CBHCompoundBatchResource(ModelResource):
                               'knownDrug':'Known Drug',
                               'medChemFriendly':'MedChem Friendly',
                               'standard_inchi':'Std InChi',
-                              'custom_fields':'custom_fields'}
+                              'rtb':'Rotatable Bonds',
+                              'molecularWeight':'Mol Weight',
+                              'molecularFormula':'Mol Formula',
+                              'acdLogp': 'alogp',
+                              'custom_fields':'custom_fields',}
 
             for index, b in enumerate(data["objects"]):
                 #print(b.data['standard_inchi'])
