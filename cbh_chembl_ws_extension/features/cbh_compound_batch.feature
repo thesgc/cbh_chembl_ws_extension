@@ -3,31 +3,98 @@ Feature: CBH Compound Batch
     a batch of a new compound in the project I am an admin of.
     As a project stakeholder I do not want batches to be logged in 
     projects that the user does not have editor access to
+#behave && cat typescript | aha > test.html
 
-
-    Scenario Outline: Batches project privileges
+    Scenario Outline: Batches project privileges saving and validating
         Given a User
-        When <dologin> log in
         and I have a valid molfile
+        and I have a valid list of SMILES
+        and I have an invalid Excel File
         and a valid project exists proja
-        and I have <editor> editor privileges for proja
-        and I have <viewer> viewer privileges for proja
-        when I save my cbh_compound_batch to proja
-        Then the response code will be <responsecode>
+        and I automatically have editor permissions as creator
+        and I remove my permissions
+        and I have<editor> given myself editor privileges for proja
+        and I have<viewer> given myself viewer privileges for proja        
+        When <dologin> log in
+        Then I <action> my cbh_compound_batch to proja and the <responsecode>
 
-        Examples: Tests
-        |   dologin    |   editor  |   viewer  |   responsecode   | 
-        |      I         |           |           |   201             |
-        |       I        |           |   not     |   201             |
-        |        I       |   not     |           |   401             |
-        |         I      |   not     |   not     |   401             |
-        |   do not      |           |           |   401             |
- 
+
+        Examples: Validation api
+        |   dologin    |   editor  |   viewer  |   responsecode   | action |
+        |      I         |           |           |  response code will be 202             | validate |
+        |       I        |           |   nt     |  response code will be 202             | validate |
+        |        I       |   nt     |           |  response code will be 401             | validate |
+        |         I      |   nt     |   nt     |  response code will be 401             | validate |
+        |   I do not      |           |           |  response code will be 401             | validate |
+        
+        Examples: Create api
+             |   dologin    |   editor  |   viewer  |   responsecode   | action |
+         |      I         |           |           |  response code will be 201            | create |
+        |       I        |           |   nt     |  response code will be 201             | create |
+        |        I       |   nt     |           |  response code will be 401             | create |
+        |         I      |   nt     |   nt     |  response code will be 401             | create |
+        |   I do not      |           |           |  response code will be 401             | create |
+
+
+
+
+    Scenario Outline: Batches project privileges get list
+        Given a User
+        and I have a valid molfile
+        and I have a valid list of SMILES
+        and I have an invalid Excel File
+        and a valid project exists proja
+        and I automatically have editor permissions as creator
+        and a single batch exists in proja
+        and I remove my permissions
+        and I have<editor> given myself editor privileges for proja
+        and I have<viewer> given myself viewer privileges for proja        
+        When <dologin> log in
+        Then I <action> my cbh_compound_batch to proja and the <responsecode>
+
+
+        
+        Examples: Get List api  - Note the viewer can list
+        |   dologin    |   editor  |   viewer  |   responsecode   | action |
+         |      I         |           |           |   response code will be 1_memberlist      | list |
+        |       I        |           |   nt     |   response code will be 1_memberlist      | list |
+        |        I       |   nt     |           |   response code will be 1_memberlist   | list |   
+        |         I      |   nt     |   nt     |   response code will be 0_memberlist      | list |
+
+        
+        Examples: Get api  - Note the viewer can list
+        |   dologin    |   editor  |   viewer  |   responsecode   | action |
+         |      I         |           |           |   response code will be 200     | get |
+        |       I        |           |   nt     |   response code will be 200      | get |
+        |        I       |   nt     |           |   response code will be 200   | get |   
+        |         I      |   nt     |   nt     |   response code will be 401      | get |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        #Examples: Validate multi batch
+
+
+
+        #Examples: Upload File - to be done manually
+
+
+
 
 
     Scenario: User submits a substance to project they have editor rights to, but the substance is already preregistered to other private and public projects they do not have editor rights to.  
         Given a User
-        When I log in 
         and I have a valid molfile
         and a valid project exists proja
         and a valid project exists projb
@@ -41,7 +108,8 @@ Feature: CBH Compound Batch
         and I have viewer rights for projb
         and I have no rights for projc
         and I have no rights for projd
-        when I validate a cbh_compound_batch to proja        
+        When I log in 
+        and I validate a cbh_compound_batch to proja        
         Then the response will contain an id for a previously registered substance in projb
         and the response will contain an id for a previously registered substance in projd
         and the response will not contain an id for a previously registered substance in projc
@@ -92,34 +160,6 @@ Feature: CBH Compound Batch
         and I have a substance ID <invalid_ID> that is not valid
         When I create batch with <invalid_ID>       
         Then the response will be <error_invalid_ID_recieved>
-
-
-
-    Scenario:  User registers a L-chiral_substance when D-chiral_subtance and rmix_chiral_substance already exist.
-        Given a User
-        When I log in 
-        and I have a valid molfile
-        and a valid project exists proja
-        and a valid project exists projb
-        and a valid project exists projc
-        and a valid project exists projd
-        and this substance is not pre-registered to proja 
-        and this substance is pre-registered to projb as private
-        and this substance is pre-registered to projc as private
-        and this substance is pre-registered to projd as public
-        and I have editor rights for proja
-        and I have viewer rights for projb
-        and I have no rights for projc
-        and I have no rights for projd
-        When I validate a cbh_compound_batch to proja        
-        Then the response will contain an id for a previously registered substance in projb
-        and the response will not contain an id for a previously registered substance in projc
-        and the response will contain an id for a previously registered substance in projd
-        When I register substance as a batch to retrieved ID
-        Then the response for projb registered ID will be <responsecode>
-        and the response for projd registered ID will be <responsecode>
-
-
 
 
 

@@ -109,8 +109,29 @@ class ProjectResource(ModelResource):
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
 
+
+
+
+
+class MoleculeDictionaryResource(ModelResource):
+    project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
+    class Meta:    
+        queryset = MoleculeDictionary.objects.all()
+        resource_name = 'molecule_dictionaries'
+        authorization = ProjectAuthorization()
+        include_resource_uri = False
+        allowed_methods = ['get', 'post', 'put']
+        default_format = 'application/json'
+        authentication = SessionAuthentication()
+        paginator_class = Paginator
+
+
+
+
+
+
 class CBHCompoundBatchResource(ModelResource):
-    #project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
+    project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
     class Meta:
         filtering = {
             "std_ctab": ALL_WITH_RELATIONS,
@@ -166,6 +187,7 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.obj.validate()
         dictdata = bundle.obj.__dict__
         dictdata.pop("_state")
+        
         updated_bundle = self.build_bundle(obj=bundle.obj, data=dictdata)
         return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
 
@@ -191,16 +213,14 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.obj.generate_structure_and_dictionary()
         
 
+    def alter_deserialized_detail_data(self, request, deserialized):
+        proj = Project.objects.get(project_key=deserialized["project_key"])
+        deserialized["project"] = proj
+        return deserialized
+
     def full_hydrate(self, bundle):
         '''As the object is created we run the validate code on it'''
         bundle = super(CBHCompoundBatchResource, self).full_hydrate(bundle)
-        try:
-            pid = Project.objects.get(project_key=bundle.data["project_key"]).id
-            bundle.obj.project_id = pid
-            bundle.data["project_id"] = pid
-            #deserialized["project"] = 
-        except Exception, e:
-            pass
         bundle.obj.validate()
         return bundle
 
@@ -353,8 +373,8 @@ class CBHCompoundBatchResource(ModelResource):
 
 
 
-    def get_object_list(self, request):
-        return super(CBHCompoundBatchResource, self).get_object_list(request).select_related("related_molregno", "related_molregno__compound_properties")
+    # def get_object_list(self, request):
+    #     return super(CBHCompoundBatchResource, self).get_object_list(request).select_related("related_molregno", "related_molregno__compound_properties")
 
 
 
@@ -381,7 +401,6 @@ class CBHCompoundBatchUpload(ModelResource):
 
     class Meta:
         always_return_data = True
-        fieldnames = [('chembl_id', 'chemblId')],
         queryset = FlowFile.objects.all()
         resource_name = 'cbh_batch_upload'
         authorization = Authorization()
