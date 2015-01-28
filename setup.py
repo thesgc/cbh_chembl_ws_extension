@@ -36,7 +36,8 @@ setup(
     ],
     include_package_data=True,
     install_requires=[
-        "django-grappelli==2.4.12",
+        'django-grappelli==2.4.12',
+        'xlsxwriter',
     ],
     license="MIT",
     zip_safe=False,

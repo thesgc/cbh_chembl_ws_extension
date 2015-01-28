@@ -61,8 +61,15 @@ try:
 except AttributeError:
     WS_DEBUG = False
 
+<<<<<<< HEAD
 from cbh_chembl_ws_extension.base import  CamelCaseJSONSerializer
 from cbh_chembl_ws_extension.authorization import ProjectAuthorization
+=======
+from chembl_webservices.compounds import CompoundsResource
+from chembl_webservices.base import ChEMBLApiSerializer
+from cbh_chembl_ws_extension.base import CBHApiBase
+from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer
+>>>>>>> 6a543698a3a4798933d5e0912e41398226e1c985
 
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
@@ -108,6 +115,57 @@ class ProjectResource(ModelResource):
 
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
+<<<<<<< HEAD
+=======
+    def base_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/stdinchikey/(?P<stdinchikey>\w[\w-]*)%s$" % (
+                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_detail'),
+                name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/stdinchikey/(?P<stdinchikey>\w[\w-]*)\.(?P<format>json|xml)%s$" % (
+                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_detail'),
+                name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/smiles/?(?P<smiles>[\S]*)\.(?P<format>json|xml)%s$" % (
+                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_list'),
+                name="api_dispatch_list"),
+            url(r"^(?P<resource_name>%s)/smiles/?(?P<smiles>[\S]*)%s$" % (self._meta.resource_name, trailing_slash()),
+                self.wrap_view('dispatch_list'),
+                name="api_dispatch_list"),
+            url(r"^(?P<resource_name>%s)/substructure/?(?P<smiles>[\S]*)\.(?P<format>json|xml)%s$" % (
+                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
+                name="api_get_substructure"),
+            url(r"^(?P<resource_name>%s)/substructure/?(?P<smiles>[\S]*)%s$" % (
+                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
+                name="api_get_substructure"),
+            url(r"^(?P<resource_name>%s)/similarity/(?P<smiles>[\S]*)/(?P<simscore>\d+)\.(?P<format>json|xml)%s$" % (
+                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
+                name="api_get_similarity"),
+            url(r"^(?P<resource_name>%s)/similarity/(?P<smiles>[\S]*)/(?P<simscore>\d+)%s$" % (
+                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
+                name="api_get_similarity"),
+            url(r"^(?P<resource_name>%s)/similarity.(?P<format>json|xml)%s$" % (
+                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
+                name="api_get_similarity"),
+            url(r"^(?P<resource_name>%s)/similarity%s$" % (self._meta.resource_name, trailing_slash()),
+                self.wrap_view('dispatch_sim'),
+                name="api_get_similarity"),
+            url(r"^(?P<resource_name>%s)/(?P<chemblid>\w[\w-]*)\.(?P<format>json|xml)%s$" % (
+                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_detail'),
+                name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/(?P<chemblid>\w[\w-]*)%s$" % (self._meta.resource_name, trailing_slash()),
+                self.wrap_view('dispatch_detail'),
+                name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/(?P<chemblid>\w[\w-]*)/image%s$" % (
+                self._meta.resource_name, trailing_slash()), self.wrap_view('get_cached_image'),
+                name="api_get_image"),
+            # url(r"^(?P<resource_name>%s)$" % self._meta.resource_name, self.wrap_view('dispatch_compounds'),
+            #     name="api_dispatch_compounds"),
+            url(r"^(?P<resource_name>%s)$" % self._meta.resource_name, self.wrap_view('post_list'),
+                name="api_post_list"),
+            url(r"^(?P<resource_name>%s)\.(?P<format>json|xml|csv|xls|sdf)$" % self._meta.resource_name,
+                self.wrap_view('dispatch_compounds'), name="api_dispatch_compounds"),
+        ]
+>>>>>>> 6a543698a3a4798933d5e0912e41398226e1c985
 
 
 
@@ -157,11 +215,23 @@ class CBHCompoundBatchResource(ModelResource):
                   ('compoundproperties.acd_logd', 'acdLogd'),
                   ('compoundproperties.acd_most_apka', 'acdAcidicPka'),
                   ('compoundproperties.acd_most_bpka', 'acdBasicPka')]
+        csv_fieldnames = [('chembl_id', 'UOX ID'),
+                  ('pref_name', 'Preferred Name'),
+                  ('max_phase', 'Known Drug'),
+                  ('compoundproperties.med_chem_friendly', 'MedChem Friendly'),
+                  ('compoundproperties.ro3_pass', 'passesRuleOfThree'),
+                  ('compoundproperties.full_molformula', 'Mol Formula'),
+                  ('compoundstructures.canonical_smiles', 'SMILES'),
+                  ('compoundstructures.standard_inchi_key', 'Std InChiKey'),
+                  ('compoundproperties.num_ro5_violations', 'Rule of 5 violations'),
+                  ('compoundproperties.rtb', 'Rotatable Bonds'),
+                  ('compoundproperties.mw_freebase', 'Mol Weight')]
+        
         queryset = CBHCompoundBatch.objects.all()
         resource_name = 'cbh_compound_batches'
         authorization = ProjectAuthorization()
         include_resource_uri = False
-        serializer = CamelCaseJSONSerializer()
+        serializer = CBHCompoundBatchSerializer()
         allowed_methods = ['get', 'post', 'put']
         default_format = 'application/json'
         authentication = SessionAuthentication()
@@ -250,8 +320,12 @@ class CBHCompoundBatchResource(ModelResource):
                 self.wrap_view('multi_batch_save'), name="multi_batch_save"),
         url(r"^(?P<resource_name>%s)/multi_batch_custom_fields/$" % self._meta.resource_name,
                 self.wrap_view('multi_batch_custom_fields'), name="multi_batch_custom_fields"),
+        url(r"^(?P<resource_name>%s)/validate_files/$" % self._meta.resource_name,
+                self.wrap_view('post_validate_files'), name="api_compound_validate_files"),
+        url(r"^(?P<resource_name>%s)/export_file/$" % self._meta.resource_name,
+                self.wrap_view('export_file'), name="api_compound_export_file"),
         url(r"^(?P<resource_name>%s)/smiles2svg/(?P<structure>\w[\w-]*)/$" % 
-                self._meta.resource_name, self.wrap_view('get_image_from_pipe'),name="smiles2svg")
+                self._meta.resource_name, self.wrap_view('get_image_from_pipe'),name="smiles2svg"),
         ]
 
     def multi_batch_save(self, request, **kwargs):
@@ -269,13 +343,13 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["errors"] = []
 
         for batch in batches:
-            try:
+
 
                 batch.save(validate=False)
                 batch.generate_structure_and_dictionary()
                 bundle.data["saved"] += 1
-            except Exception , e:
-                bundle.data["errors"] += e
+  #          except Exception , e:
+   #             bundle.data["errors"] += e
 
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
@@ -355,8 +429,145 @@ class CBHCompoundBatchResource(ModelResource):
         return self.validate_multi_batch(multiple_batch, bundle, request)
 
 
-    def dehydrate(self, bundle):
+    def post_validate_files(self, request, **kwargs):
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
+        file_name = bundle.data['file_name']
+        mappings = bundle.data['mapping']
+        correct_file = FlowFile.objects.filter(original_filename=file_name)[0]
+
+        batches = []
+        headers = []
+
+        if (correct_file.extension == ".sdf"):
+            #read in the file
+            suppl = Chem.ForwardSDMolSupplier(correct_file.file)
+
+            #read the headers from the first molecule
+            for mol in suppl:
+                if mol is None: continue
+                if not headers: 
+                    headers = list(mol.GetPropNames())
+                b = CBHCompoundBatch.objects.from_rd_mol(mol)
+                custom_fields = {}
+                for hdr in headers:
+                    if hdr in mappings["ignored_fields"]:
+                        continue
+                    elif hdr in mappings["new_fields"]:
+                        custom_fields[hdr] = mol.GetProp(hdr) 
+                    else:
+                        for key, mapping in mappings["remapped_fields"].iteritems():
+                            if hdr in mapping:
+                                custom_fields[key] = mol.GetProp(hdr)
+
+                b.custom_fields = custom_fields
+                batches.append(b)
+                
+
+        elif(correct_file.extension in (".xls", ".xlsx")):
+            #we need to know which column contains structural info - this needs to be defined on the mapping page and passed here
+            #read in the specified structural column
+            structure_col = bundle.data["struc_col"]
+            df = pd.read_excel(correct_file.file)
+            #read the smiles string value out of here, when we know which column it is.
+            row_iterator = df.iterrows()
+            headers = list(df)
+            for index, row in row_iterator:
+                smiles_str = row[structure_col]
+                b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles_str), smiles=smiles_str)
+                #work out custom fields from mapping object
+                #new_fields, remapped_fields, ignored_fields
+                
+                custom_fields = {}
+                for hdr in headers:
+                    if hdr in mappings["ignored_fields"]:
+                        continue
+                    elif hdr in mappings["new_fields"]:
+                        custom_fields[ hdr] = row[hdr] 
+                    else:
+                        for key, mapping in mappings["remapped_fields"].iteritems():
+                            if hdr in mapping:
+                                custom_fields[key] = row[hdr]
+
+                b.custom_fields = custom_fields
+                batches.append(b)
+
+
+        multiple_batch = CBHCompoundMultipleBatch.objects.create()
+        for b in batches:
+            b.multiple_batch_id = multiple_batch.pk
+
+        multiple_batch.uploaded_data=batches
+        multiple_batch.save()
+        return self.validate_multi_batch(multiple_batch, bundle, request)
+
+    def alter_list_data_to_serialize(self, request, data):
+        '''use the request type to determine which fields should be limited for file download,
+           add extra fields if needed (eg images) and enumerate the custom fields into the 
+           rest of the calculated fields'''
+        # for names in self.Meta.fieldnames:
+        #     data[names[1]] = deepgetattr(data, names[0], None)
+        #objs = json.loads(data["objects"])
+        # for key, val in json.loads(data["objects"]).iteritems():
+        #     print(val)
+        print(self.determine_format(request))
+
+        if(self.determine_format(request) == ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or 'chemical/x-mdl-sdfile') ):
+            fields_to_keep = {'chemblId':'UOx ID',
+                              'canonical_smiles':'SMILES',
+                              'knownDrug':'Known Drug',
+                              'medChemFriendly':'MedChem Friendly',
+                              'standard_inchi':'Std InChi',
+                              'rtb':'Rotatable Bonds',
+                              'molecularWeight':'Mol Weight',
+                              'molecularFormula':'Mol Formula',
+                              'acdLogp': 'alogp',
+                              'custom_fields':'custom_fields',}
+
+            for index, b in enumerate(data["objects"]):
+                #print(b.data['standard_inchi'])
+                #remove items which are not listed as being kept
+                new_data = {}
+                for k, v in b.data.iteritems():
+                    for name, display_name in fields_to_keep.iteritems():
+                        if k == name:
+                            #b.data[display_name] = v
+                            #del(b.data[k])
+                            new_data[display_name] = v
+
+
+
+                for field, value in b.data['custom_fields'].iteritems():
+                    new_data[field] = value
+                #now remove custom_fields
+                del(new_data['custom_fields'])
+                b.data = new_data
+
+
+        return data
+
+    def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
+        """
+        Extracts the common "which-format/serialize/return-response" cycle.
+        Mostly a useful shortcut/hook.
+        """
+
+        desired_format = self.determine_format(request)
+        serialized = self.serialize(request, data, desired_format)
+        rc = response_class(content=serialized, content_type=build_content_type(desired_format), **response_kwargs)
+
+        if(desired_format == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
+            rc['Content-Disposition'] = 'attachment; filename=export.xlsx'
+        elif(desired_format == 'chemical/x-mdl-sdfile'):
+            rc['Content-Disposition'] = 'attachment: filename=export.sdf'
+        return rc
+
+
+    def dehydrate(self, bundle):
+        
         try:
             data = bundle.obj.related_molregno
             for names in self.Meta.fieldnames:
@@ -369,6 +580,33 @@ class CBHCompoundBatchResource(ModelResource):
             pass
     
         return bundle
+
+    def get_list(self, request, **kwargs):
+        """
+        Returns a serialized list of resources.
+        Calls ``obj_get_list`` to provide the data, then handles that result
+        set and serializes it.
+        Should return a HttpResponse (200 OK).
+        """
+        # TODO: Uncached for now. Invalidation that works for everyone may be
+        #       impossible.
+        base_bundle = self.build_bundle(request=request)
+        objects = self.obj_get_list(bundle=base_bundle, **self.remove_api_resource_names(kwargs))
+        sorted_objects = self.apply_sorting(objects, options=request.GET)
+
+        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
+        to_be_serialized = paginator.page()
+
+        # Dehydrate the bundles in preparation for serialization.
+        bundles = []
+
+        for obj in to_be_serialized[self._meta.collection_name]:
+            bundle = self.build_bundle(obj=obj, request=request)
+            bundles.append(self.full_dehydrate(bundle, for_list=True))
+
+        to_be_serialized[self._meta.collection_name] = bundles
+        to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
+        return self.create_response(request, to_be_serialized)
 
 
 
@@ -454,6 +692,5 @@ class CBHCompoundBatchUpload(ModelResource):
 
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
+    
 
-    # def get_object_list(self, request):
-    #     return super(CBHCompoundBatchUpload, self).get_object_list(request).filter()
