@@ -7,87 +7,100 @@ Feature: CBH Compound Batch
 
     Scenario Outline: Batches project privileges saving and validating
         Given a User
+        and my user is member of a group
         and I have a valid molfile
-        and I have a valid list of SMILES
-        and I have an invalid Excel File
         and a valid project exists proja
         and I automatically have editor permissions as creator
         and I remove my permissions
-        and I have<editor> given myself editor privileges for proja
-        and I have<viewer> given myself viewer privileges for proja        
+        and I have<editor> given <me_or_group> editor privileges for proja
+        and I have<viewer> given <me_or_group> viewer privileges for proja        
         When <dologin> log in
         Then I <action> my cbh_compound_batch to proja and the <responsecode>
 
 
         Examples: Validation api
-        |   dologin    |   editor  |   viewer  |   responsecode   | action |
-        |      I         |           |           |  response code will be 202             | validate |
-        |       I        |           |   nt     |  response code will be 202             | validate |
-        |        I       |   nt     |           |  response code will be 401             | validate |
-        |         I      |   nt     |   nt     |  response code will be 401             | validate |
-        |   I do not      |           |           |  response code will be 401             | validate |
+        |me_or_group|   dologin    |   editor  |   viewer  |   responsecode   | action |
+        |myself|      I         |           |           |  response code will be 202             | validate |
+        |myself|       I        |           |   nt     |  response code will be 202             | validate |
+        |myself|        I       |   nt     |           |  response code will be 401             | validate |
+        |myself|         I      |   nt     |   nt     |  response code will be 401             | validate |
+        |myself|   I do not      |           |           |  response code will be 401             | validate |
         
         Examples: Create api
-             |   dologin    |   editor  |   viewer  |   responsecode   | action |
-         |      I         |           |           |  response code will be 201            | create |
-        |       I        |           |   nt     |  response code will be 201             | create |
-        |        I       |   nt     |           |  response code will be 401             | create |
-        |         I      |   nt     |   nt     |  response code will be 401             | create |
-        |   I do not      |           |           |  response code will be 401             | create |
+             |me_or_group|   dologin    |   editor  |   viewer  |   responsecode   | action |
+         |myself|      I         |           |           |  response code will be 201            | create |
+        |myself|       I        |           |   nt     |  response code will be 201             | create |
+        |myself|        I       |   nt     |           |  response code will be 401             | create |
+        |myself|         I      |   nt     |   nt     |  response code will be 401             | create |
+        |myself|   I do not      |           |           |  response code will be 401             | create |
 
+        Examples: Validation api group perms
+        |me_or_group|   dologin    |   editor  |   viewer  |   responsecode   | action |
+        |mygroup|      I         |           |           |  response code will be 202             | validate |
+        |mygroup|       I        |           |   nt     |  response code will be 202             | validate |
+        |mygroup|        I       |   nt     |           |  response code will be 401             | validate |
+        |mygroup|         I      |   nt     |   nt     |  response code will be 401             | validate |
+        |mygroup|   I do not      |           |           |  response code will be 401             | validate |
+        
+        Examples: Create api group perms
+             |me_or_group|   dologin    |   editor  |   viewer  |   responsecode   | action |
+         |mygroup|      I         |           |           |  response code will be 201            | create |
+        |mygroup|       I        |           |   nt     |  response code will be 201             | create |
+        |mygroup|        I       |   nt     |           |  response code will be 401             | create |
+        |mygroup|         I      |   nt     |   nt     |  response code will be 401             | create |
+        |mygroup|   I do not      |           |           |  response code will be 401             | create |
 
 
 
     Scenario Outline: Batches project privileges get list
         Given a User
+        and my user is member of a group
         and I have a valid molfile
-        and I have a valid list of SMILES
-        and I have an invalid Excel File
         and a valid project exists proja
         and I automatically have editor permissions as creator
         and a single batch exists in proja
         and I remove my permissions
-        and I have<editor> given myself editor privileges for proja
-        and I have<viewer> given myself viewer privileges for proja        
+        and I have<editor> given <me_or_group> editor privileges for proja
+        and I have<viewer> given <me_or_group> viewer privileges for proja        
         When <dologin> log in
         Then I <action> my cbh_compound_batch to proja and the <responsecode>
 
 
         
         Examples: Get List api  - Note the viewer can list
-        |   dologin    |   editor  |   viewer  |   responsecode   | action |
-         |      I         |           |           |   response code will be 1_memberlist      | list |
-        |       I        |           |   nt     |   response code will be 1_memberlist      | list |
-        |        I       |   nt     |           |   response code will be 1_memberlist   | list |   
-        |         I      |   nt     |   nt     |   response code will be 0_memberlist      | list |
+        |me_or_group|   dologin    |   editor  |   viewer  |   responsecode   | action |
+         |myself|      I         |           |           |   response code will be 1_memberlist      | list |
+        |myself|       I        |           |   nt     |   response code will be 1_memberlist      | list |
+        |myself|        I       |   nt     |           |   response code will be 1_memberlist   | list |   
+        |myself|         I      |   nt     |   nt     |   response code will be 0_memberlist      | list |
 
         
         Examples: Get api  - Note the viewer can list
-        |   dologin    |   editor  |   viewer  |   responsecode   | action |
-         |      I         |           |           |   response code will be 200     | get |
-        |       I        |           |   nt     |   response code will be 200      | get |
-        |        I       |   nt     |           |   response code will be 200   | get |   
-        |         I      |   nt     |   nt     |   response code will be 401      | get |
+        |me_or_group|   dologin    |   editor  |   viewer  |   responsecode   | action |
+         |myself|      I         |           |           |   response code will be 200     | get |
+        |myself|       I        |           |   nt     |   response code will be 200      | get |
+        |myself|        I       |   nt     |           |   response code will be 200   | get |   
+        |myself|         I      |   nt     |   nt     |   response code will be 401      | get |
 
 
 
+        Examples: Get List api  - Note the viewer can list group perms
+        |me_or_group|   dologin    |   editor  |   viewer  |   responsecode   | action |
+         |mygroup|      I         |           |           |   response code will be 1_memberlist      | list |
+        |mygroup|       I        |           |   nt     |   response code will be 1_memberlist      | list |
+        |mygroup|        I       |   nt     |           |   response code will be 1_memberlist   | list |   
+        |mygroup|         I      |   nt     |   nt     |   response code will be 0_memberlist      | list |
+
+        
+        Examples: Get api  - Note the viewer can list group perms
+        |me_or_group|   dologin    |   editor  |   viewer  |   responsecode   | action |
+         |mygroup|      I         |           |           |   response code will be 200     | get |
+        |mygroup|       I        |           |   nt     |   response code will be 200      | get |
+        |mygroup|        I       |   nt     |           |   response code will be 200   | get |   
+        |mygroup|         I      |   nt     |   nt     |   response code will be 401      | get |
 
 
 
-
-
-
-
-
-
-
-
-
-        #Examples: Validate multi batch
-
-
-
-        #Examples: Upload File - to be done manually
 
 
 

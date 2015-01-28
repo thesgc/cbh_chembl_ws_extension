@@ -60,7 +60,7 @@ def before_scenario(context, scenario):
     context.ser = Serializer()
     context.post_data = {}
     context.batch = None
-
+    context.g = None
     context.u = None
     context.response = None
     context.runner.setup_test_environment()
@@ -84,9 +84,12 @@ def after_scenario(context, scenario):
     #context.runner.teardown_databases(context.old_db_config)
     context.api_client.client.logout()
  
-    from cbh_chembl_model_extension.models import Project
-    from django.contrib.auth.models import User
+    from cbh_chembl_model_extension.models import Project, CBHCompoundBatch
+    from django.contrib.auth.models import User, Group
     User.objects.all().delete()
     Project.objects.all().delete()
+    Group.objects.all().delete()
+    CBHCompoundBatch.objects.all().delete()
+
     context.runner.teardown_test_environment()
     # Bob's your uncle.

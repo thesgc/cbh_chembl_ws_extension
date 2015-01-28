@@ -1,6 +1,6 @@
 from behave import given, when, then
 import json
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 
 @given('I have a valid molfile')
 def step(context):
@@ -26,6 +26,11 @@ def step(context):
   4  82  0     0  0
 M  END"""
 
+@given("my user is member of a group")
+def step(context):
+    context.g = Group.objects.create(name="g")
+    context.g.user_set.add(context.u)
+
 @given("a valid project exists {projkey}")
 def step(context, projkey):
     from cbh_chembl_model_extension.models import Project
@@ -47,26 +52,32 @@ def step(context):
         assert p.created_by.has_perm("%d.%s" % ( p.id, "editor")) == False
 
 
-@given("I have given myself editor privileges for {projkey}")
-def step(context, projkey):
+@given("I have given {me_or_group} editor privileges for {projkey}")
+def step(context,me_or_group, projkey):
     from cbh_chembl_model_extension.models import Project
     p = Project.objects.get(project_key=projkey)
-    p.make_editor(context.u)
+    if me_or_group == "myself":
+        p.make_editor(context.u)
+    elif me_or_group == "mygroup":
+        p.make_editor(context.g)
     context.u = User.objects.get(pk=context.u.id)
     assert context.u.has_perm("%d.%s" % ( p.id, "editor"))
 
 
-@given("I have given myself viewer privileges for {projkey}")
-def step(context, projkey):
+@given("I have given {me_or_group} viewer privileges for {projkey}")
+def step(context,me_or_group, projkey):
     from cbh_chembl_model_extension.models import Project
     p = Project.objects.get(project_key=projkey)
-    p.make_viewer(context.u)
+    if me_or_group == "myself":
+        p.make_viewer(context.u)
+    elif me_or_group == "mygroup":
+        p.make_viewer(context.g)
     context.u = User.objects.get(pk=context.u.id)
     assert context.u.has_perm("%d.%s" % ( p.id, "viewer"))
 
 
-@given("I havent given myself {editororviewer} privileges for {projkey}")
-def step(context, editororviewer, projkey):
+@given("I havent given {grouporuser} {editororviewer} privileges for {projkey}")
+def step(context,grouporuser, editororviewer, projkey):
     pass
 
 

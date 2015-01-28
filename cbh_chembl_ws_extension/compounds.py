@@ -338,11 +338,11 @@ class CBHCompoundBatchResource(ModelResource):
        
         batches = []
         if type == "smiles":
-            batches = [CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(obj), smiles=obj) for obj in objects ]
+            batches = [CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(obj), smiles=obj, project=bundle.data["project"]) for obj in objects ]
 
         elif type == "inchi":
             mols = _apply(objects,Chem.MolFromInchi)
-            batches = [CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol)) for mol in mols]
+            batches = [CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"]) for mol in mols]
         # for b in batches:
         #     b["created_by"] = request.user.username
 
@@ -373,8 +373,8 @@ class CBHCompoundBatchResource(ModelResource):
 
 
 
-    # def get_object_list(self, request):
-    #     return super(CBHCompoundBatchResource, self).get_object_list(request).select_related("related_molregno", "related_molregno__compound_properties")
+    def get_object_list(self, request):
+        return super(CBHCompoundBatchResource, self).get_object_list(request).select_related("related_molregno", "related_molregno__compound_properties")
 
 
 
