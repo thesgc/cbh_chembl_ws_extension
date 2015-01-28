@@ -86,8 +86,9 @@ import xlrd
 import pandas as pd
 import numpy as np
 import urllib
+from tastypie.validation import Validation
 
-
+from django.db.models import Max
 
 
 class ProjectResource(ModelResource):
@@ -115,8 +116,6 @@ class ProjectResource(ModelResource):
 
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
-<<<<<<< HEAD
-=======
     def base_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/stdinchikey/(?P<stdinchikey>\w[\w-]*)%s$" % (
@@ -165,23 +164,81 @@ class ProjectResource(ModelResource):
             url(r"^(?P<resource_name>%s)\.(?P<format>json|xml|csv|xls|sdf)$" % self._meta.resource_name,
                 self.wrap_view('dispatch_compounds'), name="api_dispatch_compounds"),
         ]
->>>>>>> 6a543698a3a4798933d5e0912e41398226e1c985
 
 
 
 
 
-class MoleculeDictionaryResource(ModelResource):
-    project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
-    class Meta:    
-        queryset = MoleculeDictionary.objects.all()
-        resource_name = 'molecule_dictionaries'
-        authorization = ProjectAuthorization()
-        include_resource_uri = False
-        allowed_methods = ['get', 'post', 'put']
-        default_format = 'application/json'
-        authentication = SessionAuthentication()
-        paginator_class = Paginator
+# class MoleculeValidation(Validation):
+#     def is_valid(self, bundle, request=None):
+#         if not bundle.data:
+#             return {'No Data': 'invalid_call_to_api, no data'}
+
+#         errors = {}
+
+#         structure_type = bundle.data["structure_type"]
+#         structure_key = bundle.data["structure_key"]
+#         project = bundle.data["project"]
+#         chirality = bundle.data["chirality"]
+#         forced_reg_index = bundle.data.get("forced_reg_index",0)
+#         forced_reg_reason = bundle.data.get("forced_reg_reason","")
+
+#         public = bundle.data.get("public", False)
+#         molregno = bundle.data.get("molregno", None)
+#         #Test uniqueness
+
+#         if not molregno:
+#             public_or_project_moldicts = MoleculeDictionary.objects.filter(
+#                                             (Q(structure_type=structure_type)
+#                                            Q(structure_key=structure_key),
+#                                            Q(chirality=chirality), 
+#                                            Q(public=True)) |
+#                                             (Q(structure_type=structure_type)
+#                                            Q(structure_key=structure_key),
+#                                            Q(chirality=chirality), 
+#                                            Q(project_id=project.id)
+#                                                 ))
+
+            
+#             if public_moldicts.count() > 0:
+#                 max_reg = moldicts.aggregate(Max('forced_reg_index'))["forced_reg_index__max"]
+#                 if forced_reg_index > 0:
+#                     if forced_reg_index <= max_reg:
+#                         #Somohow the forced registration index is too low, the client must re submit
+#                         errors["incorrect_force_reg_index"] ="Forced Registration unsuccesful, try with higher index"
+#                         errors["next_forced_reg_index"] = max_reg + 
+
+#                     if len(forced_reg_reason) < 3:
+#                         errors["invalid_force_reg_reason"] ="Forced registration reason should be longer than 3 characters"
+#                 else:
+#                     errors["already_registered_as_public"] ="Already registered for this project or publically"
+#                     errors["next_forced_reg_index"] = max_reg + 1
+#         return errors
+
+            
+        
+
+            
+
+
+
+            
+
+
+#         return errors
+
+
+# class MoleculeDictionaryResource(ModelResource):
+#     project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
+#     class Meta:    
+#         queryset = MoleculeDictionary.objects.all()
+#         resource_name = 'molecule_dictionaries'
+#         authorization = ProjectAuthorization()
+#         include_resource_uri = False
+#         allowed_methods = ['get', 'post', 'put']
+#         default_format = 'application/json'
+#         authentication = SessionAuthentication()
+#         paginator_class = Paginator
 
 
 
