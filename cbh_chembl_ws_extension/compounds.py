@@ -10,6 +10,7 @@ import base64
 import time
 from collections import OrderedDict
 from tastypie.resources import ModelResource, Resource
+from itertools import chain
 
 
 try:
@@ -61,15 +62,10 @@ try:
 except AttributeError:
     WS_DEBUG = False
 
-<<<<<<< HEAD
-from cbh_chembl_ws_extension.base import  CamelCaseJSONSerializer
 from cbh_chembl_ws_extension.authorization import ProjectAuthorization
-=======
 from chembl_webservices.compounds import CompoundsResource
 from chembl_webservices.base import ChEMBLApiSerializer
-from cbh_chembl_ws_extension.base import CBHApiBase
 from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer
->>>>>>> 6a543698a3a4798933d5e0912e41398226e1c985
 
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
@@ -103,67 +99,10 @@ class ProjectResource(ModelResource):
         #authorization = ProjectAuthorization()
         include_resource_uri = False
         default_format = 'application/json'
+        serializer = Serializer()
 
-    def prepend_urls(self):
-        return [
-        url(r"^(?P<resource_name>%s)/$" % self._meta.resource_name,
-                self.wrap_view('dispatch_list'), name="api_fetch_projects")
-        ]
 
-    def get_projects(self, request, **kwargs):
 
-        self.build_bundle()
-
-        return self.create_response(request, bundle, response_class=http.HttpCreated)
-
-    def base_urls(self):
-        return [
-            url(r"^(?P<resource_name>%s)/stdinchikey/(?P<stdinchikey>\w[\w-]*)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_detail'),
-                name="api_dispatch_detail"),
-            url(r"^(?P<resource_name>%s)/stdinchikey/(?P<stdinchikey>\w[\w-]*)\.(?P<format>json|xml)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_detail'),
-                name="api_dispatch_detail"),
-            url(r"^(?P<resource_name>%s)/smiles/?(?P<smiles>[\S]*)\.(?P<format>json|xml)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_list'),
-                name="api_dispatch_list"),
-            url(r"^(?P<resource_name>%s)/smiles/?(?P<smiles>[\S]*)%s$" % (self._meta.resource_name, trailing_slash()),
-                self.wrap_view('dispatch_list'),
-                name="api_dispatch_list"),
-            url(r"^(?P<resource_name>%s)/substructure/?(?P<smiles>[\S]*)\.(?P<format>json|xml)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
-                name="api_get_substructure"),
-            url(r"^(?P<resource_name>%s)/substructure/?(?P<smiles>[\S]*)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
-                name="api_get_substructure"),
-            url(r"^(?P<resource_name>%s)/similarity/(?P<smiles>[\S]*)/(?P<simscore>\d+)\.(?P<format>json|xml)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
-                name="api_get_similarity"),
-            url(r"^(?P<resource_name>%s)/similarity/(?P<smiles>[\S]*)/(?P<simscore>\d+)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
-                name="api_get_similarity"),
-            url(r"^(?P<resource_name>%s)/similarity.(?P<format>json|xml)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_sim'),
-                name="api_get_similarity"),
-            url(r"^(?P<resource_name>%s)/similarity%s$" % (self._meta.resource_name, trailing_slash()),
-                self.wrap_view('dispatch_sim'),
-                name="api_get_similarity"),
-            url(r"^(?P<resource_name>%s)/(?P<chemblid>\w[\w-]*)\.(?P<format>json|xml)%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_detail'),
-                name="api_dispatch_detail"),
-            url(r"^(?P<resource_name>%s)/(?P<chemblid>\w[\w-]*)%s$" % (self._meta.resource_name, trailing_slash()),
-                self.wrap_view('dispatch_detail'),
-                name="api_dispatch_detail"),
-            url(r"^(?P<resource_name>%s)/(?P<chemblid>\w[\w-]*)/image%s$" % (
-                self._meta.resource_name, trailing_slash()), self.wrap_view('get_cached_image'),
-                name="api_get_image"),
-            # url(r"^(?P<resource_name>%s)$" % self._meta.resource_name, self.wrap_view('dispatch_compounds'),
-            #     name="api_dispatch_compounds"),
-            url(r"^(?P<resource_name>%s)$" % self._meta.resource_name, self.wrap_view('post_list'),
-                name="api_post_list"),
-            url(r"^(?P<resource_name>%s)\.(?P<format>json|xml|csv|xls|sdf)$" % self._meta.resource_name,
-                self.wrap_view('dispatch_compounds'), name="api_dispatch_compounds"),
-        ]
 
 
 
@@ -229,7 +168,7 @@ class ProjectResource(ModelResource):
 
 
 # class MoleculeDictionaryResource(ModelResource):
-#     project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
+#     project = fields.ForeignKey(ProjectResource, 'project', blank=True, null=True)
 #     class Meta:    
 #         queryset = MoleculeDictionary.objects.all()
 #         resource_name = 'molecule_dictionaries'
@@ -295,6 +234,38 @@ class CBHCompoundBatchResource(ModelResource):
         paginator_class = Paginator
 
 
+    def match_list_to_moleculedictionaries(self, batch, project, chirality=-1, structure_type="MOL"):
+        if structure_type == "MOL":
+            structure_key = batch.standard_inchi_key
+        else:
+            raise NotImplemented
+        proj_data = MoleculeDictionary.objects.by_project_and_natural_key(structure_type,
+                                                                    structure_key,  
+                                                                    chirality, 
+                                                                    str(project.pk))
+
+        same_project = proj_data.values("molregno", "chembl", "created_by")
+        
+        pub = MoleculeDictionary.objects.by_natural_key_public_except_project(
+                                            structure_type, 
+                                            structure_key, 
+                                            chirality, 
+                                            str(project.pk)).order_by("-insert_date")
+
+        different_project_but_public = pub.values("molregno", "chembl", "created_by")
+        all_items = chain(same_project ,different_project_but_public)
+        for item in all_items:
+            item["tobelinked"] = False
+        if same_project.count() > 0:
+            #Increment the forced registration number compared to what is already in the database as this can then be used to force the registration of the molecule
+            forced_reg_no = proj_data.aggregate(Max('forced_reg_index'))["forced_reg_index__max"] + 1
+            batch.warnings.linked_to_project = True
+            
+            batch.warnings["forced_reg_no"] = forced_reg_no
+        if sum(1 for x in all_items) > 0:
+            all_items[0]["tobelinked"] = True
+        batch.warnings["linkable_molecules"] = list(all_items)
+
 
     def post_validate(self, request, **kwargs):
         """Runs the validation for a single or small set of molecules"""
@@ -312,6 +283,7 @@ class CBHCompoundBatchResource(ModelResource):
 
         updated_bundle = self.obj_build(bundle, dict_strip_unicode_keys(deserialized))
         bundle.obj.validate()
+        self.match_list_to_moleculedictionaries(bundle.obj,bundle.data["project"] )
         dictdata = bundle.obj.__dict__
         dictdata.pop("_state")
         
@@ -434,21 +406,25 @@ class CBHCompoundBatchResource(ModelResource):
 
     def validate_multi_batch(self,multi_batch, bundle, request):
         total = len(multi_batch.uploaded_data)
-        bundle.data["objects"] = {"pains" :[], "changed" : [], "errors" :[]}
+        bundle.data["objects"] = []
+        
         for batch in multi_batch.uploaded_data:
-
+            self.match_list_to_moleculedictionaries(batch,bundle.data["project"] )
             batch = batch.__dict__
-            batch.pop("_state")
-            if batch["warnings"]["pains_count"] != "0":
-                bundle.data["objects"]["pains"].append(batch)
+
+            #catch all molecules that should have some choices associated with them
             if batch["errors"] != {}:
-                bundle.data["objects"]["errors"].append(batch)
+                bundle.data["objects"].append(batch)
                 total = total - 1
+            elif len(batch["warnings"]["linkable_molecules"]) > 0 :
+                bundle.data["objects"].append(batch)
+            elif batch["warnings"]["pains_count"] != "0":
+                bundle.data["objects"].append(batch)
+            
 
-            # if batch["warnings"]["hasChanged"].lower() == "true":
-            #     bundle.data["objects"]["changed"].append(batch)  
+            
 
-        bundle.data["objects"]["total"] = total
+        bundle.data["total"] = total
 
         bundle.data["current_batch"] = multi_batch.pk
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
