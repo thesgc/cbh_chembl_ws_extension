@@ -45,23 +45,30 @@ def before_all(context):
     from south.management.commands import patch_for_test_db_setup
     patch_for_test_db_setup()
 
-    ### Set up the WSGI intercept "port".
-    context.api_client = TestApiClient()
-    context.ser = Serializer()
+    
+    context.runner.setup_test_environment()
+    context.runner.setup_databases()
 
 
 
 def before_scenario(context, scenario):
     # Set up the scenario test environment
-   
+    
+
+    ### Set up the WSGI intercept "port".
+    context.api_client = TestApiClient()
+    context.ser = Serializer()
+    context.post_data = {}
+    context.batch = None
+    context.g = None
+    context.u = None
+    context.response = None
     context.runner.setup_test_environment()
     # We must set up and tear down the entire database between
     # scenarios. We can't just use db transactions, as Django's
     # TestClient does, if we're doing full-stack tests with Mechanize,
     # because Django closes the db connection after finishing the HTTP
     # response.
-    context.old_db_config = context.runner.setup_databases()
-
     ### Set up the Mechanize browser.
     # from wsgi_intercept import mechanize_intercept
     # # MAGIC: All requests made by this monkeypatched browser to the magic
@@ -75,9 +82,14 @@ def before_scenario(context, scenario):
 def after_scenario(context, scenario):
     # Tear down the scenario test environment.
     #context.runner.teardown_databases(context.old_db_config)
-    from cbh_chembl_model_extension.models import Project
-    from django.contrib.auth.models import User
+    context.api_client.client.logout()
+ 
+    from cbh_chembl_model_extension.models import Project, CBHCompoundBatch
+    from django.contrib.auth.models import User, Group
     User.objects.all().delete()
     Project.objects.all().delete()
+    Group.objects.all().delete()
+    CBHCompoundBatch.objects.all().delete()
+
     context.runner.teardown_test_environment()
     # Bob's your uncle.

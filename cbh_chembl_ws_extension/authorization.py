@@ -5,6 +5,7 @@ logger = logging.getLogger(__name__)
 logger_debug = logging.getLogger(__name__)
 from cbh_chembl_model_extension.models import Project
 
+
 class ProjectAuthorization(Authorization):
     """
     Uses permission checking from ``django.contrib.auth`` to map
@@ -15,34 +16,42 @@ class ProjectAuthorization(Authorization):
     on, as that's all the more granular Django's permission setup gets.
     """
 
-    def base_checks(self, request, model_klass, data, possible_perm_levels):
+    def login_checks(self, request, model_klass):
 
         # If it doesn't look like a model, we can't check permissions.
         if not model_klass or not getattr(model_klass, '_meta', None):
-            print("no model")
-            return False
-
+            raise Unauthorized("improper_setup_of_authorization")
+            print "improper_setup_of_authorization"
         # User must be logged in to check permissions.
         if not hasattr(request, 'user'):
-            print("no user")
-            return False
+            print "no_logged_in_user"
+            raise Unauthorized("no_logged_in_user")
+
+
+    def base_checks(self, request, model_klass, data, possible_perm_levels):
+        self.login_checks(request, model_klass)
         if not data.get("project_key", None):
-            print("no project key")
-            return False
-            #raise Unauthorized("You so not have a project key")
+            print "no_project_key"
+            raise Unauthorized("no_project_key")
 
-        project_id = data.get("project_id", False)
-        print(project_id)
-        for p in possible_perm_levels:
-            has_perm = Project.objects.get_user_permission(project_id, request.user, p )
-            if has_perm is True:
-                return True
-        return False
-       
+        project = data.get("project", False)
+        
+        has_perm = Project.objects.get_user_permission(project.id, request.user, possible_perm_levels)
+        if has_perm is True:
+            return True
 
-    # def read_list(self, object_list, bundle):
-    #     klass = self.base_checks(bundle.request, object_list.model, bundle.data)
-    #     read_list=[]
+        print "user_does_not_have_correct_permissions_for_operation"
+        raise Unauthorized("user_does_not_have_correct_permissions_for_operation")
+        
+
+    def list_checks(self, request, model_klass, data, possible_perm_levels, object_list):
+        self.login_checks(request, model_klass)
+        new_list = []
+        for obj in object_list:
+            if Project.objects.get_user_permission(obj.project_id, request.user, possible_perm_levels) is True:
+                new_list.append(obj)
+
+        return new_list
 
 
     #     if klass is False:
@@ -89,13 +98,29 @@ class ProjectAuthorization(Authorization):
     #     if create_list:
     #         return create_list
     #     raise Unauthorized("You are not allowed to access that resource.")
+
+
+
+    def read_detail(self, object_list, bundle):
+        self.login_checks(bundle.request, bundle.obj.__class__,)
+        return Project.objects.get_user_permission(bundle.obj.project_id, bundle.request.user, ["editor","viewer",]) 
+                #return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor","viewer",])
+
+
     
     def create_detail(self, object_list, bundle):
+        return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
 
-        klass = self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
-        if klass is False:
-            return False
-        return True
+
+    def update_detail(self, object_list, bundle):
+        return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
+
+
+    def read_list(self, object_list, bundle):
+        return self.list_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor","viewer",], object_list)
+
+        
+
         # if klass is False:
         #     raise Unauthorized("You are not allowed to access that resource.")
 
