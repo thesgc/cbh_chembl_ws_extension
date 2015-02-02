@@ -305,6 +305,7 @@ class CBHCompoundBatchResource(ModelResource):
 
     def save_related(self, bundle):
         #bundle.obj.created_by = request.user.
+
         bundle.obj.generate_structure_and_dictionary()
         
 
@@ -317,6 +318,7 @@ class CBHCompoundBatchResource(ModelResource):
         '''As the object is created we run the validate code on it'''
         bundle = super(CBHCompoundBatchResource, self).full_hydrate(bundle)
         bundle.obj.validate()
+        self.match_list_to_moleculedictionaries(bundle.obj,bundle.data["project"] )
         return bundle
 
 
