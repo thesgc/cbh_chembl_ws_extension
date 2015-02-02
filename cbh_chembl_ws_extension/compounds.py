@@ -234,26 +234,22 @@ class CBHCompoundBatchResource(ModelResource):
         paginator_class = Paginator
 
 
-    def match_list_to_moleculedictionaries(self, batch, project, chirality=-1, structure_type="MOL"):
+    def match_list_to_moleculedictionaries(self, batch, project, structure_type="MOL"):
         if structure_type == "MOL":
             structure_key = batch.standard_inchi_key
         else:
             raise NotImplemented
         proj_data = MoleculeDictionary.objects.by_project_and_natural_key(structure_type,
                                                                     structure_key,  
-                                                                    chirality, 
-                                                                    str(project.pk))
-
+                                                                    project.pk)
         same_project = proj_data.values("molregno", "chembl", "created_by")
         
         pub = MoleculeDictionary.objects.by_natural_key_public_except_project(
                                             structure_type, 
                                             structure_key, 
-                                            chirality, 
-                                            str(project.pk)).order_by("-insert_date")
-
+                                           project.pk).order_by("-insert_date")
         different_project_but_public = pub.values("molregno", "chembl", "created_by")
-        all_items = chain(same_project ,different_project_but_public)
+        all_items = list(same_project) + list(different_project_but_public)
         for item in all_items:
             item["tobelinked"] = False
         if same_project.count() > 0:
@@ -262,9 +258,9 @@ class CBHCompoundBatchResource(ModelResource):
             batch.warnings.linked_to_project = True
             
             batch.warnings["forced_reg_no"] = forced_reg_no
-        if sum(1 for x in all_items) > 0:
+        if len(all_items) > 0:
             all_items[0]["tobelinked"] = True
-        batch.warnings["linkable_molecules"] = list(all_items)
+        batch.warnings["linkable_molecules"] = all_items
 
 
     def post_validate(self, request, **kwargs):
@@ -300,8 +296,8 @@ class CBHCompoundBatchResource(ModelResource):
         fields = CBHCompoundBatch.objects.get_all_keys()
         bundle.data['field_names'] =[{'name': item, 'count': 1, 'last_used': ''} for item in fields]      
 
-        return "This needs moving to the project resource"
-        #return self.create_response(request, bundle, response_class=http.HttpAccepted)
+        #return "This needs moving to the project resource"
+        return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
         #return HttpResponse("{ 'field_names': [ {'name': 'test1', 'count': 1, 'last_used': ''}, {'name': 'test2', 'count': 1, 'last_used': ''} ] }")
@@ -410,17 +406,20 @@ class CBHCompoundBatchResource(ModelResource):
         
         for batch in multi_batch.uploaded_data:
             self.match_list_to_moleculedictionaries(batch,bundle.data["project"] )
-            batch = batch.__dict__
+            b = batch.__dict__
 
             #catch all molecules that should have some choices associated with them
-            if batch["errors"] != {}:
-                bundle.data["objects"].append(batch)
+            if b["errors"] != {}:
+                bundle.data["objects"].append(b)
                 total = total - 1
-            elif len(batch["warnings"]["linkable_molecules"]) > 0 :
-                bundle.data["objects"].append(batch)
-            elif batch["warnings"]["pains_count"] != "0":
-                bundle.data["objects"].append(batch)
-            
+            elif len(b["warnings"]["linkable_molecules"]) > 0 :
+                bundle.data["objects"].append(b)
+            elif b["warnings"]["pains_count"] != "0":
+                bundle.data["objects"].append(b)
+        print multi_batch.uploaded_data[0].warnings
+        multi_batch.save()
+        print "test"
+        print CBHCompoundMultipleBatch.objects.get(pk = multi_batch.pk).uploaded_data[0].warnings
 
             
 
