@@ -482,7 +482,7 @@ class CBHCompoundBatchResource(ModelResource):
                 if mol is None: continue
                 if not headers: 
                     headers = list(mol.GetPropNames())
-                b = CBHCompoundBatch.objects.from_rd_mol(mol)
+                b = CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"])
                 custom_fields = {}
                 for hdr in headers:
                     if hdr in mappings["ignored_fields"]:
@@ -508,7 +508,7 @@ class CBHCompoundBatchResource(ModelResource):
             headers = list(df)
             for index, row in row_iterator:
                 smiles_str = row[structure_col]
-                b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles_str), smiles=smiles_str)
+                b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles_str), smiles=smiles_str, project=bundle.data["project"])
                 #work out custom fields from mapping object
                 #new_fields, remapped_fields, ignored_fields
                 
