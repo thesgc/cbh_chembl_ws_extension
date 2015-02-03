@@ -250,14 +250,26 @@ class CBHCompoundBatchResource(ModelResource):
                                            project.pk).order_by("-insert_date")
         different_project_but_public = pub.values("molregno", "chembl", "created_by")
         all_items = list(same_project) + list(different_project_but_public)
+        linkedproject = 0
+        linkedpublic = 0
+        new = 0
+        print batch.warnings
+
         for item in all_items:
             item["tobelinked"] = False
+
         if same_project.count() > 0:
             #Increment the forced registration number compared to what is already in the database as this can then be used to force the registration of the molecule
             forced_reg_no = proj_data.aggregate(Max('forced_reg_index'))["forced_reg_index__max"] + 1
-            batch.warnings.linked_to_project = True
-            
+            linkedproject += 1
             batch.warnings["forced_reg_no"] = forced_reg_no
+        elif different_project_but_public.count() > 0:
+            linkedpublic += 1        
+        else:
+            new += 1
+        batch.warnings["linkedpublic"] = linkedpublic
+        batch.warnings["linkedproject"] = linkedproject
+        batch.warnings["new"] = new
         if len(all_items) > 0:
             all_items[0]["tobelinked"] = True
         batch.warnings["linkable_molecules"] = all_items
@@ -404,19 +416,26 @@ class CBHCompoundBatchResource(ModelResource):
     def validate_multi_batch(self,multi_batch, bundle, request):
         total = len(multi_batch.uploaded_data)
         bundle.data["objects"] = []
+        bundle.data["new"] = 0
+        bundle.data["linkedpublic"] = 0
+        bundle.data["linkedproject"] = 0
+        bundle.data["errors"] = 0
         
         for batch in multi_batch.uploaded_data:
             self.match_list_to_moleculedictionaries(batch,bundle.data["project"] )
+            for key in ["new", "linkedproject", "linkedpublic"]:
+                bundle.data[key] += int(batch.warnings[key])
             b = batch.__dict__
-
+            bundle.data["objects"].append(b)
             #catch all molecules that should have some choices associated with them
             if b["errors"] != {}:
-                bundle.data["objects"].append(b)
+                bundle.data["errors"] += 1
                 total = total - 1
-            elif len(b["warnings"]["linkable_molecules"]) > 0 :
-                bundle.data["objects"].append(b)
-            elif b["warnings"]["pains_count"] != "0":
-                bundle.data["objects"].append(b)
+
+
+                
+            #elif b["warnings"]["pains_count"] != "0":
+                
         multi_batch.save()
 
         bundle.data["total"] = total
