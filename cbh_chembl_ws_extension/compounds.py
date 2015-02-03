@@ -397,8 +397,7 @@ class CBHCompoundBatchResource(ModelResource):
         for b in mb.uploaded_data:
             b.custom_fields = bundle.data["custom_fields"]
         mb.save()
-
-        return self.create_response(request, bundle, response_class=http.HttpAccepted)
+        return self.validate_multi_batch(mb, bundle, request)
 
 
 
@@ -418,16 +417,12 @@ class CBHCompoundBatchResource(ModelResource):
                 bundle.data["objects"].append(b)
             elif b["warnings"]["pains_count"] != "0":
                 bundle.data["objects"].append(b)
-        print multi_batch.uploaded_data[0].warnings
         multi_batch.save()
-        print "test"
-        print CBHCompoundMultipleBatch.objects.get(pk = multi_batch.pk).uploaded_data[0].warnings
-
-            
 
         bundle.data["total"] = total
 
         bundle.data["current_batch"] = multi_batch.pk
+
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
@@ -460,7 +455,9 @@ class CBHCompoundBatchResource(ModelResource):
 
         multiple_batch.uploaded_data=batches
         multiple_batch.save()
-        return self.validate_multi_batch(multiple_batch, bundle, request)
+        bundle.data["current_batch"] = multiple_batch.pk
+
+        return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
     def post_validate_files(self, request, **kwargs):
