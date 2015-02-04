@@ -1,7 +1,11 @@
 from django.contrib import admin
-from cbh_chembl_model_extension.models import Project
+from cbh_chembl_model_extension.models import Project, PinnedCustomField
 
 from django.contrib.admin import ModelAdmin
+
+class PinnedCustomFieldInline(admin.TabularInline):
+    model = PinnedCustomField
+
 
 class ProjectAdmin(ModelAdmin):
     prepopulated_fields = {"project_key": ("name",)}
@@ -9,5 +13,6 @@ class ProjectAdmin(ModelAdmin):
     search_fields = ('name',)
     ordering = ('-created',)
     date_hierarchy = 'created'
+    inlines = [PinnedCustomFieldInline,]
 
 admin.site.register(Project, ProjectAdmin)

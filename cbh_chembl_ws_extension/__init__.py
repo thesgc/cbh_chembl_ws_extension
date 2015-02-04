@@ -12,6 +12,8 @@ from chembl_webservices.base import ChEMBLApi
 # from chembl_webservices.bioactivities import *
 # from chembl_webservices.drugs import *
 from cbh_chembl_ws_extension.compounds import *
+from cbh_chembl_ws_extension.projects import *
+
 from cbh_chembl_ws_extension.base import *
 from django.conf import settings
 

@@ -63,6 +63,7 @@ except AttributeError:
     WS_DEBUG = False
 
 from cbh_chembl_ws_extension.authorization import ProjectAuthorization
+from cbh_chembl_ws_extension.projects import ProjectResource
 from chembl_webservices.compounds import CompoundsResource
 from chembl_webservices.base import ChEMBLApiSerializer
 from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer
@@ -71,7 +72,7 @@ from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
 from django.core.serializers.json import DjangoJSONEncoder
 from tastypie import fields, utils
-from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project
+from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project, PinnedCustomField
 from tastypie.authentication import SessionAuthentication
 import json
 from tastypie.paginator import Paginator
@@ -86,25 +87,9 @@ from tastypie.validation import Validation
 
 from django.db.models import Max
 
+from tastypie.serializers import Serializer
 
-class ProjectResource(ModelResource):
-
-    class Meta:
-        queryset = Project.objects.all()
-        authentication = SessionAuthentication()
-        paginator_class = Paginator
-        allowed_methods = ['get']        
-        #serializer = CamelCaseJSONSerializer()
-        resource_name = 'cbh_projects'
-        #authorization = ProjectAuthorization()
-        include_resource_uri = False
-        default_format = 'application/json'
-        serializer = Serializer()
-
-
-
-
-
+from tastypie.authentication import SessionAuthentication
 
 
 
@@ -299,20 +284,21 @@ class CBHCompoundBatchResource(ModelResource):
         return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
 
     def get_project_custom_field_names(self, request, **kwargs):
-        # deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'text/plain'))
-        
-        # deserialized = self.alter_deserialized_detail_data(request, deserialized)
-        bundle = self.build_bundle(request=request)
-
-
-        fields = CBHCompoundBatch.objects.get_all_keys()
-        bundle.data['field_names'] =[{'name': item, 'count': 1, 'last_used': ''} for item in fields]      
-
-        #return "This needs moving to the project resource"
+        '''Combine the pinned fields for the project with the most frequently used fields on the project into a single list'''
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'text/plain'))  
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        pinned_fields = list(PinnedCustomField.objects.filter(project_id=bundle.data["project"].id).values("name", "required", "part_of_blinded_key", "created_by_id"))
+        secondwhere = True
+        project_id = bundle.data["project"].id
+        if len(pinned_fields) > 0:
+            secondwhere = "key not in %s" % json.dumps([pf["name"] for pf in pinned_fields]).replace("\"","'").replace("[","(").replace("]",")")
+        fields = CBHCompoundBatch.objects.get_all_keys(where="project_id = %d" % project_id, 
+                                                        secondwhere=secondwhere)
+        project_fields = [{'name': item[0], 'count': item[1]} for item in fields]
+        pinned_fields.extend(project_fields)
+        bundle.data['field_names'] = pinned_fields
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
-
-
-        #return HttpResponse("{ 'field_names': [ {'name': 'test1', 'count': 1, 'last_used': ''}, {'name': 'test2', 'count': 1, 'last_used': ''} ] }")
 
 
     def save_related(self, bundle):
