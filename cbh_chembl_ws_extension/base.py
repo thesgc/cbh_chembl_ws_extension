@@ -28,6 +28,7 @@ from django.views.generic import FormView, View
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from tastypie.resources import ModelResource
+from tastypie.authorization import Authorization
 
 # If ``csrf_exempt`` isn't present, stub it.
 try:
@@ -71,10 +72,14 @@ class UserResource(ModelResource):
         allowed_methods = ["get",] 
         excludes = ['email', 'password', 'is_active', 'is_staff', 'is_superuser']
         authentication = SessionAuthentication()
+        authorization = Authorization()
 
 
     def apply_authorization_limits(self, request, object_list):
         return object_list.get(pk=request.user.id)
+
+    def get_object_list(self, request):
+        return super(UserResource, self).get_object_list(request).filter(pk=request.user.id)
 
 
 
