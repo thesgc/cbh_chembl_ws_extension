@@ -489,6 +489,8 @@ class CBHCompoundBatchResource(ModelResource):
                 if mol is None: continue
                 if not headers: 
                     headers = list(mol.GetPropNames())
+
+
                 b = CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"])
                 custom_fields = {}
                 for hdr in headers:
@@ -727,7 +729,8 @@ class CBHCompoundBatchUpload(ModelResource):
         bundle.data["headers"] = headers
 
             #send back
-
+        if len(headers) == 0:
+            return BadRequest("no_headers")
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
     
