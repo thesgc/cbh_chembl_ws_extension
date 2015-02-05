@@ -70,6 +70,7 @@ class UserResource(ModelResource):
         resource_name = 'users'
         allowed_methods = ["get",] 
         excludes = ['email', 'password', 'is_active', 'is_staff', 'is_superuser']
+        authentication = SessionAuthentication()
 
 
     def apply_authorization_limits(self, request, object_list):
