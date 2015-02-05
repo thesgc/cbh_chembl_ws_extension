@@ -290,6 +290,7 @@ class CBHCompoundBatchResource(ModelResource):
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
         pinned_fields = list(PinnedCustomField.objects.filter(custom_field_config__project=bundle.data["project"]).values())
+        print pinned_fields
         secondwhere = True
         project_id = bundle.data["project"].id
         if len(pinned_fields) > 0:
