@@ -288,7 +288,8 @@ class CBHCompoundBatchResource(ModelResource):
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'text/plain'))  
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
-        pinned_fields = list(PinnedCustomField.objects.filter(project_id=bundle.data["project"].id).values("name", "required", "part_of_blinded_key", "created_by_id"))
+
+        pinned_fields = list(PinnedCustomField.objects.filter(custom_field_config__project=bundle.data["project"]).values())
         secondwhere = True
         project_id = bundle.data["project"].id
         if len(pinned_fields) > 0:
