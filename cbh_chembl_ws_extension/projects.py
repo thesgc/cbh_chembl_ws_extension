@@ -26,6 +26,10 @@ class ProjectResource(ModelResource):
         include_resource_uri = False
         default_format = 'application/json'
         serializer = Serializer()
+        filtering = {
+            
+            "project_key": ALL_WITH_RELATIONS,
+        }
 
 
 
