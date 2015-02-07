@@ -307,6 +307,13 @@ class CBHCompoundBatchResource(ModelResource):
         #bundle.obj.created_by = request.user.
 
         bundle.obj.generate_structure_and_dictionary()
+
+ #   def save_related(self, bundle):
+ #       #For a single molecule, set the chirality
+ #       if bundle.obj.multiple_batch_id:
+ #           bundle.obj.generate_structure_and_dictionary(chirality=bundle.data["stereo_selected"]["name"])
+ #       else:
+ #           bundle.obj.generate_structure_and_dictionary()
         
 
     def alter_deserialized_detail_data(self, request, deserialized):
