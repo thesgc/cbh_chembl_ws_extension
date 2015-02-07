@@ -176,6 +176,7 @@ class CBHCompoundBatchResource(ModelResource):
             "std_ctab": ALL_WITH_RELATIONS,
             "ctab": ALL,
             "multiple_batch_id": ALL_WITH_RELATIONS,
+            "project": ALL_WITH_RELATIONS,
         }
         always_return_data = True
         prefix = "related_molregno"
