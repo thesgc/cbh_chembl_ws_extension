@@ -710,7 +710,8 @@ class CBHCompoundBatchUpload(ModelResource):
         request_json = bundle.data
 
         file_name = request_json['file_name']
-        correct_file = self.get_object_list(request).filter(original_filename=file_name)[0]
+        session_key = request.COOKIES[settings.SESSION_COOKIE_NAME]
+        correct_file = self.get_object_list(request).get(identifier="%s-%s" % (session_key, file_name))
         headers = []
         header_json = { }
         #get this into a datastructure if excel
