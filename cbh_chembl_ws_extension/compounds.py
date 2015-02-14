@@ -400,11 +400,29 @@ class CBHCompoundBatchResource(ModelResource):
         else:
             self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
         id = bundle.data["current_batch"]
+        mappings = bundle.data.get('mapping', [])
 
         mb = CBHCompoundMultipleBatch.objects.get(pk=id)
+        headers = None
         for b in mb.uploaded_data:
-            b.custom_fields = bundle.data["custom_fields"]
+            if mappings:
+                if not headers:
+                    headers = b.custom_fields.keys()
+                custom_fields = {}
+                for hdr in headers:
+                    if hdr in mappings["ignored_fields"]:
+                        continue
+                    elif hdr in mappings["new_fields"]:
+                        custom_fields[hdr] = b.custom_fields[hdr]
+                    else:
+                        for key, mapping in mappings["remapped_fields"].iteritems():
+                            if hdr in mapping:
+                                custom_fields[key] = b.custom_fields[hdr]
+                b.custom_fields = custom_fields
+            else:
+                b.custom_fields = bundle.data["custom_fields"]
         mb.save()
+        #Might not be needed
         return self.validate_multi_batch(mb, bundle, request)
 
 
@@ -471,8 +489,8 @@ class CBHCompoundBatchResource(ModelResource):
         multiple_batch.uploaded_data=batches
         multiple_batch.save()
         bundle.data["current_batch"] = multiple_batch.pk
+        return self.validate_multi_batch(multiple_batch, bundle, request)
 
-        return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
     def post_validate_files(self, request, **kwargs):
@@ -493,9 +511,7 @@ class CBHCompoundBatchResource(ModelResource):
                 if smiles:
                     b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles), smiles=smiles, project=bundle.data["project"])
                     batches.append(b)
-        else:
-            mappings = bundle.data['mapping']
-
+        else: 
             if (correct_file.extension == ".sdf"):
                 #read in the file
                 suppl = Chem.ForwardSDMolSupplier(correct_file.file)
@@ -510,15 +526,9 @@ class CBHCompoundBatchResource(ModelResource):
                     b = CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"])
                     custom_fields = {}
                     for hdr in headers:
-                        if hdr in mappings["ignored_fields"]:
-                            continue
-                        elif hdr in mappings["new_fields"]:
-                            custom_fields[hdr] = mol.GetProp(hdr) 
-                        else:
-                            for key, mapping in mappings["remapped_fields"].iteritems():
-                                if hdr in mapping:
-                                    custom_fields[key] = mol.GetProp(hdr)
 
+                        custom_fields[hdr] = mol.GetProp(hdr) 
+                        
                     b.custom_fields = custom_fields
                     batches.append(b)
                     
@@ -539,15 +549,7 @@ class CBHCompoundBatchResource(ModelResource):
                     
                     custom_fields = {}
                     for hdr in headers:
-                        if hdr in mappings["ignored_fields"]:
-                            continue
-                        elif hdr in mappings["new_fields"]:
-                            custom_fields[ hdr] = row[hdr] 
-                        else:
-                            for key, mapping in mappings["remapped_fields"].iteritems():
-                                if hdr in mapping:
-                                    custom_fields[key] = row[hdr]
-
+                        custom_fields[ hdr] = row[hdr] 
                     b.custom_fields = custom_fields
                     batches.append(b)
 
@@ -559,6 +561,8 @@ class CBHCompoundBatchResource(ModelResource):
         multiple_batch.uploaded_data=batches
         multiple_batch.save()
         return self.validate_multi_batch(multiple_batch, bundle, request)
+
+
 
     def alter_list_data_to_serialize(self, request, data):
         '''use the request type to determine which fields should be limited for file download,
