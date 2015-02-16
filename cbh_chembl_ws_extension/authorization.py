@@ -82,22 +82,8 @@ class ProjectAuthorization(Authorization):
     #         return True
     #     raise Unauthorized("You are not allowed to access that resource.")
 
-    # def create_list(self, object_list, bundle):
-    #     klass = self.base_checks(bundle.request, object_list.model, bundle.data)
-    #     create_list=[]
-
-    #     if klass is False:
-    #         return []
-
-    #     permission = '%s.add_%s' % (klass._meta.app_label, klass._meta.module_name)
-
-    #     for obj in object_list:        
-    #         #if bundle.request.user.has_perms(permission,obj):
-    #             create_list.append(obj)
-
-    #     if create_list:
-    #         return create_list
-    #     raise Unauthorized("You are not allowed to access that resource.")
+    def create_list(self, object_list, bundle):
+        return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
 
 
 
