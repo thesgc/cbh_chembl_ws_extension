@@ -19,9 +19,9 @@ class ProjectAuthorization(Authorization):
     def login_checks(self, request, model_klass):
 
         # If it doesn't look like a model, we can't check permissions.
-        if not model_klass or not getattr(model_klass, '_meta', None):
-            raise Unauthorized("improper_setup_of_authorization")
-            print "improper_setup_of_authorization"
+        # if not model_klass or not getattr(model_klass, '_meta', None):
+        #     print "improper_setup_of_authorization"
+        #     raise Unauthorized("improper_setup_of_authorization")
         # User must be logged in to check permissions.
         if not hasattr(request, 'user'):
             print "no_logged_in_user"
