@@ -83,8 +83,12 @@ class ProjectAuthorization(Authorization):
     #     raise Unauthorized("You are not allowed to access that resource.")
 
     def create_list(self, object_list, bundle):
-        return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
-
+        bool = self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
+        if bool is True:
+            return object_list
+        else:
+            
+            return []
 
 
     def read_detail(self, object_list, bundle):
