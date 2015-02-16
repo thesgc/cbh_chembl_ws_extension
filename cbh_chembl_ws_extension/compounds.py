@@ -91,7 +91,7 @@ from tastypie.serializers import Serializer
 
 from tastypie.authentication import SessionAuthentication
 
-
+import  chemdraw_reaction
 
 # class MoleculeValidation(Validation):
 #     def is_valid(self, bundle, request=None):
@@ -507,10 +507,21 @@ class CBHCompoundBatchResource(ModelResource):
         headers = []
         if (".cdx" in correct_file.extension ):
             mols = [mol.write("smi").split("\t")[0] for mol in readfile( str(correct_file.extension[1:]), str(correct_file.file.name), )]
+            rxn = None
+            if correct_file.extension == '.cdxml':
+                #Look for a stoichiometry table in the reaction file
+                rxn = chemdraw_reaction.parse( str(correct_file.file.name))
+            index = 0
             for smiles in mols:
-                if smiles:
-                    b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles), smiles=smiles, project=bundle.data["project"])
-                    batches.append(b)
+                if smiles.strip() and smiles != "*":
+                        b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles), smiles=smiles, project=bundle.data["project"])
+                        if rxn:
+                            b.custom_fields = rxn[index]
+                            b.editable_by = rxn[index]
+                        batches.append(b)
+                        index += 1
+
+
         else: 
             if (correct_file.extension == ".sdf"):
                 #read in the file
