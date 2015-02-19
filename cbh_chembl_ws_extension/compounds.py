@@ -316,6 +316,10 @@ class CBHCompoundBatchResource(ModelResource):
  #       else:
  #           bundle.obj.generate_structure_and_dictionary()
         
+    def alter_deserialized_list_data(self, request, deserialized):
+        proj = Project.objects.get(project_key=deserialized["project_key"])
+        deserialized["project"] = proj
+        return deserialized
 
     def alter_deserialized_detail_data(self, request, deserialized):
         proj = Project.objects.get(project_key=deserialized["project_key"])
