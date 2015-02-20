@@ -112,6 +112,8 @@ class Login(FormView):
         csrf_token = get_token(request)
         context = self.get_context_data(form=self.get_form(self.get_form_class()))
         context["logout"] = self.logout
+        if request.user.is_authenticated():
+            return HttpResponseRedirect(redirect_to)
         return self.render_to_response(context)
 	
 
@@ -120,8 +122,8 @@ class Login(FormView):
         auth_login(self.request, form.get_user())
         if self.request.session.test_cookie_worked():
             self.request.session.delete_test_cookie()
-        return self.render_to_response(self.get_context_data())
-        #return HttpResponseRedirect(redirect_to)
+        #return self.render_to_response(self.get_context_data())
+        return HttpResponseRedirect(redirect_to)
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
