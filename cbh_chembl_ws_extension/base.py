@@ -112,8 +112,10 @@ class Login(FormView):
         csrf_token = get_token(request)
         context = self.get_context_data(form=self.get_form(self.get_form_class()))
         context["logout"] = self.logout
-        #return self.render_to_response(context)
-	return HttpResponseRedirect(redirect_to)
+        if user.is_authenticated():
+            return HttpResponseRedirect(redirect_to)
+        return self.render_to_response(context)
+	
 
     def form_valid(self, form):
         redirect_to = settings.LOGIN_REDIRECT_URL
