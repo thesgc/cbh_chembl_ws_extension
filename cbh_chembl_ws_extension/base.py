@@ -46,11 +46,6 @@ except ImportError:
     lxml = None
 
 try:
-    TOP_LEVEL_PAGE = settings.TASTYPIE_TOP_LEVEL_PAGE
-except AttributeError:
-    TOP_LEVEL_PAGE = 'https://www.ebi.ac.uk/chembl/ws'
-
-try:
     WS_DEBUG = settings.WS_DEBUG
 except AttributeError:
     WS_DEBUG = False

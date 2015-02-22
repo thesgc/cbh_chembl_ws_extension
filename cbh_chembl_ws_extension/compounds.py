@@ -508,9 +508,10 @@ class CBHCompoundBatchResource(ModelResource):
         if (".cdx" in correct_file.extension ):
             mols = [mol.write("smi").split("\t")[0] for mol in readfile( str(correct_file.extension[1:]), str(correct_file.file.name), )]
             for smiles in mols:
-                if smiles:
-                    b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles), smiles=smiles, project=bundle.data["project"])
-                    batches.append(b)
+
+                if smiles.strip() and smiles != "*":
+                        b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles), smiles=smiles, project=bundle.data["project"])
+                        batches.append(b)
         else: 
             if (correct_file.extension == ".sdf"):
                 #read in the file

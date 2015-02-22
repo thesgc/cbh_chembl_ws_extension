@@ -4,7 +4,7 @@ try:
 except Exception as e:
     __version__ = 'development'
 
-from chembl_webservices.base import ChEMBLApi
+from tastypie.api import Api
 # from chembl_webservices.status import *
 # from chembl_webservices.compounds import *
 # from chembl_webservices.assays import *
@@ -24,7 +24,7 @@ try:
 except AttributeError:
     api_name = DEFAULT_API_NAME
 
-api = ChEMBLApi(api_name=api_name)
+api = Api(api_name=api_name)
 
 api.register(CBHCompoundBatchResource())
 api.register(CBHCompoundBatchUpload())
