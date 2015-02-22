@@ -19,9 +19,9 @@ class ProjectAuthorization(Authorization):
     def login_checks(self, request, model_klass):
 
         # If it doesn't look like a model, we can't check permissions.
-        if not model_klass or not getattr(model_klass, '_meta', None):
-            raise Unauthorized("improper_setup_of_authorization")
-            print "improper_setup_of_authorization"
+        # if not model_klass or not getattr(model_klass, '_meta', None):
+        #     print "improper_setup_of_authorization"
+        #     raise Unauthorized("improper_setup_of_authorization")
         # User must be logged in to check permissions.
         if not hasattr(request, 'user'):
             print "no_logged_in_user"
@@ -82,23 +82,13 @@ class ProjectAuthorization(Authorization):
     #         return True
     #     raise Unauthorized("You are not allowed to access that resource.")
 
-    # def create_list(self, object_list, bundle):
-    #     klass = self.base_checks(bundle.request, object_list.model, bundle.data)
-    #     create_list=[]
-
-    #     if klass is False:
-    #         return []
-
-    #     permission = '%s.add_%s' % (klass._meta.app_label, klass._meta.module_name)
-
-    #     for obj in object_list:        
-    #         #if bundle.request.user.has_perms(permission,obj):
-    #             create_list.append(obj)
-
-    #     if create_list:
-    #         return create_list
-    #     raise Unauthorized("You are not allowed to access that resource.")
-
+    def create_list(self, object_list, bundle):
+        bool = self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
+        if bool is True:
+            return object_list
+        else:
+            
+            return []
 
 
     def read_detail(self, object_list, bundle):

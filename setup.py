@@ -38,6 +38,7 @@ setup(
     install_requires=[
         'django-grappelli==2.4.12',
         'xlsxwriter',
+        'xmltodict',
     ],
     license="MIT",
     zip_safe=False,
