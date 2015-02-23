@@ -108,16 +108,21 @@ class Login(FormView):
         #     username = request.META.get('HTTP_X_WEBAUTH_USER', None)
         # if  username:
         #     return HttpResponseRedirect(reverse("webauth:login"))
+        from django.middleware.csrf import get_token
+        csrf_token = get_token(request)
         context = self.get_context_data(form=self.get_form(self.get_form_class()))
         context["logout"] = self.logout
+        if request.user.is_authenticated():
+            return HttpResponseRedirect(redirect_to)
         return self.render_to_response(context)
-
+	
 
     def form_valid(self, form):
         redirect_to = settings.LOGIN_REDIRECT_URL
         auth_login(self.request, form.get_user())
         if self.request.session.test_cookie_worked():
             self.request.session.delete_test_cookie()
+        #return self.render_to_response(self.get_context_data())
         return HttpResponseRedirect(redirect_to)
 
     def form_invalid(self, form):
