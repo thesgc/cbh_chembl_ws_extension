@@ -166,6 +166,7 @@ class CBHCompoundBatchResource(ModelResource):
             "project": ALL_WITH_RELATIONS,
             "with_substructure": ALL_WITH_RELATIONS,
             "similar_to": ALL_WITH_RELATIONS,
+            "flexmatch": ALL_WITH_RELATIONS,
         }
         always_return_data = True
         prefix = "related_molregno"
@@ -214,7 +215,6 @@ class CBHCompoundBatchResource(ModelResource):
         The default simply applies the ``applicable_filters`` as ``**kwargs``,
         but should make it possible to do more advanced things.
         """
-        #print(request.GET)
         ws = request.GET.get("with_substructure", None)
         st = request.GET.get("similar_to", None)
         fm = request.GET.get("flexmatch", None)
@@ -222,17 +222,28 @@ class CBHCompoundBatchResource(ModelResource):
         fp = request.GET.get("fpValue", None)
 
         if ws:
-            cms = CompoundMols.objects.with_substructure(ws)
+            smiles = self.convert_mol_string(ws)
+            cms = CompoundMols.objects.with_substructure(smiles)
         elif st:
-            cms = CompoundMols.objects.similar_to(st,fp)
+            smiles = self.convert_mol_string(st)
+            if fp == None:
+                cms = CompoundMols.objects.similar_to(smiles,90)
+            else:
+                cms = CompoundMols.objects.similar_to(smiles,fp)
         elif fm:
-            cms = CompoundMols.objects.flexmatch(fm)
+            smiles = self.convert_mol_string(fm)
+            cms = CompoundMols.objects.flexmatch(smiles)
         else:
             cms = CompoundMols.objects.all()
 
         applicable_filters["related_molregno_id__in"] = cms.values_list("molecule_id", flat=True)
 
         return self.get_object_list(request).filter(**applicable_filters)
+    
+    def convert_mol_string(self, str):
+        mol = Chem.MolFromMolBlock(str)
+        smiles = Chem.MolToSmiles(mol)
+        return smiles
 
 
     def match_list_to_moleculedictionaries(self, batch, project, structure_type="MOL"):
