@@ -167,6 +167,8 @@ class CBHCompoundBatchResource(ModelResource):
             "with_substructure": ALL_WITH_RELATIONS,
             "similar_to": ALL_WITH_RELATIONS,
             "flexmatch": ALL_WITH_RELATIONS,
+            "created": ['gte','lte'],
+            "created_by": ALL_WITH_RELATIONS,
         }
         always_return_data = True
         prefix = "related_molregno"
