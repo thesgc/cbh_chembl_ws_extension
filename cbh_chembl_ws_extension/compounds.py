@@ -243,6 +243,7 @@ class CBHCompoundBatchResource(ModelResource):
         return self.get_object_list(request).filter(**applicable_filters)
     
     def convert_mol_string(self, strn):
+        #commit
         try:
             mol = Chem.MolFromMolBlock(strn)
             smiles = Chem.MolToSmiles(mol)
