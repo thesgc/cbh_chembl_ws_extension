@@ -223,6 +223,8 @@ class CBHCompoundBatchResource(ModelResource):
         #this is the similarity index for fingerprint-like searching
         fp = request.GET.get("fpValue", None)
 
+        cms = None
+
         if ws:
             smiles = self.convert_mol_string(ws)
             cms = CompoundMols.objects.with_substructure(smiles)
@@ -238,7 +240,8 @@ class CBHCompoundBatchResource(ModelResource):
         else:
             cms = CompoundMols.objects.all()
 
-        applicable_filters["related_molregno_id__in"] = cms.values_list("molecule_id", flat=True)
+        if cms != None:
+            applicable_filters["related_molregno_id__in"] = cms.values_list("molecule_id", flat=True)
 
         return self.get_object_list(request).filter(**applicable_filters)
     
