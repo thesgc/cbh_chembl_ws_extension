@@ -242,6 +242,7 @@ class CBHCompoundBatchResource(ModelResource):
 
         if cms != None:
             #run the sql for pulling in new compounds into compound_mols
+            indexed = CBHCompoundBatch.objects.index_new_compounds()
             applicable_filters["related_molregno_id__in"] = cms.values_list("molecule_id", flat=True)
 
         return self.get_object_list(request).filter(**applicable_filters)
@@ -424,7 +425,7 @@ class CBHCompoundBatchResource(ModelResource):
                 bundle.data["saved"] += 1
   #          except Exception , e:
    #             bundle.data["errors"] += e
-        indexed = CBHCompoundBatch.objects.index_new_compounds()
+        #indexed = CBHCompoundBatch.objects.index_new_compounds()
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
 
