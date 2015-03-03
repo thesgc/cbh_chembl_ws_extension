@@ -43,6 +43,7 @@ from django.db.utils import DatabaseError
 from django.db import transaction
 from django.db import connection
 from chembl_beaker.beaker.core_apps.rasterImages.impl import _ctab2image
+
 try:
     from chembl_compatibility.models import MoleculeDictionary
     from chembl_compatibility.models import CompoundMols
@@ -67,7 +68,8 @@ from cbh_chembl_ws_extension.projects import ProjectResource
 from chembl_webservices.compounds import CompoundsResource
 from chembl_webservices.base import ChEMBLApiSerializer
 from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer
-
+from chembl_business_model.models import CompoundStructures
+#from cbh_chembl_ws_extension.base import NBResource
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
 from django.core.serializers.json import DjangoJSONEncoder
@@ -152,31 +154,21 @@ import  chemdraw_reaction
 #         return errors
 
 
-# class MoleculeDictionaryResource(ModelResource):
-#     project = fields.ForeignKey(ProjectResource, 'project', blank=True, null=True)
-#     class Meta:    
-#         queryset = MoleculeDictionary.objects.all()
-#         resource_name = 'molecule_dictionaries'
-#         authorization = ProjectAuthorization()
-#         include_resource_uri = False
-#         allowed_methods = ['get', 'post', 'put']
-#         default_format = 'application/json'
-#         authentication = SessionAuthentication()
-#         paginator_class = Paginator
-
-
-
-
-
-
 class CBHCompoundBatchResource(ModelResource):
     project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
+    #related_molregno = fields.ForeignKey(MoleculeDictionaryResource, 'related_molregno', blank=True, null=True)
+
     class Meta:
         filtering = {
             "std_ctab": ALL_WITH_RELATIONS,
             "ctab": ALL,
             "multiple_batch_id": ALL_WITH_RELATIONS,
             "project": ALL_WITH_RELATIONS,
+            "with_substructure": ALL_WITH_RELATIONS,
+            "similar_to": ALL_WITH_RELATIONS,
+            "flexmatch": ALL_WITH_RELATIONS,
+            "created": ['gte','lte'],
+            "created_by": ALL_WITH_RELATIONS,
         }
         always_return_data = True
         prefix = "related_molregno"
@@ -218,6 +210,51 @@ class CBHCompoundBatchResource(ModelResource):
         default_format = 'application/json'
         authentication = SessionAuthentication()
         paginator_class = Paginator
+
+    def apply_filters(self, request, applicable_filters):
+        """
+        An ORM-specific implementation of ``apply_filters``.
+        The default simply applies the ``applicable_filters`` as ``**kwargs``,
+        but should make it possible to do more advanced things.
+        """
+        ws = request.GET.get("with_substructure", None)
+        st = request.GET.get("similar_to", None)
+        fm = request.GET.get("flexmatch", None)
+        #this is the similarity index for fingerprint-like searching
+        fp = request.GET.get("fpValue", None)
+
+        cms = None
+
+        if ws:
+            smiles = self.convert_mol_string(ws)
+            cms = CompoundMols.objects.with_substructure(smiles)
+        elif st:
+            smiles = self.convert_mol_string(st)
+            if fp == None:
+                cms = CompoundMols.objects.similar_to(smiles,90)
+            else:
+                cms = CompoundMols.objects.similar_to(smiles,fp)
+        elif fm:
+            smiles = self.convert_mol_string(fm)
+            cms = CompoundMols.objects.flexmatch(smiles)
+        #else:
+        #    cms = CompoundMols.objects.all()
+
+        if cms != None:
+            #run the sql for pulling in new compounds into compound_mols
+            indexed = CBHCompoundBatch.objects.index_new_compounds()
+            applicable_filters["related_molregno_id__in"] = cms.values_list("molecule_id", flat=True)
+
+        return self.get_object_list(request).filter(**applicable_filters)
+    
+    def convert_mol_string(self, strn):
+        #commit
+        try:
+            mol = Chem.MolFromMolBlock(strn)
+            smiles = Chem.MolToSmiles(mol)
+        except:
+            smiles = strn
+        return smiles
 
 
     def match_list_to_moleculedictionaries(self, batch, project, structure_type="MOL"):
@@ -283,6 +320,7 @@ class CBHCompoundBatchResource(ModelResource):
         
         updated_bundle = self.build_bundle(obj=bundle.obj, data=dictdata)
         return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
+
 
     def get_project_custom_field_names(self, request, **kwargs):
         '''Combine the pinned fields for the project with the most frequently used fields on the project into a single list'''
@@ -353,8 +391,6 @@ class CBHCompoundBatchResource(ModelResource):
                 self.wrap_view('post_validate_list'), name="api_validate_compound_list"),
         url(r"^(?P<resource_name>%s)/existing/$" % self._meta.resource_name,
                 self.wrap_view('get_project_custom_field_names'), name="api_batch_existing_fields"),
-                
-
         url(r"^(?P<resource_name>%s)/multi_batch_save/$" % self._meta.resource_name,
                 self.wrap_view('multi_batch_save'), name="multi_batch_save"),
         url(r"^(?P<resource_name>%s)/multi_batch_custom_fields/$" % self._meta.resource_name,
@@ -389,7 +425,7 @@ class CBHCompoundBatchResource(ModelResource):
                 bundle.data["saved"] += 1
   #          except Exception , e:
    #             bundle.data["errors"] += e
-
+        #indexed = CBHCompoundBatch.objects.index_new_compounds()
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
 
@@ -483,8 +519,7 @@ class CBHCompoundBatchResource(ModelResource):
         elif type == "inchi":
             mols = _apply(objects,Chem.MolFromInchi)
             batches = [CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"]) for mol in mols]
-        # for b in batches:
-        #     b["created_by"] = request.user.username
+        
 
         multiple_batch = CBHCompoundMultipleBatch.objects.create()
         for b in batches:
@@ -649,32 +684,38 @@ class CBHCompoundBatchResource(ModelResource):
     
         return bundle
 
-    def get_list(self, request, **kwargs):
-        """
-        Returns a serialized list of resources.
-        Calls ``obj_get_list`` to provide the data, then handles that result
-        set and serializes it.
-        Should return a HttpResponse (200 OK).
-        """
-        # TODO: Uncached for now. Invalidation that works for everyone may be
-        #       impossible.
-        base_bundle = self.build_bundle(request=request)
-        objects = self.obj_get_list(bundle=base_bundle, **self.remove_api_resource_names(kwargs))
-        sorted_objects = self.apply_sorting(objects, options=request.GET)
+    # def get_list(self, request, **kwargs):
+    #     """
+    #     Returns a serialized list of resources.
+    #     Calls ``obj_get_list`` to provide the data, then handles that result
+    #     set and serializes it.
+    #     Should return a HttpResponse (200 OK).
+    #     """
+    #     # TODO: Uncached for now. Invalidation that works for everyone may be
+    #     #       impossible.
+    #     base_bundle = self.build_bundle(request=request)
 
-        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
-        to_be_serialized = paginator.page()
+    #     ########
+    #     #TODO - convert your molfile into smiles or smarts for substructure
+    #     #you should interject here, pull the molfile out of the kwargs and do your rdkit conversion etc
+    #     #then put back into the request
 
-        # Dehydrate the bundles in preparation for serialization.
-        bundles = []
+    #     objects = self.obj_get_list(bundle=base_bundle, **self.remove_api_resource_names(kwargs))
+    #     sorted_objects = self.apply_sorting(objects, options=request.GET)
 
-        for obj in to_be_serialized[self._meta.collection_name]:
-            bundle = self.build_bundle(obj=obj, request=request)
-            bundles.append(self.full_dehydrate(bundle, for_list=True))
+    #     paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
+    #     to_be_serialized = paginator.page()
 
-        to_be_serialized[self._meta.collection_name] = bundles
-        to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
-        return self.create_response(request, to_be_serialized)
+    #     # Dehydrate the bundles in preparation for serialization.
+    #     bundles = []
+
+    #     for obj in to_be_serialized[self._meta.collection_name]:
+    #         bundle = self.build_bundle(obj=obj, request=request)
+    #         bundles.append(self.full_dehydrate(bundle, for_list=True))
+
+    #     to_be_serialized[self._meta.collection_name] = bundles
+    #     to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
+    #     return self.create_response(request, to_be_serialized)
 
 
 
@@ -762,5 +803,6 @@ class CBHCompoundBatchUpload(ModelResource):
             return BadRequest("no_headers")
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
-    
 
+
+    
