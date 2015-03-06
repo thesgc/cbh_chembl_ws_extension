@@ -474,22 +474,33 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["linkedpublic"] = 0
         bundle.data["linkedproject"] = 0
         bundle.data["errors"] = 0
-        
+        bundle.data["dupes"] = 0
+        new_uploaded_data = []
+        already_found = set([])
         for batch in multi_batch.uploaded_data:
-            self.match_list_to_moleculedictionaries(batch,bundle.data["project"] )
-            for key in ["new", "linkedproject", "linkedpublic"]:
-                bundle.data[key] += int(batch.warnings[key])
-            b = batch.__dict__
-            bundle.data["objects"].append(b)
-            #catch all molecules that should have some choices associated with them
-            if b["errors"] != {}:
-                bundle.data["errors"] += 1
-                total = total - 1
-
-
+            batch_key = batch.get_uk()
+            if batch_key in already_found:
+                #setting this in case we change it later
+                batch.properties["dupe"] = True
+                bundle.data["dupes"] += 1
+            else:
+                already_found.add(batch_key)
+                self.match_list_to_moleculedictionaries(batch,bundle.data["project"] )
+                for key in ["new", "linkedproject", "linkedpublic"]:
+                    bundle.data[key] += int(batch.warnings[key])
                 
+                b = batch.__dict__
+                bundle.data["objects"].append(b)
+                #catch all molecules that should have some choices associated with them
+                if b["errors"] != {}:
+                    bundle.data["errors"] += 1
+                    total = total - 1
+                new_uploaded_data.append(batch)
+
+
+            
             #elif b["warnings"]["pains_count"] != "0":
-                
+        multi_batch.uploaded_data = new_uploaded_data
         multi_batch.save()
 
         bundle.data["total"] = total
