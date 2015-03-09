@@ -200,6 +200,24 @@ class CBHCompoundBatchResource(ModelResource):
                   ('compoundproperties.num_ro5_violations', 'Rule of 5 violations'),
                   ('compoundproperties.rtb', 'Rotatable Bonds'),
                   ('compoundproperties.mw_freebase', 'Mol Weight')]
+        fields_to_keep = {'chemblId':'UOx ID',
+                              'canonical_smiles':'SMILES',
+                              'knownDrug':'Known Drug',
+                              'medChemFriendly':'MedChem Friendly',
+                              'standard_inchi':'Std InChi',
+                              'rtb':'Rotatable Bonds',
+                              'molecularWeight':'Mol Weight',
+                              'molecularFormula':'Mol Formula',
+                              'acdLogp': 'alogp',
+                              'custom_fields':'custom_fields',}
+        ordrered_ftk = OrderedDict([('chemblId','UOx ID'),
+                                     ('canonical_smiles','SMILES'),
+                                     ('knownDrug','Known Drug'),
+                                     ('medChemFriendly','MedChem Friendly'),
+                                     ('standard_inchi','Std InChi'),
+                                     ('rtb','Rotatable Bonds'),
+                                     ('molecularWeight','Mol Weight'),
+                                     ('acdLogp', 'alogp')])
         
         queryset = CBHCompoundBatch.objects.all()
         resource_name = 'cbh_compound_batches'
@@ -631,36 +649,37 @@ class CBHCompoundBatchResource(ModelResource):
            rest of the calculated fields'''
     
         if(self.determine_format(request) == ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or 'chemical/x-mdl-sdfile') ):
-            fields_to_keep = {'chemblId':'UOx ID',
-                              'canonical_smiles':'SMILES',
-                              'knownDrug':'Known Drug',
-                              'medChemFriendly':'MedChem Friendly',
-                              'standard_inchi':'Std InChi',
-                              'rtb':'Rotatable Bonds',
-                              'molecularWeight':'Mol Weight',
-                              'molecularFormula':'Mol Formula',
-                              'acdLogp': 'alogp',
-                              'custom_fields':'custom_fields',}
 
+            #create a pandas dataframe for the data
+            #df = pd.DataFrame()
+            #print(df)
+            df_data = []
             for index, b in enumerate(data["objects"]):
                 #remove items which are not listed as being kept
                 new_data = {}
+                #df.append(b.data)
                 for k, v in b.data.iteritems():
-                    for name, display_name in fields_to_keep.iteritems():
+                    for name, display_name in self.Meta.fields_to_keep.iteritems():
                         if k == name:
                             #b.data[display_name] = v
                             #del(b.data[k])
                             new_data[display_name] = v
 
-
-
+                #dummy
+                #not every row has a value for every custom field
                 for field, value in b.data['custom_fields'].iteritems():
+                    #ordrered_ftk.update({field,field})
                     new_data[field] = value
+                    
                 #now remove custom_fields
                 del(new_data['custom_fields'])
                 b.data = new_data
-
-
+                df_data.append(new_data)
+            #print(df)
+            df = pd.DataFrame(df_data)
+            #print(df.to_json())
+            
+            data['export'] = df.to_json()
         return data
 
     def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
@@ -670,7 +689,7 @@ class CBHCompoundBatchResource(ModelResource):
         """
 
         desired_format = self.determine_format(request)
-        serialized = self.serialize(request, data, desired_format)
+        serialized = self.serialize(request, data, desired_format, options=self.Meta.ordrered_ftk)
         rc = response_class(content=serialized, content_type=build_content_type(desired_format), **response_kwargs)
 
         if(desired_format == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
