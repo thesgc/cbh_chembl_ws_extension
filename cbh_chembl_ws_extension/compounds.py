@@ -215,9 +215,9 @@ class CBHCompoundBatchResource(ModelResource):
                                      ('knownDrug','Known Drug'),
                                      ('medChemFriendly','MedChem Friendly'),
                                      ('standard_inchi','Std InChi'),
-                                     ('rtb','Rotatable Bonds'),
                                      ('molecularWeight','Mol Weight'),
                                      ('acdLogp', 'alogp')])
+        
         
         queryset = CBHCompoundBatch.objects.all()
         resource_name = 'cbh_compound_batches'
@@ -654,32 +654,29 @@ class CBHCompoundBatchResource(ModelResource):
             #df = pd.DataFrame()
             #print(df)
             df_data = []
+            ordered_cust_fields = []
             for index, b in enumerate(data["objects"]):
                 #remove items which are not listed as being kept
                 new_data = {}
-                #df.append(b.data)
                 for k, v in b.data.iteritems():
                     for name, display_name in self.Meta.fields_to_keep.iteritems():
                         if k == name:
-                            #b.data[display_name] = v
-                            #del(b.data[k])
                             new_data[display_name] = v
 
                 #dummy
                 #not every row has a value for every custom field
                 for field, value in b.data['custom_fields'].iteritems():
-                    #ordrered_ftk.update({field,field})
                     new_data[field] = value
                     
                 #now remove custom_fields
                 del(new_data['custom_fields'])
                 b.data = new_data
                 df_data.append(new_data)
-            #print(df)
+            
             df = pd.DataFrame(df_data)
-            #print(df.to_json())
             
             data['export'] = df.to_json()
+            
         return data
 
     def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
