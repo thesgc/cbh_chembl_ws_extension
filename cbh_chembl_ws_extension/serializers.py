@@ -210,15 +210,16 @@ class SDFSerializer(Serializer):
         w = Chem.SDWriter(sio)
         mols = []
         index = 0
+        data = self.to_simple(data, {})
+        print(data['export'])
         try:
             for d in data.get('objects',[]):
-                m = Chem.MolFromSmiles(d.data['canonical_smiles'])
-                #idx = 0
-                for k, v in d.data.iteritems():
-                    m.SetProp(k,v)
-                    #worksheet.write(index+1, idx, v)
-                    #idx = idx + 1
-                #index = index + 1
+                #print(d.data)
+                m = Chem.MolFromSmiles(d['canonical_smiles'])
+                
+                # for k, v in d.data.iteritems():
+                #     m.SetProp(k,v)
+
                 mols.append(m)
         except Exception , e:
             print e
@@ -228,7 +229,8 @@ class SDFSerializer(Serializer):
 
         for m in mols: 
             w.write(m)
-        w.flush()
+        w.close()
+        #print mols
         return sio.getvalue()
 
 

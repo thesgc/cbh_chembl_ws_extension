@@ -205,7 +205,6 @@ class CBHCompoundBatchResource(ModelResource):
                               'knownDrug':'Known Drug',
                               'medChemFriendly':'MedChem Friendly',
                               'standard_inchi':'Std InChi',
-                              'rtb':'Rotatable Bonds',
                               'molecularWeight':'Mol Weight',
                               'molecularFormula':'Mol Formula',
                               'acdLogp': 'alogp',
@@ -692,6 +691,7 @@ class CBHCompoundBatchResource(ModelResource):
         if(desired_format == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
             rc['Content-Disposition'] = 'attachment; filename=export.xlsx'
         elif(desired_format == 'chemical/x-mdl-sdfile'):
+            print("desired format is chemical/x-mol-sdfile")
             rc['Content-Disposition'] = 'attachment: filename=export.sdf'
         return rc
 
