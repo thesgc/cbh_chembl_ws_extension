@@ -3,9 +3,28 @@ from cbh_chembl_model_extension.models import Project, PinnedCustomField, Custom
 
 from django.contrib.admin import ModelAdmin
 
-class PinnedCustomFieldInline(admin.TabularInline):
-    model = PinnedCustomField
 
+from django.forms.widgets import HiddenInput
+
+
+class GrappelliSortableHiddenMixin(object):
+    """
+    Mixin which hides the sortable field with Stacked and Tabular inlines.
+    This mixin must precede admin.TabularInline or admin.StackedInline.
+    """
+    sortable_field_name = "position"
+
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        if db_field.name == self.sortable_field_name:
+            kwargs["widget"] = HiddenInput()
+        return super(GrappelliSortableHiddenMixin, self).formfield_for_dbfield(db_field, **kwargs)
+
+
+class PinnedCustomFieldInline(GrappelliSortableHiddenMixin, admin.TabularInline):
+    model = PinnedCustomField
+    sortable_field_name = "position"
+    extra = 0
+    
 
 class CustomFieldConfigAdmin(ModelAdmin):
 
