@@ -19,3 +19,9 @@ urlpatterns = patterns('',
 	url(r'^grappelli/', include('grappelli.urls')),
 )
 urlpatterns += webservices.urls
+
+
+if "django_webauth" in settings.INSTALLED_APPS:
+    urlpatterns += patterns('',
+                            url(r'^%s/webauth/' % api_name, include('django_webauth.urls', 'webauth')),
+                            )
