@@ -20,9 +20,9 @@ class GrappelliSortableHiddenMixin(object):
         return super(GrappelliSortableHiddenMixin, self).formfield_for_dbfield(db_field, **kwargs)
 
 
-class PinnedCustomFieldInline(GrappelliSortableHiddenMixin, admin.TabularInline):
+class PinnedCustomFieldInline( admin.TabularInline): #GrappelliSortableHiddenMixin
     model = PinnedCustomField
-    sortable_field_name = "position"
+    #sortable_field_name = "position"
     extra = 0
     
 
