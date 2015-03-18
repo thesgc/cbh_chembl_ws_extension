@@ -100,11 +100,11 @@ class Login(FormView):
         #     print logout
         redirect_to = settings.LOGIN_REDIRECT_URL
         '''Borrowed from django base detail view'''
-        username = request.META.get('REMOTE_USER', None)
-        if not username:
-            username = request.META.get('HTTP_X_WEBAUTH_USER', None)
-        if  username and "django_webauth" in settings.INSTALLED_APPS:
-            return HttpResponseRedirect(reverse("webauth:login"))
+        # username = request.META.get('REMOTE_USER', None)
+        # if not username:
+        #     username = request.META.get('HTTP_X_WEBAUTH_USER', None)
+        # if  username and "django_webauth" in settings.INSTALLED_APPS:
+        #     return HttpResponseRedirect(reverse("webauth:login"))
         from django.middleware.csrf import get_token
         csrf_token = get_token(request)
         context = self.get_context_data(form=self.get_form(self.get_form_class()))
