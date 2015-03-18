@@ -17,6 +17,7 @@ from django.utils import six
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 import time
 import logging
