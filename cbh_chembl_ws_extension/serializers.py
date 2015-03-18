@@ -13,6 +13,9 @@ import re
 import json
 import xlsxwriter
 import os
+import xlrd
+import pandas as pd
+import numpy as np
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -156,28 +159,36 @@ class XLSSerializer(Serializer):
     def to_xls(self, data, options=None):
         '''write excel file here'''
         output = cStringIO.StringIO()
-
-        workbook = xlsxwriter.Workbook(output)
-        worksheet = workbook.add_worksheet('results sheet')
-
         
-        index = 0
-        try:
-            for d in data.get('objects',[]):
-                
-                idx = 0
-                for k, v in d.data.iteritems():
-                    if index == 0:
-                        worksheet.write(0, idx, k)
-                    worksheet.write(index+1, idx, v)
-                    idx = idx + 1
-                index = index + 1
-        except Exception , e:
-            print e
+        #make a pandas dataframe from the data here
+        #then export as xls or to xlsxwriter
+        data = self.to_simple(data, {})
+        exp_json = json.loads(data.get('export',[]))
+        df = pd.DataFrame(exp_json)
 
-        #worksheet.write(0, 0, 'Hello, Excel!')
-        workbook.close()
+        cols = df.columns.tolist()
+        #now for the list we have in the order we have it, move the columns by name
+        #this way you end up with your core fields at the start and custom fields at the end.
+        ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
+        for idx, item in enumerate(ordered_fields):
+            cols.insert(idx, cols.pop(cols.index(item)))
+        #reindex the dataframe
+        df = df.ix[:, cols]
 
+        writer = pd.ExcelWriter('temp.xlsx', engine='xlsxwriter')
+        writer.book.filename = output
+        df.to_excel(writer, sheet_name='Sheet1', index=False)
+        workbook = writer.book
+        format = workbook.add_format()
+        worksheet = writer.sheets['Sheet1']
+        format.set_text_wrap()
+        #make the UOx ID and SMILES columns bigger
+        #BUG - can't set column format until pandas 0.16
+        #https://github.com/pydata/pandas/issues/9167
+        worksheet.set_column(0,0, 20)
+        worksheet.set_column(1,1, 40)
+        writer.save()
+        
         return output.getvalue()
 
 
