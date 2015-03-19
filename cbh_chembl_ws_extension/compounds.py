@@ -362,7 +362,6 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def save_related(self, bundle):
-        #bundle.obj.created_by = request.user.
 
         bundle.obj.generate_structure_and_dictionary()
 
@@ -390,11 +389,6 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.obj.validate()
         self.match_list_to_moleculedictionaries(bundle.obj,bundle.data["project"] )
         return bundle
-
-    # def obj_create(self, bundle, **kwargs):
-    #     print("I am getting here")
-    #     print(bundle.request.user.__dict__)
-    #     return super(CBHCompoundBatchResource, self).obj_create(bundle, created_by=bundle.request.user.username)
 
     def obj_build(self, bundle, kwargs):
         """
@@ -562,8 +556,6 @@ class CBHCompoundBatchResource(ModelResource):
         multiple_batch = CBHCompoundMultipleBatch.objects.create()
         for b in batches:
             b.multiple_batch_id = multiple_batch.pk
-            print("printing user...")
-            print(bundle.request.user.username)
             b.created_by = bundle.request.user.username
 
         multiple_batch.uploaded_data=batches
