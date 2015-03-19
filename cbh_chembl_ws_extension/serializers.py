@@ -169,7 +169,7 @@ class XLSSerializer(Serializer):
         cols = df.columns.tolist()
         #now for the list we have in the order we have it, move the columns by name
         #this way you end up with your core fields at the start and custom fields at the end.
-        ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
+        ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'Added By', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
         for idx, item in enumerate(ordered_fields):
             cols.insert(idx, cols.pop(cols.index(item)))
         #reindex the dataframe

@@ -204,6 +204,7 @@ class CBHCompoundBatchResource(ModelResource):
                   ('compoundproperties.mw_freebase', 'Mol Weight')]
         fields_to_keep = {'chemblId':'UOx ID',
                               'canonical_smiles':'SMILES',
+                              'created_by': 'Added By',
                               'knownDrug':'Known Drug',
                               'medChemFriendly':'MedChem Friendly',
                               'standard_inchi':'Std InChi',
@@ -718,7 +719,10 @@ class CBHCompoundBatchResource(ModelResource):
         for name in mynames:
             bundle.data[name] = json.loads(bundle.data[name])
         #bundle.data["created_by"] = user.__dict__ 
-        bundle.data["created_by"] = user.username
+        if user != None:
+          bundle.data["created_by"] = user.username
+        else:
+          bundle.data["created_by"] = ""
         #except:
         #    pass
     
