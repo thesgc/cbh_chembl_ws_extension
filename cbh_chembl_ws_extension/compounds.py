@@ -95,6 +95,8 @@ from tastypie.authentication import SessionAuthentication
 
 import  chemdraw_reaction
 
+from django.contrib.auth import get_user_model
+
 # class MoleculeValidation(Validation):
 #     def is_valid(self, bundle, request=None):
 #         if not bundle.data:
@@ -384,10 +386,15 @@ class CBHCompoundBatchResource(ModelResource):
     def full_hydrate(self, bundle):
         '''As the object is created we run the validate code on it'''
         bundle = super(CBHCompoundBatchResource, self).full_hydrate(bundle)
+        bundle.obj.created_by=bundle.request.user.username
         bundle.obj.validate()
         self.match_list_to_moleculedictionaries(bundle.obj,bundle.data["project"] )
         return bundle
 
+    # def obj_create(self, bundle, **kwargs):
+    #     print("I am getting here")
+    #     print(bundle.request.user.__dict__)
+    #     return super(CBHCompoundBatchResource, self).obj_create(bundle, created_by=bundle.request.user.username)
 
     def obj_build(self, bundle, kwargs):
         """
@@ -434,8 +441,11 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["saved"] = 0
         bundle.data["errors"] = []
 
+
         for batch in batches:
 
+                #batch.created_by = str(bundle.request.user.username)
+                print(batch.__dict__)
 
                 batch.save(validate=False)
                 batch.generate_structure_and_dictionary()
@@ -552,6 +562,9 @@ class CBHCompoundBatchResource(ModelResource):
         multiple_batch = CBHCompoundMultipleBatch.objects.create()
         for b in batches:
             b.multiple_batch_id = multiple_batch.pk
+            print("printing user...")
+            print(bundle.request.user.username)
+            b.created_by = bundle.request.user.username
 
         multiple_batch.uploaded_data=batches
         multiple_batch.save()
@@ -698,16 +711,24 @@ class CBHCompoundBatchResource(ModelResource):
 
     def dehydrate(self, bundle):
         
-        try:
-            data = bundle.obj.related_molregno
-            for names in self.Meta.fieldnames:
-                bundle.data[names[1]] = deepgetattr(data, names[0], None)
+        #try:
+        data = bundle.obj.related_molregno
+        user = None
+        
+        if bundle.obj.created_by:
+          #user = User.objects.get(username=bundle.obj.created_by)
+          User = get_user_model()
+          user = User.objects.get(username=bundle.obj.created_by)
+        for names in self.Meta.fieldnames:
+            bundle.data[names[1]] = deepgetattr(data, names[0], None)
 
-            mynames = ["editable_by","viewable_by", "warnings", "properties", "custom_fields", "errors"]
-            for name in mynames:
-                bundle.data[name] = json.loads(bundle.data[name]) 
-        except:
-            pass
+        mynames = ["editable_by","viewable_by", "warnings", "properties", "custom_fields", "errors"]
+        for name in mynames:
+            bundle.data[name] = json.loads(bundle.data[name])
+        #bundle.data["created_by"] = user.__dict__ 
+        bundle.data["created_by"] = user.username
+        #except:
+        #    pass
     
         return bundle
 
