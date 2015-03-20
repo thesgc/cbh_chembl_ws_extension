@@ -203,6 +203,7 @@ class CBHCompoundBatchResource(ModelResource):
                   ('compoundproperties.rtb', 'Rotatable Bonds'),
                   ('compoundproperties.mw_freebase', 'Mol Weight')]
         fields_to_keep = {'chemblId':'UOx ID',
+                              'id':'Batch ID',
                               'canonical_smiles':'SMILES',
                               'created_by': 'Added By',
                               'knownDrug':'Known Drug',
@@ -265,7 +266,7 @@ class CBHCompoundBatchResource(ModelResource):
             indexed = CBHCompoundBatch.objects.index_new_compounds()
             applicable_filters["related_molregno_id__in"] = cms.values_list("molecule_id", flat=True)
 
-        return self.get_object_list(request).filter(**applicable_filters)
+        return self.get_object_list(request).filter(**applicable_filters).order_by("-created")
     
     def convert_mol_string(self, strn):
         #commit
@@ -652,14 +653,13 @@ class CBHCompoundBatchResource(ModelResource):
         '''use the request type to determine which fields should be limited for file download,
            add extra fields if needed (eg images) and enumerate the custom fields into the 
            rest of the calculated fields'''
-    
         if(self.determine_format(request) == ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or 'chemical/x-mdl-sdfile') ):
 
             #create a pandas dataframe for the data
             #df = pd.DataFrame()
-            #print(df)
             df_data = []
             ordered_cust_fields = []
+            keys_list = []
             for index, b in enumerate(data["objects"]):
                 #remove items which are not listed as being kept
                 new_data = {}
@@ -672,6 +672,7 @@ class CBHCompoundBatchResource(ModelResource):
                 #not every row has a value for every custom field
                 for field, value in b.data['custom_fields'].iteritems():
                     new_data[field] = value
+                    keys_list.append(field)
                     
                 #now remove custom_fields
                 del(new_data['custom_fields'])
@@ -710,19 +711,22 @@ class CBHCompoundBatchResource(ModelResource):
         
         if bundle.obj.created_by:
           #user = User.objects.get(username=bundle.obj.created_by)
-          User = get_user_model()
-          user = User.objects.get(username=bundle.obj.created_by)
+            User = get_user_model()
+            user = User.objects.get(username=bundle.obj.created_by)
         for names in self.Meta.fieldnames:
-            bundle.data[names[1]] = deepgetattr(data, names[0], None)
+            try:
+                bundle.data[names[1]] = deepgetattr(data, names[0], None)
+            except(AttributeError):
+                bundle.data[names[1]] = ""
 
         mynames = ["editable_by","viewable_by", "warnings", "properties", "custom_fields", "errors"]
         for name in mynames:
             bundle.data[name] = json.loads(bundle.data[name])
         #bundle.data["created_by"] = user.__dict__ 
         if user != None:
-          bundle.data["created_by"] = user.username
+            bundle.data["created_by"] = user.username
         else:
-          bundle.data["created_by"] = ""
+            bundle.data["created_by"] = ""
         #except:
         #    pass
     
