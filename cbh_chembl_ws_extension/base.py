@@ -16,6 +16,8 @@ import simplejson
 from django.utils import six
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
+from django.conf import settings
+from django.core.urlresolvers import reverse
 
 import time
 import logging
@@ -101,7 +103,7 @@ class Login(FormView):
         # username = request.META.get('REMOTE_USER', None)
         # if not username:
         #     username = request.META.get('HTTP_X_WEBAUTH_USER', None)
-        # if  username:
+        # if  username and "django_webauth" in settings.INSTALLED_APPS:
         #     return HttpResponseRedirect(reverse("webauth:login"))
         from django.middleware.csrf import get_token
         csrf_token = get_token(request)
