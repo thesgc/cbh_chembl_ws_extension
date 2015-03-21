@@ -169,7 +169,7 @@ class XLSSerializer(Serializer):
         cols = df.columns.tolist()
         #now for the list we have in the order we have it, move the columns by name
         #this way you end up with your core fields at the start and custom fields at the end.
-        ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
+        ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'Added By', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
         for idx, item in enumerate(ordered_fields):
             cols.insert(idx, cols.pop(cols.index(item)))
         #reindex the dataframe
@@ -210,15 +210,16 @@ class SDFSerializer(Serializer):
         w = Chem.SDWriter(sio)
         mols = []
         index = 0
+        data = self.to_simple(data, {})
+        print(data['export'])
         try:
             for d in data.get('objects',[]):
-                m = Chem.MolFromSmiles(d.data['canonical_smiles'])
-                #idx = 0
-                for k, v in d.data.iteritems():
-                    m.SetProp(k,v)
-                    #worksheet.write(index+1, idx, v)
-                    #idx = idx + 1
-                #index = index + 1
+                #print(d.data)
+                m = Chem.MolFromSmiles(d['canonical_smiles'])
+                
+                # for k, v in d.data.iteritems():
+                #     m.SetProp(k,v)
+
                 mols.append(m)
         except Exception , e:
             print e
@@ -228,7 +229,8 @@ class SDFSerializer(Serializer):
 
         for m in mols: 
             w.write(m)
-        w.flush()
+        w.close()
+        #print mols
         return sio.getvalue()
 
 

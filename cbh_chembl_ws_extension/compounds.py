@@ -95,6 +95,8 @@ from tastypie.authentication import SessionAuthentication
 
 import  chemdraw_reaction
 
+from django.contrib.auth import get_user_model
+
 # class MoleculeValidation(Validation):
 #     def is_valid(self, bundle, request=None):
 #         if not bundle.data:
@@ -201,11 +203,12 @@ class CBHCompoundBatchResource(ModelResource):
                   ('compoundproperties.rtb', 'Rotatable Bonds'),
                   ('compoundproperties.mw_freebase', 'Mol Weight')]
         fields_to_keep = {'chemblId':'UOx ID',
+                              'id':'Batch ID',
                               'canonical_smiles':'SMILES',
+                              'created_by': 'Added By',
                               'knownDrug':'Known Drug',
                               'medChemFriendly':'MedChem Friendly',
                               'standard_inchi':'Std InChi',
-                              'rtb':'Rotatable Bonds',
                               'molecularWeight':'Mol Weight',
                               'molecularFormula':'Mol Formula',
                               'acdLogp': 'alogp',
@@ -263,7 +266,7 @@ class CBHCompoundBatchResource(ModelResource):
             indexed = CBHCompoundBatch.objects.index_new_compounds()
             applicable_filters["related_molregno_id__in"] = cms.values_list("molecule_id", flat=True)
 
-        return self.get_object_list(request).filter(**applicable_filters)
+        return self.get_object_list(request).filter(**applicable_filters).order_by("-created")
     
     def convert_mol_string(self, strn):
         #commit
@@ -361,7 +364,6 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def save_related(self, bundle):
-        #bundle.obj.created_by = request.user.
 
         bundle.obj.generate_structure_and_dictionary()
 
@@ -385,10 +387,10 @@ class CBHCompoundBatchResource(ModelResource):
     def full_hydrate(self, bundle):
         '''As the object is created we run the validate code on it'''
         bundle = super(CBHCompoundBatchResource, self).full_hydrate(bundle)
+        bundle.obj.created_by=bundle.request.user.username
         bundle.obj.validate()
         self.match_list_to_moleculedictionaries(bundle.obj,bundle.data["project"] )
         return bundle
-
 
     def obj_build(self, bundle, kwargs):
         """
@@ -435,8 +437,11 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["saved"] = 0
         bundle.data["errors"] = []
 
+
         for batch in batches:
 
+                #batch.created_by = str(bundle.request.user.username)
+                print(batch.__dict__)
 
                 batch.save(validate=False)
                 batch.generate_structure_and_dictionary()
@@ -553,6 +558,7 @@ class CBHCompoundBatchResource(ModelResource):
         multiple_batch = CBHCompoundMultipleBatch.objects.create()
         for b in batches:
             b.multiple_batch_id = multiple_batch.pk
+            b.created_by = bundle.request.user.username
 
         multiple_batch.uploaded_data=batches
         multiple_batch.save()
@@ -647,14 +653,13 @@ class CBHCompoundBatchResource(ModelResource):
         '''use the request type to determine which fields should be limited for file download,
            add extra fields if needed (eg images) and enumerate the custom fields into the 
            rest of the calculated fields'''
-    
         if(self.determine_format(request) == ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or 'chemical/x-mdl-sdfile') ):
 
             #create a pandas dataframe for the data
             #df = pd.DataFrame()
-            #print(df)
             df_data = []
             ordered_cust_fields = []
+            keys_list = []
             for index, b in enumerate(data["objects"]):
                 #remove items which are not listed as being kept
                 new_data = {}
@@ -667,6 +672,7 @@ class CBHCompoundBatchResource(ModelResource):
                 #not every row has a value for every custom field
                 for field, value in b.data['custom_fields'].iteritems():
                     new_data[field] = value
+                    keys_list.append(field)
                     
                 #now remove custom_fields
                 del(new_data['custom_fields'])
@@ -692,22 +698,37 @@ class CBHCompoundBatchResource(ModelResource):
         if(desired_format == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
             rc['Content-Disposition'] = 'attachment; filename=export.xlsx'
         elif(desired_format == 'chemical/x-mdl-sdfile'):
+            print("desired format is chemical/x-mol-sdfile")
             rc['Content-Disposition'] = 'attachment: filename=export.sdf'
         return rc
 
 
     def dehydrate(self, bundle):
         
-        try:
-            data = bundle.obj.related_molregno
-            for names in self.Meta.fieldnames:
+        #try:
+        data = bundle.obj.related_molregno
+        user = None
+        
+        if bundle.obj.created_by:
+          #user = User.objects.get(username=bundle.obj.created_by)
+            User = get_user_model()
+            user = User.objects.get(username=bundle.obj.created_by)
+        for names in self.Meta.fieldnames:
+            try:
                 bundle.data[names[1]] = deepgetattr(data, names[0], None)
+            except(AttributeError):
+                bundle.data[names[1]] = ""
 
-            mynames = ["editable_by","viewable_by", "warnings", "properties", "custom_fields", "errors"]
-            for name in mynames:
-                bundle.data[name] = json.loads(bundle.data[name]) 
-        except:
-            pass
+        mynames = ["editable_by","viewable_by", "warnings", "properties", "custom_fields", "errors"]
+        for name in mynames:
+            bundle.data[name] = json.loads(bundle.data[name])
+        #bundle.data["created_by"] = user.__dict__ 
+        if user != None:
+            bundle.data["created_by"] = user.username
+        else:
+            bundle.data["created_by"] = ""
+        #except:
+        #    pass
     
         return bundle
 
