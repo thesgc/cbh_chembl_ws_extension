@@ -1,3 +1,6 @@
+Feature: INCHI upload
+
+'''
 INCHI submission
 
 Feature: INCHI upload
@@ -46,3 +49,5 @@ Feature: INCHI upload
         and I have editor rights for proja
         when I submit INCHIs
         then the the responce would be <This substance has already been registered. Would you like to register as a new batch (or force registration)?>  
+
+'''

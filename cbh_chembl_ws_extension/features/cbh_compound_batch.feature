@@ -127,7 +127,7 @@ Feature: CBH Compound Batch
         and the response will contain an id for a previously registered substance in projd
         and the response will not contain an id for a previously registered substance in projc
 
-
+'''
     Scenario: User submits ID of substance to make a batch, perhaps that they have received by email, but is not entitled to this substance.
         Given a User
         When I log in 
@@ -166,7 +166,7 @@ Feature: CBH Compound Batch
         When I create batch with blahh       
         Then the response will be error_invalid_ID_received
 
-
+'''
 
 
 

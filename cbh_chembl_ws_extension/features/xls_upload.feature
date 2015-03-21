@@ -1,4 +1,3 @@
-XLS upload	
 
 Feature: XLS upload
     I wish to submit an xls file that is either flagged as blinded / not blinded to a project I have editor rights. The XLS file either does /does not contain structural information. The substances in the XLS file are either pre-registered or not registered publically on the CBH resistration system.
@@ -25,7 +24,7 @@ Feature: XLS upload
         and the file contains structural data
         and I flag the file as blinded
         and I submit file 
-        then the responce would be <Error - This XLS file contains structural information but has been flagged as blinded. Please flag as 'not blinded'.> 
+        then the responce would be Error - This XLS file contains structural information but has been flagged as blinded. Please flag as 'not blinded'.
 
     Scenario: User submits an XLS file containing unregistered substances to proja. The XLS file does not contain structural information and is flagged as blinded.
 	    Given a User
@@ -50,7 +49,7 @@ Feature: XLS upload
         and the file does not contain structural data
         and I flag the file as not blinded
         and I submit file 
-        then the responce would be <Error - This XLS file contains no structural information but has been flagged as not blinded. Please flag as 'blinded'.> 
+        then the responce would be Error - This XLS file contains no structural information but has been flagged as not blinded. Please flag as 'blinded'. 
 
 Scenario: User submits an XLS file containing registered substances to proja. The XLS file contains structural information and is flagged as not blinded.
 	    Given a User
@@ -62,7 +61,7 @@ Scenario: User submits an XLS file containing registered substances to proja. Th
         and the file contains structural data
         and I flag the file as not blinded
         and I submit file 
-        The the responce will be <This substance has already been registered. Would you like to register as a new batch (or force registration)?>
+        Then the responce will be This substance has already been registered. Would you like to register as a new batch (or force registration)
 
 	Scenario: User submits an XLS file containing registered substances to proja. The XLS file contains structural information and is flagged as blinded.
 	    Given a User
@@ -74,7 +73,7 @@ Scenario: User submits an XLS file containing registered substances to proja. Th
         and the file contains structural data
         and I flag the file as blinded
         and I submit file 
-        then the responces would be <This substance has already been registered. Would you like to register as a new batch (or force registration)?> and <Error - This XLS file contains structural information but has been flagged as blinded. Please flag as 'not blinded'.> 
+        then the responces would be This substance has already been registered. Would you like to register as a new batch (or force registration)? and Error - This XLS file contains structural information but has been flagged as blinded. Please flag as 'not blinded'. 
 
     Scenario: User submits an XLS file containing registered substances to proja. The XLS file does not contain structural information and is flagged as blinded.
 	    Given a User

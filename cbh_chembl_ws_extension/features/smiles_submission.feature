@@ -1,4 +1,3 @@
-SMILES submission
 
 Feature: SMILES upload
     I wish to submit substances to a project I have editor rights using multiple SMILES. The substances are either pre-registered or not registered publically on the CBH resistration system. The SMILES entered are either all dissimilar or contain duplications

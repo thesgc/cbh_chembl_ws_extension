@@ -27,8 +27,9 @@ def step(context):
     context.api_client.client.login(username="foo", password="bar")
  
  
-@then('I see a json response with only the logged in users name in it')
+@then('I see a 401 error')
 def step(context):
-    resp = context.api_client.get("/chemblws/users/",  format='json')
-    assert resp.status_code == 200
-    assert context.ser.deserialize(resp.content)["objects"][0]["username"] == "foo"
+
+    resp = context.api_client.get("/devapi/users/",  format='json')
+    
+    assert resp.status_code == 401
