@@ -7,7 +7,7 @@ from itertools import chain
 
 
 from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project
-from cbh_chembl_ws_extension.authorization import ProjectAuthorization
+from cbh_chembl_ws_extension.authorization import ProjectAuthorization, ProjectListAuthorization
 from tastypie.serializers import Serializer
 from tastypie.authentication import SessionAuthentication
 from tastypie.paginator import Paginator
@@ -22,7 +22,7 @@ class ProjectResource(ModelResource):
         paginator_class = Paginator
         allowed_methods = ['get']        
         resource_name = 'cbh_projects'
-        #authorization = ProjectAuthorization()
+        authorization = ProjectListAuthorization()
         include_resource_uri = False
         default_format = 'application/json'
         serializer = Serializer()
