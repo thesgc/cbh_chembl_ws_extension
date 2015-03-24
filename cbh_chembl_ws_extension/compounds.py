@@ -642,6 +642,7 @@ class CBHCompoundBatchResource(ModelResource):
         multiple_batch = CBHCompoundMultipleBatch.objects.create()
         for b in batches:
             b.multiple_batch_id = multiple_batch.pk
+            b.created_by = bundle.request.user.username
 
         multiple_batch.uploaded_data=batches
         multiple_batch.save()
