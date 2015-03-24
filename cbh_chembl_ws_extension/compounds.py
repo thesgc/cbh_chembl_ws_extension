@@ -653,35 +653,38 @@ class CBHCompoundBatchResource(ModelResource):
         '''use the request type to determine which fields should be limited for file download,
            add extra fields if needed (eg images) and enumerate the custom fields into the 
            rest of the calculated fields'''
-        if(self.determine_format(request) == ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or 'chemical/x-mdl-sdfile') ):
-
-            #create a pandas dataframe for the data
-            #df = pd.DataFrame()
-            df_data = []
-            ordered_cust_fields = []
-            keys_list = []
-            for index, b in enumerate(data["objects"]):
-                #remove items which are not listed as being kept
-                new_data = {}
-                for k, v in b.data.iteritems():
-                    for name, display_name in self.Meta.fields_to_keep.iteritems():
-                        if k == name:
-                            new_data[display_name] = v
-
-                #dummy
-                #not every row has a value for every custom field
-                for field, value in b.data['custom_fields'].iteritems():
-                    new_data[field] = value
-                    keys_list.append(field)
-                    
-                #now remove custom_fields
-                del(new_data['custom_fields'])
-                b.data = new_data
-                df_data.append(new_data)
+        if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or self.determine_format(request) == 'chemical/x-mdl-sdfile' ):
             
-            df = pd.DataFrame(df_data)
-            
-            data['export'] = df.to_json()
+            try:
+                df_data = []
+                ordered_cust_fields = []
+                keys_list = []
+                for index, b in enumerate(data["objects"]):
+                    #remove items which are not listed as being kept
+                    new_data = {}
+                    for k, v in b.data.iteritems():
+                        for name, display_name in self.Meta.fields_to_keep.iteritems():
+                            if k == name:
+                                new_data[display_name] = v
+                    #we need sd format exported results to retain stereochemistry - use mol instaed of smiles
+                    if(self.determine_format(request) == 'chemical/x-mdl-sdfile'):
+                        new_data['ctab'] = b.data['ctab']
+                    #dummy
+                    #not every row has a value for every custom field
+                    for field, value in b.data['custom_fields'].iteritems():
+                        new_data[field] = value
+                        keys_list.append(field)
+                        
+                    #now remove custom_fields
+                    del(new_data['custom_fields'])
+                    b.data = new_data
+                    df_data.append(new_data)
+                
+                df = pd.DataFrame(df_data)
+                
+                data['export'] = df.to_json()
+            except Exception , e:
+                print e
             
         return data
 
@@ -698,8 +701,7 @@ class CBHCompoundBatchResource(ModelResource):
         if(desired_format == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
             rc['Content-Disposition'] = 'attachment; filename=export.xlsx'
         elif(desired_format == 'chemical/x-mdl-sdfile'):
-            print("desired format is chemical/x-mol-sdfile")
-            rc['Content-Disposition'] = 'attachment: filename=export.sdf'
+            rc['Content-Disposition'] = 'attachment; filename=export.sdf'
         return rc
 
 

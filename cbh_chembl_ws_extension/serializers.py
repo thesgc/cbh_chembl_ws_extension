@@ -18,7 +18,7 @@ import pandas as pd
 import numpy as np
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import AllChem, PandasTools
 
 
 def flatten_dict(d, base=None):
@@ -210,22 +210,35 @@ class SDFSerializer(Serializer):
         w = Chem.SDWriter(sio)
         mols = []
         index = 0
-        data = self.to_simple(data, {})
-        print(data['export'])
+        options = options or {}
+        
+        exp_json = json.loads(data.get('export',[]))
+        df = pd.DataFrame(exp_json)
+        #pull data back out of dataframe to put into rdkit tools
+        ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'Added By', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
+
+        row_iterator = df.iterrows()
         try:
-            for d in data.get('objects',[]):
-                #print(d.data)
-                m = Chem.MolFromSmiles(d['canonical_smiles'])
-                
-                # for k, v in d.data.iteritems():
-                #     m.SetProp(k,v)
+            for index, row in row_iterator:
+                #smiles_str = row['SMILES']
+                #m = Chem.MolFromSmiles(smiles_str)
+                mol_str = row['ctab']
+                m = Chem.MolFromMolBlock(mol_str)
+                for field in ordered_fields:
+                    m.SetProp(field, str(row[field]))
 
                 mols.append(m)
+            
+                # for d in pd_json:
+                #     print(d.data)
+                #     m = Chem.MolFromSmiles(d['SMILES'])
+                    
+                    # for k, v in d.data.iteritems():
+                    #     m.SetProp(k,v)
+
+                    # mols.append(m)
         except Exception , e:
             print e
-
-
-
 
         for m in mols: 
             w.write(m)
