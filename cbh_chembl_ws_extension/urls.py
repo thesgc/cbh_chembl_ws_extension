@@ -1,12 +1,35 @@
+
 from django.conf.urls import patterns, url, include
-from cbh_chembl_ws_extension import api as webservices
-from cbh_chembl_ws_extension import Login, Logout
-from chembl_webservices import __version__ as ws_version
+from cbh_chembl_ws_extension.base import Login, Logout
 from chembl_webservices import api_name
 from chembl_core_db.utils import DirectTemplateView
 from django.conf import settings
 from flowjs import urls as flow
 from django.contrib import admin
+
+
+
+from tastypie.api import Api
+
+from cbh_chembl_ws_extension.compounds import *
+from cbh_chembl_ws_extension.projects import *
+
+from cbh_chembl_ws_extension.base import *
+from django.conf import settings
+
+DEFAULT_API_NAME='chemblws'
+
+try:
+    api_name = settings.WEBSERVICES_NAME
+except AttributeError:
+    api_name = DEFAULT_API_NAME
+
+api = Api(api_name=api_name)
+
+api.register(CBHCompoundBatchResource())
+api.register(CBHCompoundBatchUpload())
+api.register(UserResource())
+api.register(ProjectResource())
 
 admin.autodiscover()
 
@@ -19,7 +42,7 @@ urlpatterns = patterns('',
     url(r'^%s/admin/' % api_name, include(admin.site.urls)),
 	url(r'^grappelli/', include('grappelli.urls')),
 )
-urlpatterns += webservices.urls
+urlpatterns += api.urls
 
 
 if "django_webauth" in settings.INSTALLED_APPS:
