@@ -849,7 +849,8 @@ class CBHCompoundBatchUpload(ModelResource):
         bundle.data["headers"] = headers
 
             #send back
-        if len(headers) == 0:
+            #we should allow SD file uploads with no meta data
+        if (len(headers) == 0 and correct_file.extension in (".xls", ".xlsx") ):
             return BadRequest("no_headers")
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
