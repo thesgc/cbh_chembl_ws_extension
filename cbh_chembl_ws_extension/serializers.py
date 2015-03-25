@@ -218,14 +218,15 @@ class SDFSerializer(Serializer):
         ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'Added By', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
 
         row_iterator = df.iterrows()
+        headers = list(df)
         try:
             for index, row in row_iterator:
                 #smiles_str = row['SMILES']
                 #m = Chem.MolFromSmiles(smiles_str)
                 mol_str = row['ctab']
                 m = Chem.MolFromMolBlock(mol_str)
-                for field in ordered_fields:
-                    m.SetProp(field, str(row[field]))
+                for field in headers:
+                    m.SetProp(str(field), str(row[field]))
 
                 mols.append(m)
             
