@@ -165,6 +165,7 @@ class XLSSerializer(Serializer):
         data = self.to_simple(data, {})
         exp_json = json.loads(data.get('export',[]))
         df = pd.DataFrame(exp_json)
+        df.fillna('', inplace=True)
 
         cols = df.columns.tolist()
         #now for the list we have in the order we have it, move the columns by name
@@ -214,18 +215,20 @@ class SDFSerializer(Serializer):
         
         exp_json = json.loads(data.get('export',[]))
         df = pd.DataFrame(exp_json)
+        df.fillna('', inplace=True)
         #pull data back out of dataframe to put into rdkit tools
         ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'Added By', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
 
         row_iterator = df.iterrows()
+        headers = list(df)
         try:
             for index, row in row_iterator:
                 #smiles_str = row['SMILES']
                 #m = Chem.MolFromSmiles(smiles_str)
                 mol_str = row['ctab']
                 m = Chem.MolFromMolBlock(mol_str)
-                for field in ordered_fields:
-                    m.SetProp(field, str(row[field]))
+                for field in headers:
+                    m.SetProp(str(field), str(row[field]))
 
                 mols.append(m)
             

@@ -682,6 +682,7 @@ class CBHCompoundBatchResource(ModelResource):
                     df_data.append(new_data)
                 
                 df = pd.DataFrame(df_data)
+                #df.fillna('', inplace=True)
                 
                 data['export'] = df.to_json()
             except Exception , e:
