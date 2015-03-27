@@ -20,23 +20,22 @@ class GrappelliSortableHiddenMixin(object):
         return super(GrappelliSortableHiddenMixin, self).formfield_for_dbfield(db_field, **kwargs)
 
 
-class PinnedCustomFieldInline( admin.TabularInline): #GrappelliSortableHiddenMixin
+class PinnedCustomFieldInline( admin.TabularInline, GrappelliSortableHiddenMixin): #GrappelliSortableHiddenMixin
     model = PinnedCustomField
-    #sortable_field_name = "position"
-    extra = 0
+    sortable_field_name = "position"
     
 
 class CustomFieldConfigAdmin(ModelAdmin):
+    exclude= ["created_by"]
 
     search_fields = ('name',)
     ordering = ('-created',)
     date_hierarchy = 'created' 
     inlines = [PinnedCustomFieldInline,]
+    def save_model(self, request, obj, form, change): 
+        obj.created_by = request.user
+        obj.save()
 
-    def get_changeform_initial_data(self, request):
-        initial = super().get_changeform_initial_data(request)
-        initial['created_by'] = request.user
-        return initial
 
 
 class ProjectAdmin(ModelAdmin):
@@ -45,11 +44,12 @@ class ProjectAdmin(ModelAdmin):
     search_fields = ('name',)
     ordering = ('-created',)
     date_hierarchy = 'created'
+    exclude= ["created_by"]
 
-    def get_changeform_initial_data(self, request):
-        initial = super().get_changeform_initial_data(request)
-        initial['created_by'] = request.user
-        return initial
+    def save_model(self, request, obj, form, change): 
+        obj.created_by = request.user
+        obj.save()
+
 
 admin.site.register(CustomFieldConfig, CustomFieldConfigAdmin)
 admin.site.register(Project, ProjectAdmin)
