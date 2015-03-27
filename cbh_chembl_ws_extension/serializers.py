@@ -165,6 +165,7 @@ class XLSSerializer(Serializer):
         data = self.to_simple(data, {})
         exp_json = json.loads(data.get('export',[]))
         df = pd.DataFrame(exp_json)
+        df.fillna('', inplace=True)
 
         cols = df.columns.tolist()
         #now for the list we have in the order we have it, move the columns by name
@@ -214,6 +215,7 @@ class SDFSerializer(Serializer):
         
         exp_json = json.loads(data.get('export',[]))
         df = pd.DataFrame(exp_json)
+        df.fillna('', inplace=True)
         #pull data back out of dataframe to put into rdkit tools
         ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'Added By', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
 
