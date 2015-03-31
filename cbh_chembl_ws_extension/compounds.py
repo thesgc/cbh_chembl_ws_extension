@@ -65,8 +65,6 @@ except AttributeError:
 
 from cbh_chembl_ws_extension.authorization import ProjectAuthorization
 from cbh_chembl_ws_extension.projects import ProjectResource
-from chembl_webservices.compounds import CompoundsResource
-from chembl_webservices.base import ChEMBLApiSerializer
 from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer
 from chembl_business_model.models import CompoundStructures
 #from cbh_chembl_ws_extension.base import NBResource

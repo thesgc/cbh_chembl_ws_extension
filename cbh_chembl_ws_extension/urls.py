@@ -1,7 +1,6 @@
 
 from django.conf.urls import patterns, url, include
 from cbh_chembl_ws_extension.base import Login, Logout
-from chembl_webservices import api_name
 from chembl_core_db.utils import DirectTemplateView
 from django.conf import settings
 from flowjs import urls as flow
@@ -30,7 +29,7 @@ api.register(CBHCompoundBatchResource())
 api.register(CBHCompoundBatchUpload())
 api.register(UserResource())
 api.register(ProjectResource())
-
+api.register(CustomFieldConfigResource())
 admin.autodiscover()
 
 
