@@ -95,6 +95,9 @@ import  chemdraw_reaction
 
 from django.contrib.auth import get_user_model
 
+from rdkit.Chem.AllChem import Compute2DCoords
+
+
 # class MoleculeValidation(Validation):
 #     def is_valid(self, bundle, request=None):
 #         if not bundle.data:
@@ -546,10 +549,13 @@ class CBHCompoundBatchResource(ModelResource):
        
         batches = []
         if type == "smiles":
-            batches = [CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(obj), smiles=obj, project=bundle.data["project"]) for obj in objects ]
+            molfs = [(obj, Chem.MolFromSmiles(obj)) for obj in objects]
+            computed =[Compute2DCoords(mf[1]) for mf in molfs]
+            batches = [CBHCompoundBatch.objects.from_rd_mol(molf[1], smiles=molf[0], project=bundle.data["project"]) for molf in molfs ]
 
         elif type == "inchi":
             mols = _apply(objects,Chem.MolFromInchi)
+            empty = [Compute2DCoords(m) for m in mols]
             batches = [CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"]) for mol in mols]
         
 
@@ -577,40 +583,64 @@ class CBHCompoundBatchResource(ModelResource):
 
         batches = []
         headers = []
+        errors = []
+        index = 0
         if (".cdx" in correct_file.extension ):
-            mols = [mol.write("smi").split("\t")[0] for mol in readfile( str(correct_file.extension[1:]), str(correct_file.file.name), )]
+            mols = [mol for mol in readfile( str(correct_file.extension[1:]), str(correct_file.file.name), )]
             rxn = None
             if correct_file.extension == '.cdxml':
                 #Look for a stoichiometry table in the reaction file
                 rxn = chemdraw_reaction.parse( str(correct_file.file.name))
-            index = 0
-            for smiles in mols:
+            
+            for pybelmol in mols:
+                molfile = pybelmol.write("mdl")
 
-                if smiles.strip() and smiles != "*":
-                        b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles), smiles=smiles, project=bundle.data["project"])
-                        if rxn:
-                            b.custom_fields = rxn[index]
-                            b.editable_by = rxn[index]
-                        batches.append(b)
+                if molfile.strip() and molfile != "*":
+                        rd_mol = Chem.MolFromMolBlock(molfile)
+                        '''
+                        Pybel can read some hypervalent molecules that RDKit cannot read
+                        Therefore currently these molecules are outputted as images and sent back to the front end
+                        https://www.mail-archive.com/rdkit-discuss@lists.sourceforge.net/msg04466.html
+                        '''
+                        if rd_mol:
+                              smiles = Chem.MolToSmiles(rd_mol)
+                              if smiles.strip():
+                                  b = CBHCompoundBatch.objects.from_rd_mol(rd_mol, smiles=smiles, project=bundle.data["project"])
+                                  if rxn:
+                                      b.custom_fields = rxn[index]
+                                      b.editable_by = rxn[index]
+                                  batches.append(b)
+                        else:
+                            errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Invalid valency or other error parsing this molecule"})
                         index += 1
+            print errors
+                       
 
         else: 
             if (correct_file.extension == ".sdf"):
                 #read in the file
                 suppl = Chem.ForwardSDMolSupplier(correct_file.file)
-
+                mols = [mo for mo in suppl]
                 #read the headers from the first molecule
-                for mol in suppl:
-                    if mol is None: continue
+                for mol in mols:
+                    if mol is None: 
+                        errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
+
+                        continue
                     if not headers: 
-                        headers = list(mol.GetPropNames())
+                        headers.extend(list(mol.GetPropNames()))
+                headers = list(set(headers))
 
-
+                for mol in mols:
+                    if mol is None: 
+                        continue
                     b = CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"])
                     custom_fields = {}
                     for hdr in headers:
-
-                        custom_fields[hdr] = mol.GetProp(hdr) 
+                        try:
+                            custom_fields[hdr] = mol.GetProp(hdr) 
+                        except KeyError:
+                            custom_fields[hdr]   = ""
                         
                     b.custom_fields = custom_fields
                     batches.append(b)
@@ -626,7 +656,9 @@ class CBHCompoundBatchResource(ModelResource):
                 headers = list(df)
                 for index, row in row_iterator:
                     smiles_str = row[structure_col]
-                    b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles_str), smiles=smiles_str, project=bundle.data["project"])
+                    struc = Chem.MolFromSmiles(smiles_str)
+                    Compute2DCoords(struc)
+                    b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"])
                     #work out custom fields from mapping object
                     #new_fields, remapped_fields, ignored_fields
                     
@@ -642,6 +674,7 @@ class CBHCompoundBatchResource(ModelResource):
             b.multiple_batch_id = multiple_batch.pk
             b.created_by = bundle.request.user.username
 
+        bundle.data["fileerrors"] = errors
         multiple_batch.uploaded_data=batches
         multiple_batch.save()
         return self.validate_multi_batch(multiple_batch, bundle, request)
@@ -836,9 +869,7 @@ class CBHCompoundBatchUpload(ModelResource):
 
             for mol in suppl:
                 if mol is None: continue
-                if not headers: 
-                    headers = list(mol.GetPropNames())
-                    break
+                headers.extend(list(mol.GetPropNames()))
 
         elif(correct_file.extension in (".xls", ".xlsx")):
             #read in excel file, use pandas to read the headers
@@ -846,8 +877,7 @@ class CBHCompoundBatchUpload(ModelResource):
             headers = list(df)
 
         #this converts to json in preparation to be added to the response
-        bundle.data["headers"] = headers
-
+        bundle.data["headers"] = list(set(headers))
             #send back
             #we should allow SD file uploads with no meta data
         if (len(headers) == 0 and correct_file.extension in (".xls", ".xlsx") ):
