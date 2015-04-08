@@ -301,7 +301,7 @@ class CamelCaseJSONSerializer(Serializer):
                     if new_key == "customFields":
                         
                         for k, v in value.iteritems():
-                            if isinstance(s, basestring):
+                            if isinstance(v, basestring):
                                 if  v.startswith("[") and v.endswith("]"):
                                     try:
                                         value[k] = json.loads(v)
