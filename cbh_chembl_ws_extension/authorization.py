@@ -90,6 +90,7 @@ class ProjectAuthorization(Authorization):
     on, as that's all the more granular Django's permission setup gets.
     """
 
+
     def login_checks(self, request, model_klass):
 
         # If it doesn't look like a model, we can't check permissions.
@@ -121,9 +122,16 @@ class ProjectAuthorization(Authorization):
     def list_checks(self, request, model_klass, data, possible_perm_levels, object_list):
         self.login_checks(request, model_klass)
         new_list = []
+
         for obj in object_list:
-            if Project.objects.get_user_permission(obj.project_id, request.user, possible_perm_levels) is True:
-                new_list.append(obj)
+            if hasattr( obj, "project_id",):
+                if Project.objects.get_user_permission(obj.project_id, request.user, possible_perm_levels) is True:
+                    new_list.append(obj)
+            elif hasattr( obj, "project",):
+                for p in obj.project.all():
+                    if Project.objects.get_user_permission(p.id, request.user, possible_perm_levels) is True:
+                        new_list.append(obj)
+                        break
 
         return new_list
 

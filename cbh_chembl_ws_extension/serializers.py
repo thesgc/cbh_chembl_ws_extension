@@ -298,7 +298,20 @@ class CamelCaseJSONSerializer(Serializer):
                 new_dict = {}
                 for key, value in data.items():
                     new_key = re.sub(r"[a-z]_[a-z]", underscoreToCamel, key)
-                    new_dict[new_key] = camelize(value)
+                    if new_key == "customFields":
+                        
+                        for k, v in value.iteritems():
+                            if isinstance(v, basestring):
+                                if  v.startswith("[") and v.endswith("]"):
+                                    try:
+                                        value[k] = json.loads(v)
+                                        continue
+                                    except ValueError:
+                                        value[k] = v
+                            
+                        new_dict[new_key] = value
+                    else:
+                        new_dict[new_key] = camelize(value)
                 return new_dict
             if isinstance(data, (list, tuple)):
                 for i in range(len(data)):
@@ -328,7 +341,11 @@ class CamelCaseJSONSerializer(Serializer):
                 new_dict = {}
                 for key, value in data.items():
                     new_key = re.sub(r"[a-z][A-Z]", camelToUnderscore, key)
-                    new_dict[new_key] = underscorize(value)
+                    if new_key == "custom_fields":
+                        new_dict[new_key] = value
+
+                    else:
+                        new_dict[new_key] = underscorize(value)
                 return new_dict
             if isinstance(data, (list, tuple)):
                 for i in range(len(data)):

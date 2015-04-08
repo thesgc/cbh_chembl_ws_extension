@@ -1,6 +1,5 @@
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from django.conf import settings
-from tastypie.utils import trailing_slash
 from django.conf.urls import *
 from django.core.exceptions import ObjectDoesNotExist
 from tastypie.authorization import Authorization
@@ -27,12 +26,6 @@ try:
 except ImportError:
     DrawingOptions = None
 
-try:
-    import indigo
-    import indigo_renderer
-except ImportError:
-    indigo = None
-    indigo_renderer = None
 
 
 from tastypie.exceptions import BadRequest
@@ -42,7 +35,6 @@ from tastypie.exceptions import ImmediateHttpResponse
 from django.db.utils import DatabaseError
 from django.db import transaction
 from django.db import connection
-from chembl_beaker.beaker.core_apps.rasterImages.impl import _ctab2image
 
 try:
     from chembl_compatibility.models import MoleculeDictionary
@@ -54,31 +46,22 @@ except ImportError:
     from chembl_core_model.models import MoleculeHierarchy
 
 try:
-    DEFAULT_SYNONYM_SEPARATOR = settings.DEFAULT_COMPOUND_SEPARATOR
-except AttributeError:
-    DEFAULT_SYNONYM_SEPARATOR = ','
-
-try:
     WS_DEBUG = settings.WS_DEBUG
 except AttributeError:
     WS_DEBUG = False
 
 from cbh_chembl_ws_extension.authorization import ProjectAuthorization
 from cbh_chembl_ws_extension.projects import ProjectResource
-from chembl_webservices.compounds import CompoundsResource
-from chembl_webservices.base import ChEMBLApiSerializer
 from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer
 from chembl_business_model.models import CompoundStructures
 #from cbh_chembl_ws_extension.base import NBResource
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
-from django.core.serializers.json import DjangoJSONEncoder
 from tastypie import fields, utils
 from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project, PinnedCustomField
 from tastypie.authentication import SessionAuthentication
 import json
 from tastypie.paginator import Paginator
-from chembl_beaker.beaker.core_apps.conversions.impl import _smiles2ctab, _apply
 
 from flowjs.models import FlowFile
 import xlrd
@@ -97,68 +80,17 @@ import  chemdraw_reaction
 
 from django.contrib.auth import get_user_model
 
-# class MoleculeValidation(Validation):
-#     def is_valid(self, bundle, request=None):
-#         if not bundle.data:
-#             return {'No Data': 'invalid_call_to_api, no data'}
+from rdkit.Chem.AllChem import Compute2DCoords
 
-#         errors = {}
-
-#         structure_type = bundle.data["structure_type"]
-#         structure_key = bundle.data["structure_key"]
-#         project = bundle.data["project"]
-#         chirality = bundle.data["chirality"]
-#         forced_reg_index = bundle.data.get("forced_reg_index",0)
-#         forced_reg_reason = bundle.data.get("forced_reg_reason","")
-
-#         public = bundle.data.get("public", False)
-#         molregno = bundle.data.get("molregno", None)
-#         #Test uniqueness
-
-#         if not molregno:
-#             public_or_project_moldicts = MoleculeDictionary.objects.filter(
-#                                             (Q(structure_type=structure_type)
-#                                            Q(structure_key=structure_key),
-#                                            Q(chirality=chirality), 
-#                                            Q(public=True)) |
-#                                             (Q(structure_type=structure_type)
-#                                            Q(structure_key=structure_key),
-#                                            Q(chirality=chirality), 
-#                                            Q(project_id=project.id)
-#                                                 ))
-
-            
-#             if public_moldicts.count() > 0:
-#                 max_reg = moldicts.aggregate(Max('forced_reg_index'))["forced_reg_index__max"]
-#                 if forced_reg_index > 0:
-#                     if forced_reg_index <= max_reg:
-#                         #Somohow the forced registration index is too low, the client must re submit
-#                         errors["incorrect_force_reg_index"] ="Forced Registration unsuccesful, try with higher index"
-#                         errors["next_forced_reg_index"] = max_reg + 
-
-#                     if len(forced_reg_reason) < 3:
-#                         errors["invalid_force_reg_reason"] ="Forced registration reason should be longer than 3 characters"
-#                 else:
-#                     errors["already_registered_as_public"] ="Already registered for this project or publically"
-#                     errors["next_forced_reg_index"] = max_reg + 1
-#         return errors
-
-            
-        
-
-            
 
 
 
             
 
-
-#         return errors
 
 
 class CBHCompoundBatchResource(ModelResource):
     project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
-    #related_molregno = fields.ForeignKey(MoleculeDictionaryResource, 'related_molregno', blank=True, null=True)
 
     class Meta:
         filtering = {
@@ -297,7 +229,6 @@ class CBHCompoundBatchResource(ModelResource):
         linkedproject = 0
         linkedpublic = 0
         new = 0
-        print batch.warnings
 
         for item in all_items:
             item["tobelinked"] = False
@@ -350,7 +281,6 @@ class CBHCompoundBatchResource(ModelResource):
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
         pinned_fields = list(PinnedCustomField.objects.filter(custom_field_config__project=bundle.data["project"]).values())
-        print pinned_fields
         secondwhere = True
         project_id = bundle.data["project"].id
         if len(pinned_fields) > 0:
@@ -440,9 +370,6 @@ class CBHCompoundBatchResource(ModelResource):
 
         for batch in batches:
 
-                #batch.created_by = str(bundle.request.user.username)
-                #print(batch.__dict__)
-
                 batch.save(validate=False)
                 batch.generate_structure_and_dictionary()
                 bundle.data["saved"] += 1
@@ -496,7 +423,7 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["new"] = 0
         bundle.data["linkedpublic"] = 0
         bundle.data["linkedproject"] = 0
-        bundle.data["errors"] = 0
+        bundle.data["errors"] = len(bundle.data.get("fileerrors", []))
         bundle.data["dupes"] = 0
         new_uploaded_data = []
         already_found = set([])
@@ -548,12 +475,19 @@ class CBHCompoundBatchResource(ModelResource):
        
         batches = []
         if type == "smiles":
-            batches = [CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(obj), smiles=obj, project=bundle.data["project"]) for obj in objects ]
+            allmols = [(obj, Chem.MolFromSmiles(obj)) for obj in objects]
 
         elif type == "inchi":
-            mols = _apply(objects,Chem.MolFromInchi)
-            batches = [CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"]) for mol in mols]
-        
+            allmols = [(Chem.MolToSmiles( Chem.MolFromInchi(obj)), Chem.MolFromInchi(obj)) for obj in objects]
+
+        errors = [{"index" : i+1, "error": "Parse Error"} for i, mol in enumerate(allmols) if not mol[1]]
+        bundle.data["fileerrors"] = errors
+
+        mols = [ mol1 for mol1 in allmols if mol1[1]]
+        for m in mols:
+            Compute2DCoords(m[1])
+        batches = [CBHCompoundBatch.objects.from_rd_mol(mol2[1], smiles=mol2[0], project=bundle.data["project"]) for mol2 in mols]
+    
 
         multiple_batch = CBHCompoundMultipleBatch.objects.create()
         for b in batches:
@@ -579,42 +513,66 @@ class CBHCompoundBatchResource(ModelResource):
 
         batches = []
         headers = []
+        errors = []
+        index = 0
         if (".cdx" in correct_file.extension ):
-            mols = [mol.write("smi").split("\t")[0] for mol in readfile( str(correct_file.extension[1:]), str(correct_file.file.name), )]
+            mols = [mol for mol in readfile( str(correct_file.extension[1:]), str(correct_file.file.name), )]
             rxn = None
             if correct_file.extension == '.cdxml':
                 #Look for a stoichiometry table in the reaction file
                 rxn = chemdraw_reaction.parse( str(correct_file.file.name))
-            index = 0
-            for smiles in mols:
+            
+            for pybelmol in mols:
+                molfile = pybelmol.write("mdl")
 
-                if smiles.strip() and smiles != "*":
-                        b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles), smiles=smiles, project=bundle.data["project"])
-                        if rxn:
-                            b.custom_fields = rxn[index]
-                            b.editable_by = rxn[index]
-                        batches.append(b)
+                if molfile.strip() and molfile != "*":
+                        rd_mol = Chem.MolFromMolBlock(molfile)
+                        '''
+                        Pybel can read some hypervalent molecules that RDKit cannot read
+                        Therefore currently these molecules are outputted as images and sent back to the front end
+                        https://www.mail-archive.com/rdkit-discuss@lists.sourceforge.net/msg04466.html
+                        '''
+                        if rd_mol:
+                              smiles = Chem.MolToSmiles(rd_mol)
+                              if smiles.strip():
+                                  b = CBHCompoundBatch.objects.from_rd_mol(rd_mol, smiles=smiles, project=bundle.data["project"])
+                                  if rxn:
+                                      b.custom_fields = rxn[index]
+                                      b.editable_by = rxn[index]
+                                  batches.append(b)
+                        else:
+                            errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Invalid valency or other error parsing this molecule"})
                         index += 1
+                       
 
         else: 
             if (correct_file.extension == ".sdf"):
                 #read in the file
                 suppl = Chem.ForwardSDMolSupplier(correct_file.file)
-
+                mols = [mo for mo in suppl]
                 #read the headers from the first molecule
-                for mol in suppl:
-                    if mol is None: continue
+                for mol in mols:
+                    if mol is None: 
+                        errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
+
+                        continue
                     if not headers: 
-                        headers = list(mol.GetPropNames())
+                        headers.extend(list(mol.GetPropNames()))
+                headers = list(set(headers))
 
-
+                for mol in mols:
+                    if mol is None: 
+                        continue
                     b = CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"])
                     custom_fields = {}
                     for hdr in headers:
-
-                        custom_fields[hdr] = mol.GetProp(hdr) 
+                        try:
+                            custom_fields[hdr] = mol.GetProp(hdr) 
+                        except KeyError:
+                            custom_fields[hdr]   = ""
                         
                     b.custom_fields = custom_fields
+
                     batches.append(b)
                     
 
@@ -628,7 +586,9 @@ class CBHCompoundBatchResource(ModelResource):
                 headers = list(df)
                 for index, row in row_iterator:
                     smiles_str = row[structure_col]
-                    b = CBHCompoundBatch.objects.from_rd_mol(Chem.MolFromSmiles(smiles_str), smiles=smiles_str, project=bundle.data["project"])
+                    struc = Chem.MolFromSmiles(smiles_str)
+                    Compute2DCoords(struc)
+                    b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"])
                     #work out custom fields from mapping object
                     #new_fields, remapped_fields, ignored_fields
                     
@@ -637,13 +597,22 @@ class CBHCompoundBatchResource(ModelResource):
                         custom_fields[ hdr] = row[hdr] 
                     b.custom_fields = custom_fields
                     batches.append(b)
+            else:
+                return ImmediateHttpResponse(BadRequest("Invalid File Format"))
 
 
         multiple_batch = CBHCompoundMultipleBatch.objects.create()
         for b in batches:
             b.multiple_batch_id = multiple_batch.pk
             b.created_by = bundle.request.user.username
+            ctablines = [item.split("0.0000")[0].strip() for item in b.ctab.split("\n") if "0.0000" in item]
+            if len(ctablines) > len(list(set(ctablines))):
+                #check for overlapping molecules in the CTAB 
+                rd_mol = Chem.MolFromMolBlock(b.ctab)
+                Compute2DCoords(rd_mol)
+                b.ctab = Chem.MolToMolBlock(rd_mol)
 
+        bundle.data["fileerrors"] = errors
         multiple_batch.uploaded_data=batches
         multiple_batch.save()
         return self.validate_multi_batch(multiple_batch, bundle, request)
@@ -838,9 +807,7 @@ class CBHCompoundBatchUpload(ModelResource):
 
             for mol in suppl:
                 if mol is None: continue
-                if not headers: 
-                    headers = list(mol.GetPropNames())
-                    break
+                headers.extend(list(mol.GetPropNames()))
 
         elif(correct_file.extension in (".xls", ".xlsx")):
             #read in excel file, use pandas to read the headers
@@ -848,8 +815,7 @@ class CBHCompoundBatchUpload(ModelResource):
             headers = list(df)
 
         #this converts to json in preparation to be added to the response
-        bundle.data["headers"] = headers
-
+        bundle.data["headers"] = list(set(headers))
             #send back
             #we should allow SD file uploads with no meta data
         if (len(headers) == 0 and correct_file.extension in (".xls", ".xlsx") ):
