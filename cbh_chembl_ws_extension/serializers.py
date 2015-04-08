@@ -301,11 +301,14 @@ class CamelCaseJSONSerializer(Serializer):
                     if new_key == "customFields":
                         
                         for k, v in value.iteritems():
-                            if  v.startswith("[") and v.endswith("]"):
-                                try:
-                                    value[k] = json.loads(v)
-                                except ValueError:
-                                    value[k] = v
+                            if isinstance(s, basestring):
+                                if  v.startswith("[") and v.endswith("]"):
+                                    try:
+                                        value[k] = json.loads(v)
+                                        continue
+                                    except ValueError:
+                                        value[k] = v
+                            
                         new_dict[new_key] = value
                     else:
                         new_dict[new_key] = camelize(value)
