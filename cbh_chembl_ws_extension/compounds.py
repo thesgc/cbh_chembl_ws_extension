@@ -441,7 +441,7 @@ class CBHCompoundBatchResource(ModelResource):
         for batch in batches:
 
                 #batch.created_by = str(bundle.request.user.username)
-                print(batch.__dict__)
+                #print(batch.__dict__)
 
                 batch.save(validate=False)
                 batch.generate_structure_and_dictionary()

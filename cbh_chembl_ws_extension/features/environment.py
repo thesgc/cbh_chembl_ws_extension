@@ -16,7 +16,7 @@ For the basic solution: https://github.com/nathforge/django-mechanize/
 """
 
 
-import os
+import os, django
 import urlparse
 # This is necessary for all installed apps to be recognized, for some reason.
 #Already set this on vagrant
@@ -32,9 +32,12 @@ def before_all(context):
     # We'll use thise later to frog-march Django through the motions
     # of setting up and tearing down the test environment, including
     # test databases.
-    from django.core.management import setup_environ
-    from deployment.settings  import development as settings
-    setup_environ(settings)
+    # from django.core.management import setup_environ
+    # from deployment.settings  import development as settings
+    # setup_environ(settings)
+    #os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myapp.settings")
+    from cbh_chembl_model_extension import models
+    django.setup()
 
     ### Take a TestRunner hostage.
     from django.test.simple import DjangoTestSuiteRunner
@@ -42,8 +45,8 @@ def before_all(context):
 
     ## If you use South for migrations, uncomment this to monkeypatch
     ## syncdb to get migrations to run.
-    from south.management.commands import patch_for_test_db_setup
-    patch_for_test_db_setup()
+    #from south.management.commands import patch_for_test_db_setup
+    #patch_for_test_db_setup()
 
     
     context.runner.setup_test_environment()
@@ -84,10 +87,11 @@ def after_scenario(context, scenario):
     #context.runner.teardown_databases(context.old_db_config)
     context.api_client.client.logout()
  
-    from cbh_chembl_model_extension.models import Project, CBHCompoundBatch
+    from cbh_chembl_model_extension.models import Project, CBHCompoundBatch, CustomFieldConfig
     from django.contrib.auth.models import User, Group
     User.objects.all().delete()
     Project.objects.all().delete()
+    CustomFieldConfig.objects.all().delete()
     Group.objects.all().delete()
     CBHCompoundBatch.objects.all().delete()
 
