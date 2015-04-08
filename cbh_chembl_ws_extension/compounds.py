@@ -1,6 +1,5 @@
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from django.conf import settings
-from tastypie.utils import trailing_slash
 from django.conf.urls import *
 from django.core.exceptions import ObjectDoesNotExist
 from tastypie.authorization import Authorization
@@ -27,12 +26,6 @@ try:
 except ImportError:
     DrawingOptions = None
 
-try:
-    import indigo
-    import indigo_renderer
-except ImportError:
-    indigo = None
-    indigo_renderer = None
 
 
 from tastypie.exceptions import BadRequest
@@ -53,11 +46,6 @@ except ImportError:
     from chembl_core_model.models import MoleculeHierarchy
 
 try:
-    DEFAULT_SYNONYM_SEPARATOR = settings.DEFAULT_COMPOUND_SEPARATOR
-except AttributeError:
-    DEFAULT_SYNONYM_SEPARATOR = ','
-
-try:
     WS_DEBUG = settings.WS_DEBUG
 except AttributeError:
     WS_DEBUG = False
@@ -69,7 +57,6 @@ from chembl_business_model.models import CompoundStructures
 #from cbh_chembl_ws_extension.base import NBResource
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
-from django.core.serializers.json import DjangoJSONEncoder
 from tastypie import fields, utils
 from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project, PinnedCustomField
 from tastypie.authentication import SessionAuthentication
@@ -620,6 +607,12 @@ class CBHCompoundBatchResource(ModelResource):
         for b in batches:
             b.multiple_batch_id = multiple_batch.pk
             b.created_by = bundle.request.user.username
+            ctablines = [item.split("0.0000")[0].strip() for item in b.ctab.split("\n") if "0.0000" in item]
+            if len(ctablines) > len(list(set(ctablines))):
+                #check for overlapping molecules in the CTAB 
+                rd_mol = Chem.MolFromMolBlock(b.ctab)
+                Compute2DCoords(rd_mol)
+                b.ctab = Chem.MolToMolBlock(rd_mol)
 
         bundle.data["fileerrors"] = errors
         multiple_batch.uploaded_data=batches
