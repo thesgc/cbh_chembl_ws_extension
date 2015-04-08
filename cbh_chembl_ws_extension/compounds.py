@@ -42,7 +42,6 @@ from tastypie.exceptions import ImmediateHttpResponse
 from django.db.utils import DatabaseError
 from django.db import transaction
 from django.db import connection
-from chembl_beaker.beaker.core_apps.rasterImages.impl import _ctab2image
 
 try:
     from chembl_compatibility.models import MoleculeDictionary
@@ -76,7 +75,6 @@ from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMulti
 from tastypie.authentication import SessionAuthentication
 import json
 from tastypie.paginator import Paginator
-from chembl_beaker.beaker.core_apps.conversions.impl import _smiles2ctab, _apply
 
 from flowjs.models import FlowFile
 import xlrd
@@ -98,68 +96,14 @@ from django.contrib.auth import get_user_model
 from rdkit.Chem.AllChem import Compute2DCoords
 
 
-# class MoleculeValidation(Validation):
-#     def is_valid(self, bundle, request=None):
-#         if not bundle.data:
-#             return {'No Data': 'invalid_call_to_api, no data'}
-
-#         errors = {}
-
-#         structure_type = bundle.data["structure_type"]
-#         structure_key = bundle.data["structure_key"]
-#         project = bundle.data["project"]
-#         chirality = bundle.data["chirality"]
-#         forced_reg_index = bundle.data.get("forced_reg_index",0)
-#         forced_reg_reason = bundle.data.get("forced_reg_reason","")
-
-#         public = bundle.data.get("public", False)
-#         molregno = bundle.data.get("molregno", None)
-#         #Test uniqueness
-
-#         if not molregno:
-#             public_or_project_moldicts = MoleculeDictionary.objects.filter(
-#                                             (Q(structure_type=structure_type)
-#                                            Q(structure_key=structure_key),
-#                                            Q(chirality=chirality), 
-#                                            Q(public=True)) |
-#                                             (Q(structure_type=structure_type)
-#                                            Q(structure_key=structure_key),
-#                                            Q(chirality=chirality), 
-#                                            Q(project_id=project.id)
-#                                                 ))
-
-            
-#             if public_moldicts.count() > 0:
-#                 max_reg = moldicts.aggregate(Max('forced_reg_index'))["forced_reg_index__max"]
-#                 if forced_reg_index > 0:
-#                     if forced_reg_index <= max_reg:
-#                         #Somohow the forced registration index is too low, the client must re submit
-#                         errors["incorrect_force_reg_index"] ="Forced Registration unsuccesful, try with higher index"
-#                         errors["next_forced_reg_index"] = max_reg + 
-
-#                     if len(forced_reg_reason) < 3:
-#                         errors["invalid_force_reg_reason"] ="Forced registration reason should be longer than 3 characters"
-#                 else:
-#                     errors["already_registered_as_public"] ="Already registered for this project or publically"
-#                     errors["next_forced_reg_index"] = max_reg + 1
-#         return errors
-
-            
-        
-
-            
-
 
 
             
 
-
-#         return errors
 
 
 class CBHCompoundBatchResource(ModelResource):
     project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
-    #related_molregno = fields.ForeignKey(MoleculeDictionaryResource, 'related_molregno', blank=True, null=True)
 
     class Meta:
         filtering = {
@@ -298,7 +242,6 @@ class CBHCompoundBatchResource(ModelResource):
         linkedproject = 0
         linkedpublic = 0
         new = 0
-        print batch.warnings
 
         for item in all_items:
             item["tobelinked"] = False
@@ -351,7 +294,6 @@ class CBHCompoundBatchResource(ModelResource):
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
         pinned_fields = list(PinnedCustomField.objects.filter(custom_field_config__project=bundle.data["project"]).values())
-        print pinned_fields
         secondwhere = True
         project_id = bundle.data["project"].id
         if len(pinned_fields) > 0:
@@ -442,7 +384,6 @@ class CBHCompoundBatchResource(ModelResource):
         for batch in batches:
 
                 #batch.created_by = str(bundle.request.user.username)
-                print(batch.__dict__)
 
                 batch.save(validate=False)
                 batch.generate_structure_and_dictionary()
@@ -497,7 +438,7 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["new"] = 0
         bundle.data["linkedpublic"] = 0
         bundle.data["linkedproject"] = 0
-        bundle.data["errors"] = 0
+        bundle.data["errors"] = len(bundle.data.get("fileerrors", []))
         bundle.data["dupes"] = 0
         new_uploaded_data = []
         already_found = set([])
@@ -549,15 +490,19 @@ class CBHCompoundBatchResource(ModelResource):
        
         batches = []
         if type == "smiles":
-            molfs = [(obj, Chem.MolFromSmiles(obj)) for obj in objects]
-            computed =[Compute2DCoords(mf[1]) for mf in molfs]
-            batches = [CBHCompoundBatch.objects.from_rd_mol(molf[1], smiles=molf[0], project=bundle.data["project"]) for molf in molfs ]
+            allmols = [(obj, Chem.MolFromSmiles(obj)) for obj in objects]
 
         elif type == "inchi":
-            mols = _apply(objects,Chem.MolFromInchi)
-            empty = [Compute2DCoords(m) for m in mols]
-            batches = [CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"]) for mol in mols]
-        
+            allmols = [(Chem.MolToSmiles( Chem.MolFromInchi(obj)), Chem.MolFromInchi(obj)) for obj in objects]
+
+        errors = [{"index" : i+1, "error": "Parse Error"} for i, mol in enumerate(allmols) if not mol[1]]
+        bundle.data["fileerrors"] = errors
+
+        mols = [ mol1 for mol1 in allmols if mol1[1]]
+        for m in mols:
+            Compute2DCoords(m[1])
+        batches = [CBHCompoundBatch.objects.from_rd_mol(mol2[1], smiles=mol2[0], project=bundle.data["project"]) for mol2 in mols]
+    
 
         multiple_batch = CBHCompoundMultipleBatch.objects.create()
         for b in batches:
@@ -613,7 +558,6 @@ class CBHCompoundBatchResource(ModelResource):
                         else:
                             errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Invalid valency or other error parsing this molecule"})
                         index += 1
-            print errors
                        
 
         else: 
@@ -643,6 +587,7 @@ class CBHCompoundBatchResource(ModelResource):
                             custom_fields[hdr]   = ""
                         
                     b.custom_fields = custom_fields
+
                     batches.append(b)
                     
 
@@ -667,6 +612,8 @@ class CBHCompoundBatchResource(ModelResource):
                         custom_fields[ hdr] = row[hdr] 
                     b.custom_fields = custom_fields
                     batches.append(b)
+            else:
+                return ImmediateHttpResponse(BadRequest("Invalid File Format"))
 
 
         multiple_batch = CBHCompoundMultipleBatch.objects.create()
