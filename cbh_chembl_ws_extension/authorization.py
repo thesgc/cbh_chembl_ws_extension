@@ -182,7 +182,10 @@ class ProjectAuthorization(Authorization):
                 #return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor","viewer",])
 
 
-    
+    def update_list(self, object_list, bundle):
+        return self.create_list(self, object_list, bundle)
+
+
     def create_detail(self, object_list, bundle):
         return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
 

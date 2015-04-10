@@ -298,7 +298,7 @@ class CamelCaseJSONSerializer(Serializer):
                 new_dict = {}
                 for key, value in data.items():
                     new_key = re.sub(r"[a-z]_[a-z]", underscoreToCamel, key)
-                    if new_key == "customFields":
+                    if new_key in ["customFields", "uncuratedFields"]:
                         
                         for k, v in value.iteritems():
                             if isinstance(v, basestring):
@@ -341,7 +341,7 @@ class CamelCaseJSONSerializer(Serializer):
                 new_dict = {}
                 for key, value in data.items():
                     new_key = re.sub(r"[a-z][A-Z]", camelToUnderscore, key)
-                    if new_key == "custom_fields":
+                    if new_key in ["custom_fields", "uncurated_fields"]:
                         new_dict[new_key] = value
 
                     else:

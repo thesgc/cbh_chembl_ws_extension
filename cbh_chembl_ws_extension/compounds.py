@@ -159,7 +159,7 @@ class CBHCompoundBatchResource(ModelResource):
         authorization = ProjectAuthorization()
         include_resource_uri = False
         serializer = CBHCompoundBatchSerializer()
-        allowed_methods = ['get', 'post', 'put']
+        allowed_methods = ['get', 'post', 'put', 'patch']
         default_format = 'application/json'
         authentication = SessionAuthentication()
         paginator_class = Paginator
@@ -275,20 +275,12 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def get_project_custom_field_names(self, request, **kwargs):
-        '''Combine the pinned fields for the project with the most frequently used fields on the project into a single list'''
+        '''Get a single list of pinned fields for the project previously listed all custom fields in the DB but this was unwieldy'''
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'text/plain'))  
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
         pinned_fields = list(PinnedCustomField.objects.filter(custom_field_config__project=bundle.data["project"]).values())
-        secondwhere = True
-        project_id = bundle.data["project"].id
-        if len(pinned_fields) > 0:
-            secondwhere = "key not in %s" % json.dumps([pf["name"] for pf in pinned_fields]).replace("\"","'").replace("[","(").replace("]",")")
-        fields = CBHCompoundBatch.objects.get_all_keys(where="project_id = %d" % project_id, 
-                                                        secondwhere=secondwhere)
-        project_fields = [{'name': item[0], 'count': item[1]} for item in fields]
-        pinned_fields.extend(project_fields)
         bundle.data['field_names'] = pinned_fields
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
@@ -398,21 +390,28 @@ class CBHCompoundBatchResource(ModelResource):
         headers = None
         for b in mb.uploaded_data:
             if mappings:
+                #If there is a mappings object this data has come from the SD upload
                 if not headers:
-                    headers = b.custom_fields.keys()
+                    headers = b.uncurated_fields.keys()
                 custom_fields = {}
+                uncurated_fields = {}
                 for hdr in headers:
                     if hdr in mappings["ignored_fields"]:
-                        continue
+                        #ignored fields are removed
+                        b.uncurated_fields.pop(hdr, False)
                     elif hdr in mappings["new_fields"]:
-                        custom_fields[hdr] = b.custom_fields[hdr]
+                        #New fields are left as uncurated for now
+                        continue
                     else:
                         for key, mapping in mappings["remapped_fields"].iteritems():
+                            #Remapped fields are added to the curated fields as only curated data will be present
                             if hdr in mapping:
-                                custom_fields[key] = b.custom_fields[hdr]
+                                custom_fields[key] = b.uncurated_fields.pop(hdr, "")
                 b.custom_fields = custom_fields
             else:
+                #Only curated fields can be added via the standard UI
                 b.custom_fields = bundle.data["custom_fields"]
+
         mb.save()
         #Might not be needed
         return self.validate_multi_batch(mb, bundle, request)
@@ -425,33 +424,31 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["new"] = 0
         bundle.data["linkedpublic"] = 0
         bundle.data["linkedproject"] = 0
+        if not bundle.data.get("fileerrors"):
+            bundle.data["fileerrors"] = []
         bundle.data["errors"] = len(bundle.data.get("fileerrors", []))
         bundle.data["dupes"] = 0
         new_uploaded_data = []
         already_found = set([])
-        for batch in multi_batch.uploaded_data:
-            batch_key = batch.get_uk()
-            if batch_key in already_found:
-                #setting this in case we change it later
-                batch.properties["dupe"] = True
-                bundle.data["dupes"] += 1
+        for i, batch in enumerate(multi_batch.uploaded_data):
+            if batch.__dict__["errors"] != {}:
+                bundle.data["errors"] += 1
+                bundle.data["fileerrors"].append({"index" : i+1, "error": "Inchi Parse Error"})
+                total = total - 1
+                print batch.__dict__["errors"]
             else:
-                already_found.add(batch_key)
-                self.match_list_to_moleculedictionaries(batch,bundle.data["project"] )
-                for key in ["new", "linkedproject", "linkedpublic"]:
-                    bundle.data[key] += int(batch.warnings[key])
-                
-                b = batch.__dict__
-                bundle.data["objects"].append(b)
-                #catch all molecules that should have some choices associated with them
-                if b["errors"] != {}:
-                    bundle.data["errors"] += 1
-                    total = total - 1
+                batch_key = batch.get_uk()
+                if batch_key in already_found:
+                    #setting this in case we change it later
+                    batch.properties["dupe"] = True
+                    bundle.data["dupes"] += 1
+                else:
+                    already_found.add(batch_key)
+                    self.match_list_to_moleculedictionaries(batch,bundle.data["project"] )
+                    for key in ["new", "linkedproject", "linkedpublic"]:
+                        bundle.data[key] += int(batch.warnings[key])
                 new_uploaded_data.append(batch)
 
-
-            
-            #elif b["warnings"]["pains_count"] != "0":
         multi_batch.uploaded_data = new_uploaded_data
         multi_batch.save()
 
@@ -528,23 +525,23 @@ class CBHCompoundBatchResource(ModelResource):
                 molfile = pybelmol.write("mdl")
 
                 if molfile.strip() and molfile != "*":
-                        rd_mol = Chem.MolFromMolBlock(molfile)
-                        '''
-                        Pybel can read some hypervalent molecules that RDKit cannot read
-                        Therefore currently these molecules are outputted as images and sent back to the front end
-                        https://www.mail-archive.com/rdkit-discuss@lists.sourceforge.net/msg04466.html
-                        '''
-                        if rd_mol:
-                              smiles = Chem.MolToSmiles(rd_mol)
-                              if smiles.strip():
-                                  b = CBHCompoundBatch.objects.from_rd_mol(rd_mol, smiles=smiles, project=bundle.data["project"])
-                                  if rxn:
-                                      b.custom_fields = rxn[index]
-                                      b.editable_by = rxn[index]
-                                  batches.append(b)
-                        else:
-                            errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Invalid valency or other error parsing this molecule"})
-                        index += 1
+                    rd_mol = Chem.MolFromMolBlock(molfile)
+                    '''
+                    Pybel can read some hypervalent molecules that RDKit cannot read
+                    Therefore currently these molecules are outputted as images and sent back to the front end
+                    https://www.mail-archive.com/rdkit-discuss@lists.sourceforge.net/msg04466.html
+                    '''
+                    if rd_mol:
+                        smiles = Chem.MolToSmiles(rd_mol)
+                        if smiles.strip():
+                            b = CBHCompoundBatch.objects.from_rd_mol(rd_mol, smiles=smiles, project=bundle.data["project"])
+                            if rxn:
+                                #Here we set the uncurated fields equal to the reaction data extracted from Chemdraw
+                                b.uncurated_fields = rxn[index]
+                            batches.append(b)
+                    else:
+                        errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Invalid valency or other error parsing this molecule"})
+                    index += 1
                        
 
         else: 
@@ -573,7 +570,7 @@ class CBHCompoundBatchResource(ModelResource):
                         except KeyError:
                             custom_fields[hdr]   = ""
                         
-                    b.custom_fields = custom_fields
+                    b.uncurated_fields = custom_fields
 
                     batches.append(b)
                     
@@ -597,10 +594,11 @@ class CBHCompoundBatchResource(ModelResource):
                     custom_fields = {}
                     for hdr in headers:
                         custom_fields[ hdr] = row[hdr] 
-                    b.custom_fields = custom_fields
+                    #Set excel fields as uncurated
+                    b.uncurated_fields = custom_fields
                     batches.append(b)
             else:
-                return ImmediateHttpResponse(BadRequest("Invalid File Format"))
+                raise BadRequest("Invalid File Format")
 
 
         multiple_batch = CBHCompoundMultipleBatch.objects.create()
@@ -650,11 +648,8 @@ class CBHCompoundBatchResource(ModelResource):
                     #now remove custom_fields
                     del(new_data['custom_fields'])
                     b.data = new_data
-                    df_data.append(new_data)
-                
+                    df_data.append(new_data)               
                 df = pd.DataFrame(df_data)
-                #df.fillna('', inplace=True)
-                
                 data['export'] = df.to_json()
             except Exception , e:
                 print e
@@ -694,7 +689,7 @@ class CBHCompoundBatchResource(ModelResource):
             except(AttributeError):
                 bundle.data[names[1]] = ""
 
-        mynames = ["editable_by","viewable_by", "warnings", "properties", "custom_fields", "errors"]
+        mynames = ["editable_by","uncurated_fields", "warnings", "properties", "custom_fields", "errors"]
         for name in mynames:
             bundle.data[name] = json.loads(bundle.data[name])
         #bundle.data["created_by"] = user.__dict__ 
@@ -821,7 +816,7 @@ class CBHCompoundBatchUpload(ModelResource):
             #send back
             #we should allow SD file uploads with no meta data
         if (len(headers) == 0 and correct_file.extension in (".xls", ".xlsx") ):
-            return BadRequest("no_headers")
+            raise BadRequest("No Headers")
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
