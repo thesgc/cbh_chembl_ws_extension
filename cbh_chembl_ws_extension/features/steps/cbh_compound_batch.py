@@ -33,8 +33,10 @@ def step(context):
 
 @given("a valid project exists {projkey}")
 def step(context, projkey):
-    from cbh_chembl_model_extension.models import Project
-    Project.objects.create(name=projkey, project_key=projkey, created_by=context.u)
+    from cbh_chembl_model_extension.models import Project, CustomFieldConfig
+    cfc = CustomFieldConfig.objects.create(created_by=context.u, name='test')
+    Project.objects.create(name=projkey, project_key=projkey, created_by=context.u, custom_field_config=cfc)
+
 
 @given("I automatically have editor permissions as creator")
 def step(context):
@@ -120,7 +122,7 @@ def step(context, action=None, projkey=None, responsecode=None):
         path = "/devapi/cbh_compound_batches/"
         if action == "get":
             path = path + str(context.batch.id)
-            print path
+            #print(path)
         resp = context.api_client.get(
             path,
             )

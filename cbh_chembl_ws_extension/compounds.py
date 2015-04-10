@@ -362,8 +362,6 @@ class CBHCompoundBatchResource(ModelResource):
 
         for batch in batches:
 
-                #batch.created_by = str(bundle.request.user.username)
-
                 batch.save(validate=False)
                 batch.generate_structure_and_dictionary()
                 bundle.data["saved"] += 1

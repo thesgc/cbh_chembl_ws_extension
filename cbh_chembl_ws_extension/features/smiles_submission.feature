@@ -22,7 +22,7 @@ Feature: SMILES upload
         and some of the SMILES are duplicated
         and I have editor rights for proja
         when I submit SMILES
-        then the the responce would be <Some of your SMILES are duplicated. Please remove duplications and resubmit> 
+        then the the response would be <Some of your SMILES are duplicated. Please remove duplications and resubmit> 
 
 
     Scenario: User submits registered substances to proja in a SMILES format. Some of the SMILES are duplicated. 
@@ -33,7 +33,7 @@ Feature: SMILES upload
         and some of the SMILES are duplicated
         and I have editor rights for proja
         when I submit SMILES
-        then the the responce would be <This substance has already been registered. Would you like to register as a new batch (or force registration)?> and <Some of your SMILES are duplicated. Please remove duplications and resubmit>   
+        then the the response would be <This substance has already been registered. Would you like to register as a new batch (or force registration)?> and <Some of your SMILES are duplicated. Please remove duplications and resubmit>   
 
 
     Scenario: User submits registered substances to proja in a SMILES format. The SMILES are all dissimilar to one another.
@@ -44,4 +44,4 @@ Feature: SMILES upload
         and the SMILES are all dissimilar.
         and I have editor rights for proja
         when I submit SMILES
-        then the the responce would be <This substance has already been registered. Would you like to register as a new batch (or force registration)?>    
+        then the the response would be <This substance has already been registered. Would you like to register as a new batch (or force registration)?>    
