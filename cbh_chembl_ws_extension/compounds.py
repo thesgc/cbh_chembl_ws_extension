@@ -483,7 +483,7 @@ class CBHCompoundBatchResource(ModelResource):
         mols = [ mol1 for mol1 in allmols if mol1[1]]
         for m in mols:
             Compute2DCoords(m[1])
-        batches = [CBHCompoundBatch.objects.from_rd_mol(mol2[1], smiles=mol2[0], project=bundle.data["project"]) for mol2 in mols]
+        batches = [CBHCompoundBatch.objects.from_rd_mol(mol2[1], smiles=mol2[0], project=bundle.data["project"], reDraw=True) for mol2 in mols]
     
 
         multiple_batch = CBHCompoundMultipleBatch.objects.create()
@@ -523,7 +523,7 @@ class CBHCompoundBatchResource(ModelResource):
                 molfile = pybelmol.write("mdl")
 
                 if molfile.strip() and molfile != "*":
-                    rd_mol = Chem.MolFromMolBlock(molfile)
+                    rd_mol = Chem.MolFromMolBlock(molfile, sanitize=False)
                     '''
                     Pybel can read some hypervalent molecules that RDKit cannot read
                     Therefore currently these molecules are outputted as images and sent back to the front end
@@ -545,7 +545,7 @@ class CBHCompoundBatchResource(ModelResource):
         else: 
             if (correct_file.extension == ".sdf"):
                 #read in the file
-                suppl = Chem.ForwardSDMolSupplier(correct_file.file)
+                suppl = Chem.ForwardSDMolSupplier(correct_file.file, sanitize=False)
                 mols = [mo for mo in suppl]
                 #read the headers from the first molecule
                 for mol in mols:
@@ -585,7 +585,7 @@ class CBHCompoundBatchResource(ModelResource):
                     smiles_str = row[structure_col]
                     struc = Chem.MolFromSmiles(smiles_str)
                     Compute2DCoords(struc)
-                    b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"])
+                    b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
                     #work out custom fields from mapping object
                     #new_fields, remapped_fields, ignored_fields
                     
