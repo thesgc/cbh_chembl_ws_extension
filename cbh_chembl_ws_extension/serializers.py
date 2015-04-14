@@ -20,6 +20,8 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem, PandasTools
 
+import pybel
+
 
 def flatten_dict(d, base=None):
     """Converts a dictionary of dictionaries or lists into a simple
@@ -208,7 +210,6 @@ class SDFSerializer(Serializer):
     def to_sdf(self, data, options=None):
         '''Convert to SDF'''
         sio = cStringIO.StringIO()
-        w = Chem.SDWriter(sio)
         mols = []
         index = 0
         options = options or {}
@@ -216,21 +217,29 @@ class SDFSerializer(Serializer):
         exp_json = json.loads(data.get('export',[]))
         df = pd.DataFrame(exp_json)
         df.fillna('', inplace=True)
-        #pull data back out of dataframe to put into rdkit tools
+        cols = df.columns.tolist()
+        #now for the list we have in the order we have it, move the columns by name
+        #this way you end up with your core fields at the start and custom fields at the end.
         ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'Added By', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
+        for idx, item in enumerate(ordered_fields):
+            cols.insert(idx, cols.pop(cols.index(item)))
+        #reindex the dataframe
+        df = df.ix[:, cols]
+        #pull data back out of dataframe to put into rdkit tools
 
         row_iterator = df.iterrows()
         headers = list(df)
         try:
             for index, row in row_iterator:
-                #smiles_str = row['SMILES']
-                #m = Chem.MolFromSmiles(smiles_str)
-                mol_str = row['ctab']
-                m = Chem.MolFromMolBlock(mol_str)
-                for field in headers:
-                    m.SetProp(str(field), str(row[field]))
 
-                mols.append(m)
+                #in order to be able to specify an order for the molecule data, we will need to use pybel to construct our mols
+                mol_str = row['ctab']
+                m = pybel.readstring("sdf", str(mol_str))
+                for field in headers:
+                    m.data[str(field)] = str(row[field])
+                #we don't need the ctab column as we already have our mol
+                del m.data['ctab']
+                sio.write(m.write('sdf'))
             
                 # for d in pd_json:
                 #     print(d.data)
@@ -243,11 +252,8 @@ class SDFSerializer(Serializer):
         except Exception , e:
             print e
 
-        for m in mols: 
-            w.write(m)
-        w.close()
-        #print mols
         return sio.getvalue()
+        
 
 
 
