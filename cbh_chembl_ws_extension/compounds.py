@@ -365,9 +365,6 @@ class CBHCompoundBatchResource(ModelResource):
                 batch.save(validate=False)
                 batch.generate_structure_and_dictionary()
                 bundle.data["saved"] += 1
-  #          except Exception , e:
-   #             bundle.data["errors"] += e
-        #indexed = CBHCompoundBatch.objects.index_new_compounds()
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
 
@@ -432,7 +429,6 @@ class CBHCompoundBatchResource(ModelResource):
             if batch.__dict__["errors"] != {}:
                 bundle.data["errors"] += 1
                 bundle.data["fileerrors"].append({"index" : i+1, "error": "Inchi Parse Error"})
-                total = total - 1
                 print batch.__dict__["errors"]
             else:
                 batch_key = batch.get_uk()
@@ -533,10 +529,14 @@ class CBHCompoundBatchResource(ModelResource):
                         smiles = Chem.MolToSmiles(rd_mol)
                         if smiles.strip():
                             b = CBHCompoundBatch.objects.from_rd_mol(rd_mol, smiles=smiles, project=bundle.data["project"])
-                            if rxn:
-                                #Here we set the uncurated fields equal to the reaction data extracted from Chemdraw
-                                b.uncurated_fields = rxn[index]
-                            batches.append(b)
+                            if b:
+                                if rxn:
+                                    #Here we set the uncurated fields equal to the reaction data extracted from Chemdraw
+                                    b.uncurated_fields = rxn[index]
+                                batches.append(b)
+                            else:
+                                errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Invalid valency or other error parsing this molecule"})
+
                     else:
                         errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Invalid valency or other error parsing this molecule"})
                     index += 1
@@ -550,7 +550,7 @@ class CBHCompoundBatchResource(ModelResource):
                 #read the headers from the first molecule
                 for mol in mols:
                     if mol is None: 
-                        errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
+                        
 
                         continue
                     if not headers: 
@@ -559,18 +559,22 @@ class CBHCompoundBatchResource(ModelResource):
 
                 for mol in mols:
                     if mol is None: 
+                        errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
                         continue
                     b = CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"])
-                    custom_fields = {}
-                    for hdr in headers:
-                        try:
-                            custom_fields[hdr] = mol.GetProp(hdr) 
-                        except KeyError:
-                            custom_fields[hdr]   = ""
-                        
-                    b.uncurated_fields = custom_fields
+                    if b:
+                        custom_fields = {}
+                        for hdr in headers:
+                            try:
+                                custom_fields[hdr] = mol.GetProp(hdr) 
+                            except KeyError:
+                                custom_fields[hdr]   = ""
+                            
+                        b.uncurated_fields = custom_fields
 
-                    batches.append(b)
+                        batches.append(b)
+                    else:
+                        errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
                     
 
             elif(correct_file.extension in (".xls", ".xlsx")):
@@ -584,17 +588,22 @@ class CBHCompoundBatchResource(ModelResource):
                 for index, row in row_iterator:
                     smiles_str = row[structure_col]
                     struc = Chem.MolFromSmiles(smiles_str)
-                    Compute2DCoords(struc)
-                    b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
-                    #work out custom fields from mapping object
-                    #new_fields, remapped_fields, ignored_fields
-                    
-                    custom_fields = {}
-                    for hdr in headers:
-                        custom_fields[ hdr] = row[hdr] 
-                    #Set excel fields as uncurated
-                    b.uncurated_fields = custom_fields
-                    batches.append(b)
+                    if struc:
+                        Compute2DCoords(struc)
+                        b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
+                        #work out custom fields from mapping object
+                        #new_fields, remapped_fields, ignored_fields
+                        if b:
+                            custom_fields = {}
+                            for hdr in headers:
+                                custom_fields[ hdr] = row[hdr] 
+                            #Set excel fields as uncurated
+                            b.uncurated_fields = custom_fields
+                            batches.append(b)
+                        else:
+                            errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this identifier", "SMILES": smiles_str})
+                    else:
+                        errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this identifier",  "SMILES": smiles_str})
             else:
                 raise BadRequest("Invalid File Format")
 
