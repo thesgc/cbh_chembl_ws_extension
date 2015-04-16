@@ -362,8 +362,9 @@ class CBHCompoundBatchResource(ModelResource):
 
         for batch in batches:
 
-                batch.save(validate=False)
+                
                 batch.generate_structure_and_dictionary()
+                batch.save(validate=False)
                 bundle.data["saved"] += 1
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
@@ -632,34 +633,38 @@ class CBHCompoundBatchResource(ModelResource):
            rest of the calculated fields'''
         if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or self.determine_format(request) == 'chemical/x-mdl-sdfile' ):
             
-            try:
-                df_data = []
-                ordered_cust_fields = []
-                keys_list = []
-                for index, b in enumerate(data["objects"]):
-                    #remove items which are not listed as being kept
-                    new_data = {}
-                    for k, v in b.data.iteritems():
-                        for name, display_name in self.Meta.fields_to_keep.iteritems():
-                            if k == name:
-                                new_data[display_name] = v
-                    #we need sd format exported results to retain stereochemistry - use mol instaed of smiles
-                    if(self.determine_format(request) == 'chemical/x-mdl-sdfile'):
-                        new_data['ctab'] = b.data['ctab']
-                    #dummy
-                    #not every row has a value for every custom field
-                    for field, value in b.data['custom_fields'].iteritems():
-                        new_data[field] = value
-                        keys_list.append(field)
-                        
-                    #now remove custom_fields
-                    del(new_data['custom_fields'])
-                    b.data = new_data
-                    df_data.append(new_data)               
-                df = pd.DataFrame(df_data)
-                data['export'] = df.to_json()
-            except Exception , e:
-                print e
+            df_data = []
+            ordered_cust_fields = []
+            keys_list = []
+            for index, b in enumerate(data["objects"]):
+                #remove items which are not listed as being kept
+                new_data = {}
+                for k, v in b.data.iteritems():
+                    for name, display_name in self.Meta.fields_to_keep.iteritems():
+                        if k == name:
+                            new_data[display_name] = v
+                #we need sd format exported results to retain stereochemistry - use mol instaed of smiles
+                if(self.determine_format(request) == 'chemical/x-mdl-sdfile'):
+                    new_data['ctab'] = b.data['ctab']
+                #dummy
+                #not every row has a value for every custom field
+                for field, value in b.data['custom_fields'].iteritems():
+                    new_data[field] = value
+                    keys_list.append(field)
+                    
+                #now remove custom_fields
+                del(new_data['custom_fields'])
+                # for field, value in b.data['uncurated_fields'].iteritems():
+                #     new_data[field] = value
+                #     keys_list.append(field)
+                    
+                # #now remove custom_fields
+                # del(new_data['uncurated_fields'])
+                b.data = new_data
+                df_data.append(new_data)               
+            df = pd.DataFrame(df_data)
+            data['export'] = df.to_json()
+            
             
         return data
 

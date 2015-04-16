@@ -7,7 +7,6 @@ from django.contrib.admin import ModelAdmin
 from django.forms.widgets import HiddenInput, TextInput
 from django.db import models
 import json
-from django.template.defaultfilters import slugify
 
 class GrappelliSortableHiddenMixin(object):
     """
@@ -54,33 +53,33 @@ class CustomFieldConfigAdmin(ModelAdmin):
 
 
 
-    def save_related(self, request, form, formsets, change):
-        """
-        Given the ``HttpRequest``, the parent ``ModelForm`` instance, the
-        list of inline formsets and a boolean value based on whether the
-        parent is being added or changed, save the related objects to the
-        database. Note that at this point save_form() and save_model() have
-        already been called.
-        """
-        form.save_m2m()
-        for formset in formsets:
-            instances = self.save_formset(request, form, formset, change=change)
-            fields = []
-            for f in formset.queryset:
-                f.field_key = slugify(f.name).replace("-", "_")
-                f.save()
-                fields.append(f.get_fields())
-            schemaform = {
-                            "schema" :{
-                                        "type" : "object",
-                                        "properties"   :  dict((field[0],field[1]) for field in fields),
-                                        "required" : [field[0] for field in fields if field[2] is True]
-                            },
-                            "form" : [field[0] for field in fields]
-                        }
-            formset.instance.schemaform = json.dumps(schemaform)
-            formset.instance.save()
-            break # There is only one formset
+    # def save_related(self, request, form, formsets, change):
+    #     """
+    #     Given the ``HttpRequest``, the parent ``ModelForm`` instance, the
+    #     list of inline formsets and a boolean value based on whether the
+    #     parent is being added or changed, save the related objects to the
+    #     database. Note that at this point save_form() and save_model() have
+    #     already been called.
+    #     """
+    #     form.save_m2m()
+    #     for formset in formsets:
+    #         instances = self.save_formset(request, form, formset, change=change)
+    #         fields = []
+    #         for f in formset.queryset:
+    #             f.field_key = slugify(f.name).replace("-", "_")
+    #             f.save()
+    #             fields.append(f.get_fields())
+    #         schemaform = {
+    #                         "schema" :{
+    #                                     "type" : "object",
+    #                                     "properties"   :  dict((field[0],field[1]) for field in fields),
+    #                                     "required" : [field[0] for field in fields if field[2] is True]
+    #                         },
+    #                         "form" : [field[0] for field in fields]
+    #                     }
+    #         formset.instance.schemaform = json.dumps(schemaform)
+    #         formset.instance.save()
+    #         break # There is only one formset
 
 
 
