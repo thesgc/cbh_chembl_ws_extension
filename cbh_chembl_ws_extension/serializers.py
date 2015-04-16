@@ -313,8 +313,20 @@ class CamelCaseJSONSerializer(Serializer):
                                         value[k] = json.loads(v)
                                         continue
                                     except ValueError:
-                                        value[k] = v
-                            
+                                        pass
+                                elif "." in v:
+                                    try:
+                                        value[k] = float(v)
+                                        continue
+                                    except:
+                                        pass
+                                else:
+                                    try:
+                                        value[k] = int(v)
+                                        continue
+                                    except:
+                                        pass
+                                value[k] = v
                         new_dict[new_key] = value
                     else:
                         new_dict[new_key] = camelize(value)

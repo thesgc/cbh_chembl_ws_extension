@@ -57,14 +57,14 @@ class PinnedCustomFieldResource(ModelResource):
         data["placeholder"] = obj.description
         form = None
         if data.get("format", False) == obj.UISELECT:
-            data["items"] = []# obj.get_allowed_items() 
+            data["items"] = obj.get_allowed_items(projectKey) 
+            print data["items"]
             if obj.field_type in [obj.UISELECTTAGS,obj.UISELECTTAGS]:
-                data["items"] = [] #Will be filled dynamically
                 data["options"]  = {
                                       "tagging": "$scope.tagFunction" ,
                                       "taggingLabel": "(adding new)",
                                       "taggingTokens": ",|ENTER",
-                                        "http_get" :{     "url": "/" + settings.WEBSERVICES_NAME + "/"  + self._meta.resource_name + "/%d?projectKey=%s" % (obj.id, projectKey )}
+                                       ## "http_get" :{     "url": "/" + settings.WEBSERVICES_NAME + "/"  + self._meta.resource_name + "/%d?projectKey=%s" % (obj.id, projectKey )}
 
                                    }
                                    #
@@ -72,8 +72,8 @@ class PinnedCustomFieldResource(ModelResource):
             form = {
                 "key": obj.name,
                 "minDate": "2000-01-01",
-                "maxDate": time.strftime("%Y%m%d"),
-                "format": "yyyy-mm-dd"
+                "maxDate": time.strftime("%d-%m-%Y"),
+                "format": "dd-mm-yyyy"
 
             }
 
