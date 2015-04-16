@@ -364,7 +364,7 @@ class CBHCompoundBatchResource(ModelResource):
 
                 
                 batch.generate_structure_and_dictionary()
-                batch.save(validate=False)
+                #batch.save(validate=False)
                 bundle.data["saved"] += 1
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
