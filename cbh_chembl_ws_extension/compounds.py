@@ -529,7 +529,7 @@ class CBHCompoundBatchResource(ModelResource):
                     if rd_mol:
                         smiles = Chem.MolToSmiles(rd_mol)
                         if smiles.strip():
-                            b = CBHCompoundBatch.objects.from_rd_mol(rd_mol, smiles=smiles, project=bundle.data["project"])
+                            b = CBHCompoundBatch.objects.from_rd_mol(rd_mol, orig_ctab=molfile, smiles=smiles, project=bundle.data["project"])
                             if b:
                                 if rxn:
                                     #Here we set the uncurated fields equal to the reaction data extracted from Chemdraw
@@ -546,23 +546,22 @@ class CBHCompoundBatchResource(ModelResource):
         else: 
             if (correct_file.extension == ".sdf"):
                 #read in the file
-                suppl = Chem.ForwardSDMolSupplier(correct_file.file, sanitize=False)
+                suppl = Chem.ForwardSDMolSupplier(correct_file.file)
                 mols = [mo for mo in suppl]
                 #read the headers from the first molecule
                 for mol in mols:
                     if mol is None: 
-                        
-
                         continue
                     if not headers: 
                         headers.extend(list(mol.GetPropNames()))
                 headers = list(set(headers))
-
-                for mol in mols:
+                ctabs = correct_file.file.read().split("\n$$$$\n")
+                for index, mol in enumerate(mols):
                     if mol is None: 
                         errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
                         continue
-                    b = CBHCompoundBatch.objects.from_rd_mol(mol, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"])
+                    orig_data = ctabs[index]
+                    b = CBHCompoundBatch.objects.from_rd_mol(mol, orig_ctab=orig_data, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"])
                     if b:
                         custom_fields = {}
                         for hdr in headers:
