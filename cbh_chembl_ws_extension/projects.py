@@ -53,30 +53,34 @@ class PinnedCustomFieldResource(ModelResource):
 
     def get_field_values(self, obj, projectKey):
         data =  copy.deepcopy(obj.FIELD_TYPE_CHOICES[obj.field_type]["data"])
+
         data["title"] = obj.name
         data["placeholder"] = obj.description
-        form = None
+
+
+        form = {}
+        form["field_type"] = obj.field_type
+        form["positon"] = obj.position
+        form["key"] = obj.name
+        form["title"] = obj.name
+        form["placeholder"] = obj.description
+        form["allowed_values"] = obj.allowed_values
         if data.get("format", False) == obj.UISELECT:
             data["items"] = obj.get_allowed_items(projectKey) 
-            print data["items"]
-            if obj.field_type in [obj.UISELECTTAGS,obj.UISELECTTAGS]:
-                data["options"]  = {
-                                      "tagging": "$scope.tagFunction" ,
-                                      "taggingLabel": "(adding new)",
-                                      "taggingTokens": ",|ENTER",
-                                       ## "http_get" :{     "url": "/" + settings.WEBSERVICES_NAME + "/"  + self._meta.resource_name + "/%d?projectKey=%s" % (obj.id, projectKey )}
 
-                                   }
-                                   #
+          
         if data.get("format", False) == obj.DATE:
-            form = {
-                "key": obj.name,
+            form.update( {
                 "minDate": "2000-01-01",
                 "maxDate": time.strftime("%d-%m-%Y"),
                 "format": "dd-mm-yyyy"
 
-            }
-
+            })
+        else:
+            for item in ["options"]:
+                stuff = data.pop(item, None)
+                if stuff:
+                    form[item] = stuff
         return (obj.name, data, obj.required, form)
 
 class CustomFieldConfigResource(ModelResource):
@@ -100,6 +104,8 @@ class CustomFieldConfigResource(ModelResource):
 
     def get_object_list(self, request):
         return super(CustomFieldConfigResource, self).get_object_list(request).prefetch_related("project").select_related("pinned_custom_field")
+
+
 
     def alter_list_data_to_serialize(self, request, bundle):
         for bun in bundle["objects"]:

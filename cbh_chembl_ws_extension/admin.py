@@ -2,7 +2,7 @@ from django.contrib import admin
 from cbh_chembl_model_extension.models import Project, PinnedCustomField, CustomFieldConfig
 
 from django.contrib.admin import ModelAdmin
-
+from cbh_chembl_ws_extension.projects import CustomFieldConfigResource
 
 from django.forms.widgets import HiddenInput, TextInput
 from django.db import models
@@ -29,57 +29,67 @@ class PinnedCustomFieldInline( GrappelliSortableHiddenMixin, admin.TabularInline
     formfield_overrides = {
         models.CharField: {'widget': TextInput(attrs={'size':'20'})},
     }
-
-
+    extra = 3
+    def get_extra (self, request, obj=None, **kwargs):
+        """Dynamically sets the number of extra forms. 0 if the related object
+        already exists or the extra configuration otherwise."""
+        if obj:
+            # Don't add any extra forms if the related object already exists.
+            return 0
+        return self.extra
 #Make a template have to be chosen in order to create a schema and make it impossible to edit schemas once created then versioning not needed
 
 
 
 class CustomFieldConfigAdmin(ModelAdmin):
-
+    
     exclude= ["created_by", ]
 
     search_fields = ('name',)
     ordering = ('-created',)
     date_hierarchy = 'created' 
     inlines = [PinnedCustomFieldInline,]
+
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj: # editing an existing object
+            return self.readonly_fields + ('schemaform',)
+        return self.readonly_fields
+
     def save_model(self, request, obj, form, change): 
-        obj.created_by = request.user
-        print "test"
+        obj.created_by= request.user
         obj.save()
+        if obj.pinned_custom_field.all().count() == 0 and obj.schemaform:
+            data = json.loads(form.cleaned_data["schemaform"])["form"]
+            for position, field in enumerate(data):
+                PinnedCustomField.objects.create(allowed_values=field["allowed_values"],
+                                                custom_field_config=obj,
+                                                field_type=field["field_type"],
+                                                position=field["positon"],
+                                                name=field["key"],
+                                                description=field["placeholder"])
+                                                
+                
+
+
+    def log_change(self, request, object, message):
+        """
+        Log that an object has been successfully changed.
+        The default implementation creates an admin LogEntry object.
+        """
+        super(CustomFieldConfigAdmin, self).log_change(request, object, message)
+        cfr = CustomFieldConfigResource()
+        if object.__class__.__name__ == "CustomFieldConfig":
+            schemaform = json.dumps(cfr.get_schema_form(object, ""))
+            object.schemaform = schemaform
+            object.save()
+
+
     formfield_overrides = {
         models.CharField: {'widget': TextInput(attrs={'size':'20'})},
     }
 
 
-
-    # def save_related(self, request, form, formsets, change):
-    #     """
-    #     Given the ``HttpRequest``, the parent ``ModelForm`` instance, the
-    #     list of inline formsets and a boolean value based on whether the
-    #     parent is being added or changed, save the related objects to the
-    #     database. Note that at this point save_form() and save_model() have
-    #     already been called.
-    #     """
-    #     form.save_m2m()
-    #     for formset in formsets:
-    #         instances = self.save_formset(request, form, formset, change=change)
-    #         fields = []
-    #         for f in formset.queryset:
-    #             f.field_key = slugify(f.name).replace("-", "_")
-    #             f.save()
-    #             fields.append(f.get_fields())
-    #         schemaform = {
-    #                         "schema" :{
-    #                                     "type" : "object",
-    #                                     "properties"   :  dict((field[0],field[1]) for field in fields),
-    #                                     "required" : [field[0] for field in fields if field[2] is True]
-    #                         },
-    #                         "form" : [field[0] for field in fields]
-    #                     }
-    #         formset.instance.schemaform = json.dumps(schemaform)
-    #         formset.instance.save()
-    #         break # There is only one formset
 
 
 
