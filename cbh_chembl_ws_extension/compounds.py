@@ -631,7 +631,7 @@ class CBHCompoundBatchResource(ModelResource):
         '''use the request type to determine which fields should be limited for file download,
            add extra fields if needed (eg images) and enumerate the custom fields into the 
            rest of the calculated fields'''
-        if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or self.determine_format(request) == 'chemical/x-mdl-sdfile' ):
+        if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or request.GET.get("format") == "sdf" or self.determine_format(request) == 'chemical/x-mdl-sdfile' ):
             
             df_data = []
             ordered_cust_fields = []
@@ -644,7 +644,7 @@ class CBHCompoundBatchResource(ModelResource):
                         if k == name:
                             new_data[display_name] = v
                 #we need sd format exported results to retain stereochemistry - use mol instaed of smiles
-                if(self.determine_format(request) == 'chemical/x-mdl-sdfile'):
+                if(self.determine_format(request) == 'chemical/x-mdl-sdfile' or request.GET.get("format") == "sdf"):
                     new_data['ctab'] = b.data['ctab']
                 #dummy
                 #not every row has a value for every custom field
@@ -663,8 +663,7 @@ class CBHCompoundBatchResource(ModelResource):
                 b.data = new_data
                 df_data.append(new_data)               
             df = pd.DataFrame(df_data)
-            data['export'] = df.to_json()
-            
+            data['export'] = df.to_json()            
             
         return data
 

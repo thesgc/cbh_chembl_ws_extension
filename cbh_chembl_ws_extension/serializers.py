@@ -195,6 +195,11 @@ class XLSSerializer(Serializer):
         return output.getvalue()
 
 
+
+SDF_TEMPLATE = ">  <{name}>\n{value}\n\n"
+
+
+
 class SDFSerializer(Serializer):
     '''For exporting query sets as SD/Mol files'''
     formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv', 'xls', 'sdf']
@@ -209,11 +214,10 @@ class SDFSerializer(Serializer):
 
     def to_sdf(self, data, options=None):
         '''Convert to SDF'''
-        sio = cStringIO.StringIO()
         mols = []
         index = 0
         options = options or {}
-        
+        print data
         exp_json = json.loads(data.get('export',[]))
         df = pd.DataFrame(exp_json)
         df.fillna('', inplace=True)
@@ -229,30 +233,21 @@ class SDFSerializer(Serializer):
 
         row_iterator = df.iterrows()
         headers = list(df)
-        try:
-            for index, row in row_iterator:
 
-                #in order to be able to specify an order for the molecule data, we will need to use pybel to construct our mols
-                mol_str = row['ctab']
-                m = pybel.readstring("sdf", str(mol_str))
-                for field in headers:
-                    m.data[str(field)] = str(row[field])
-                #we don't need the ctab column as we already have our mol
-                del m.data['ctab']
-                sio.write(m.write('sdf'))
-            
-                # for d in pd_json:
-                #     print(d.data)
-                #     m = Chem.MolFromSmiles(d['SMILES'])
-                    
-                    # for k, v in d.data.iteritems():
-                    #     m.SetProp(k,v)
-
-                    # mols.append(m)
-        except Exception , e:
-            print e
-
-        return sio.getvalue()
+        mol_strings = []
+        for index, row in row_iterator:
+            #Simple string based SDF formatter
+            mol_str = row['ctab'].split("END")[0]
+            properties = []
+            for field in headers:
+                if field !="ctab":
+                    properties.append(
+                        SDF_TEMPLATE.format(
+                            **{"name" :str(field), "value" : str(row[field])}
+                            )
+                        )
+            mol_strings.append("".join([mol_str,"END\n"] + properties))
+        return "$$$$\n".join(mol_strings) + "$$$$"
         
 
 
