@@ -25,6 +25,9 @@ def compounds(x, dataKeys,  product_ids, reagent_ids, reactant_ids):
 				datum['@SGDataValue'] for datum in component['sgdatum']
 			}
 			dicttoyield['role'] = role
+			for k, v in dicttoyield.items():
+				if "%" in k:
+					dicttoyield[k] = str(float(v.strip()) *100)
 			yield dicttoyield
 
 

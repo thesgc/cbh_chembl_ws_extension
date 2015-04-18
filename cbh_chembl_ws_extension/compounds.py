@@ -11,7 +11,7 @@ from collections import OrderedDict
 from tastypie.resources import ModelResource, Resource
 from itertools import chain
 from pybel import readfile , readstring
-
+import re
 try:
     from rdkit import Chem
     from rdkit.Chem import AllChem
@@ -265,6 +265,7 @@ class CBHCompoundBatchResource(ModelResource):
             self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
 
         updated_bundle = self.obj_build(bundle, dict_strip_unicode_keys(deserialized))
+        bundle.obj.std_ctab = bundle.obj.ctab
         bundle.obj.validate()
         self.match_list_to_moleculedictionaries(bundle.obj,bundle.data["project"] )
         dictdata = bundle.obj.__dict__
@@ -355,7 +356,12 @@ class CBHCompoundBatchResource(ModelResource):
         else:
             self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
         id = bundle.data["current_batch"]
-        batches = CBHCompoundMultipleBatch.objects.get(pk=id).uploaded_data
+        mb = CBHCompoundMultipleBatch.objects.get(pk=id)
+        batches = mb.uploaded_data
+        mb.saved=True
+        mb.created_by = request.user.username
+        mb.save()
+
         bundle.data["saved"] = 0
         bundle.data["errors"] = []
 
@@ -483,7 +489,7 @@ class CBHCompoundBatchResource(ModelResource):
         batches = [CBHCompoundBatch.objects.from_rd_mol(mol2[1], smiles=mol2[0], project=bundle.data["project"], reDraw=True) for mol2 in mols]
     
 
-        multiple_batch = CBHCompoundMultipleBatch.objects.create()
+        multiple_batch = CBHCompoundMultipleBatch.objects.create(project=bundle.data["project"])
         for b in batches:
             b.multiple_batch_id = multiple_batch.pk
             b.created_by = bundle.request.user.username
@@ -528,20 +534,25 @@ class CBHCompoundBatchResource(ModelResource):
                     '''
                     if rd_mol:
                         smiles = Chem.MolToSmiles(rd_mol)
+
                         if smiles.strip():
-                            b = CBHCompoundBatch.objects.from_rd_mol(rd_mol, orig_ctab=molfile, smiles=smiles, project=bundle.data["project"])
+                            try:
+                                b = CBHCompoundBatch.objects.from_rd_mol(rd_mol, orig_ctab=molfile, smiles=smiles, project=bundle.data["project"])
+                            except Exception, e:
+                                b =None
+                                index = index -1
                             if b:
                                 if rxn:
                                     #Here we set the uncurated fields equal to the reaction data extracted from Chemdraw
                                     b.uncurated_fields = rxn[index]
                                 batches.append(b)
                             else:
-                                errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Invalid valency or other error parsing this molecule"})
+                                errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Unable to produce inchi from this molecule"})
 
                     else:
                         errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Invalid valency or other error parsing this molecule"})
                     index += 1
-                       
+                    
 
         else: 
             if (correct_file.extension == ".sdf"):
@@ -551,31 +562,35 @@ class CBHCompoundBatchResource(ModelResource):
                 #read the headers from the first molecule
                 for mol in mols:
                     if mol is None: 
-                        continue
-                    if not headers: 
+                        pass
+                    else:
                         headers.extend(list(mol.GetPropNames()))
                 headers = list(set(headers))
-                ctabs = correct_file.file.read().split("\n$$$$\n")
+                data = correct_file.file.read()
+                data = data.replace("\r\n","\n").replace("\r","\n")
+                ctabs = data.split("$$$$")
                 for index, mol in enumerate(mols):
                     if mol is None: 
                         errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
-                        continue
-                    orig_data = ctabs[index]
-                    b = CBHCompoundBatch.objects.from_rd_mol(mol, orig_ctab=orig_data, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"])
-                    if b:
-                        custom_fields = {}
-                        for hdr in headers:
-                            try:
-                                custom_fields[hdr] = mol.GetProp(hdr) 
-                            except KeyError:
-                                custom_fields[hdr]   = ""
-                            
-                        b.uncurated_fields = custom_fields
-
-                        batches.append(b)
                     else:
-                        errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
-                    
+                        orig_data = ctabs[index]
+                        try:
+                            
+                            b = CBHCompoundBatch.objects.from_rd_mol(mol, orig_ctab=orig_data, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"])
+                            
+                            custom_fields = {}
+                            for hdr in headers:
+                                try:
+                                    custom_fields[hdr] = mol.GetProp(hdr) 
+                                except KeyError:
+                                    custom_fields[hdr]   = ""
+                                
+                            b.uncurated_fields = custom_fields
+
+                            batches.append(b)
+                        except Exception, e:
+                            errors.append({"index" : index+1, "message" : str(e)})
+                        
 
             elif(correct_file.extension in (".xls", ".xlsx")):
                 #we need to know which column contains structural info - this needs to be defined on the mapping page and passed here
@@ -608,7 +623,7 @@ class CBHCompoundBatchResource(ModelResource):
                 raise BadRequest("Invalid File Format")
 
 
-        multiple_batch = CBHCompoundMultipleBatch.objects.create()
+        multiple_batch = CBHCompoundMultipleBatch.objects.create(project = bundle.data["project"])
         for b in batches:
             b.multiple_batch_id = multiple_batch.pk
             b.created_by = bundle.request.user.username
@@ -768,7 +783,16 @@ def deepgetattr(obj, attr, ex):
 
 
 
-
+class CBHCompoundMultipleBatchResource(ModelResource):
+    class Meta:
+        always_return_data = True
+        queryset = FlowFile.objects.all()
+        resource_name = 'cbh_batch_upload'
+        authorization = Authorization()
+        include_resource_uri = False
+        allowed_methods = ['get']
+        default_format = 'application/json'
+        authentication = SessionAuthentication()    
 
 
 
