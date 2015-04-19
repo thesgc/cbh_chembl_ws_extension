@@ -217,7 +217,6 @@ class SDFSerializer(Serializer):
         mols = []
         index = 0
         options = options or {}
-        print data
         exp_json = json.loads(data.get('export',[]))
         df = pd.DataFrame(exp_json)
         df.fillna('', inplace=True)

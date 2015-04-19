@@ -475,10 +475,10 @@ class CBHCompoundBatchResource(ModelResource):
        
         batches = []
         if type == "smiles":
-            allmols = [(obj, Chem.MolFromSmiles(obj)) for obj in objects]
+            allmols = [(obj, Chem.MolFromSmiles(str(obj))) for obj in objects]
 
         elif type == "inchi":
-            allmols = [(Chem.MolToSmiles( Chem.MolFromInchi(obj)), Chem.MolFromInchi(obj)) for obj in objects]
+            allmols = [(Chem.MolToSmiles( Chem.MolFromInchi(str(obj.encode('ascii','ignore')))), Chem.MolFromInchi(obj.encode('ascii','ignore'))) for obj in objects]
 
         errors = [{"index" : i+1, "error": "Parse Error"} for i, mol in enumerate(allmols) if not mol[1]]
         bundle.data["fileerrors"] = errors
