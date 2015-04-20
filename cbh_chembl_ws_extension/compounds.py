@@ -12,6 +12,7 @@ from tastypie.resources import ModelResource, Resource
 from itertools import chain
 from pybel import readfile , readstring
 import re
+import shortuuid
 try:
     from rdkit import Chem
     from rdkit.Chem import AllChem
@@ -25,7 +26,6 @@ try:
     from rdkit.Chem.Draw import DrawingOptions
 except ImportError:
     DrawingOptions = None
-
 
 
 from tastypie.exceptions import BadRequest
@@ -421,6 +421,35 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def validate_multi_batch(self,multi_batch, bundle, request):
+        sdfstrings = [batch.ctab for batch in multi_batch.uploaded_data]
+        sdf = "\n".join(sdfstrings)
+        
+        filename = "/tmp/" + shortuuid.ShortUUID().random()
+        text_file = open(filename, "w")
+        text_file.write(sdf)
+        text_file.close()
+
+        import subprocess
+        from subprocess import PIPE, Popen
+
+        p = Popen([settings.INCHI_BINARIES_LOCATION['1.02'], "-STDIO",  filename], stdout=PIPE, stderr=PIPE)
+        a = p.communicate()
+        inchis = {}
+        inchiparts = a[0].split("\nStructure:")
+        print inchiparts
+        
+        for i, inch in enumerate(inchiparts):
+
+            parts = inch.split("\n")
+            print parts
+            if len(parts) == 1:
+                continue
+            ints =[s for s in parts[0].split() if s.isdigit()]
+            part = "".join(ints)
+            inchis[part] = parts[1]
+            
+
+
         total = len(multi_batch.uploaded_data)
         bundle.data["objects"] = []
         bundle.data["new"] = 0
@@ -433,6 +462,8 @@ class CBHCompoundBatchResource(ModelResource):
         new_uploaded_data = []
         already_found = set([])
         for i, batch in enumerate(multi_batch.uploaded_data):
+            batch.standard_inchi = inchis[str(i+1)]
+            batch.validate(temp_props=False)
             if batch.__dict__["errors"] != {}:
                 bundle.data["errors"] += 1
                 bundle.data["fileerrors"].append({"index" : i+1, "error": "Inchi Parse Error"})
@@ -514,10 +545,11 @@ class CBHCompoundBatchResource(ModelResource):
         batches = []
         headers = []
         errors = []
-        index = 0
+        
         if (".cdx" in correct_file.extension ):
             mols = [mol for mol in readfile( str(correct_file.extension[1:]), str(correct_file.file.name), )]
             rxn = None
+            index = 0
             if correct_file.extension == '.cdxml':
                 #Look for a stoichiometry table in the reaction file
                 rxn = chemdraw_reaction.parse( str(correct_file.file.name))
@@ -574,23 +606,25 @@ class CBHCompoundBatchResource(ModelResource):
                         errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
                     else:
                         orig_data = ctabs[index]
+                        # try:
+                        t = time.time()
                         try:
-                            
                             b = CBHCompoundBatch.objects.from_rd_mol(mol, orig_ctab=orig_data, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"])
+                        except Exception, e:
+                            errors.append({"index" : index+1,  "message" : str(e)})
+                            b =None
                             
+                        if b:
                             custom_fields = {}
                             for hdr in headers:
                                 try:
                                     custom_fields[hdr] = mol.GetProp(hdr) 
                                 except KeyError:
                                     custom_fields[hdr]   = ""
-                                
+                            
                             b.uncurated_fields = custom_fields
-
                             batches.append(b)
-                        except Exception, e:
-                            errors.append({"index" : index+1, "message" : str(e)})
-                        
+
 
             elif(correct_file.extension in (".xls", ".xlsx")):
                 #we need to know which column contains structural info - this needs to be defined on the mapping page and passed here
@@ -605,7 +639,11 @@ class CBHCompoundBatchResource(ModelResource):
                     struc = Chem.MolFromSmiles(smiles_str)
                     if struc:
                         Compute2DCoords(struc)
-                        b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
+                        try:
+                            b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
+                        except Exception, e:
+                            errors.append({"index" : index+1,  "message" : str(e)})
+                            b =None
                         #work out custom fields from mapping object
                         #new_fields, remapped_fields, ignored_fields
                         if b:
@@ -615,8 +653,6 @@ class CBHCompoundBatchResource(ModelResource):
                             #Set excel fields as uncurated
                             b.uncurated_fields = custom_fields
                             batches.append(b)
-                        else:
-                            errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this identifier", "SMILES": smiles_str})
                     else:
                         errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this identifier",  "SMILES": smiles_str})
             else:
@@ -633,8 +669,10 @@ class CBHCompoundBatchResource(ModelResource):
                 rd_mol = Chem.MolFromMolBlock(b.ctab)
                 Compute2DCoords(rd_mol)
                 b.ctab = Chem.MolToMolBlock(rd_mol)
+                b.ctab += "\n$$$$"
 
         bundle.data["fileerrors"] = errors
+
         multiple_batch.uploaded_data=batches
         multiple_batch.save()
         return self.validate_multi_batch(multiple_batch, bundle, request)
