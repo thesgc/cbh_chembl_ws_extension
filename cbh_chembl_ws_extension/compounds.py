@@ -175,6 +175,8 @@ class CBHCompoundBatchResource(ModelResource):
         fm = request.GET.get("flexmatch", None)
         #this is the similarity index for fingerprint-like searching
         fp = request.GET.get("fpValue", None)
+        custom_fields = request.GET.get("custom_fields", [])
+
 
         cms = None
 
@@ -415,8 +417,7 @@ class CBHCompoundBatchResource(ModelResource):
                 b.custom_fields = bundle.data["custom_fields"]
 
         mb.save()
-        #Might not be needed
-        return self.validate_multi_batch(mb, bundle, request)
+        return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
 
@@ -436,12 +437,10 @@ class CBHCompoundBatchResource(ModelResource):
         a = p.communicate()
         inchis = {}
         inchiparts = a[0].split("\nStructure:")
-        print inchiparts
         
         for i, inch in enumerate(inchiparts):
 
             parts = inch.split("\n")
-            print parts
             if len(parts) == 1:
                 continue
             ints =[s for s in parts[0].split() if s.isdigit()]
@@ -467,7 +466,6 @@ class CBHCompoundBatchResource(ModelResource):
             if batch.__dict__["errors"] != {}:
                 bundle.data["errors"] += 1
                 bundle.data["fileerrors"].append({"index" : i+1, "error": "Inchi Parse Error"})
-                print batch.__dict__["errors"]
             else:
                 batch_key = batch.get_uk()
                 if batch_key in already_found:
@@ -663,8 +661,12 @@ class CBHCompoundBatchResource(ModelResource):
         for b in batches:
             b.multiple_batch_id = multiple_batch.pk
             b.created_by = bundle.request.user.username
-            ctablines = [item.split("0.0000")[0].strip() for item in b.ctab.split("\n") if "0.0000" in item]
-            if len(ctablines) > len(list(set(ctablines))):
+            ctablines = [item.split("0.0000") for item in b.ctab.split("\n") if "0.0000" in item]
+            needs_redraw = 0
+            for line in ctablines:
+                if len(line) > 3:
+                    needs_redraw +=1
+            if needs_redraw == len(ctablines):
                 #check for overlapping molecules in the CTAB 
                 rd_mol = Chem.MolFromMolBlock(b.ctab)
                 Compute2DCoords(rd_mol)
@@ -802,7 +804,7 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def get_object_list(self, request):
-        return super(CBHCompoundBatchResource, self).get_object_list(request).select_related("related_molregno", "related_molregno__compound_properties")
+        return super(CBHCompoundBatchResource, self).get_object_list(request).select_related("related_molregno", "related_molregno__compound_properties").all()
 
 
 
