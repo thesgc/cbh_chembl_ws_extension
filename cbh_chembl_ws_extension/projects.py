@@ -65,8 +65,11 @@ class PinnedCustomFieldResource(ModelResource):
         form["title"] = obj.name
         form["placeholder"] = obj.description
         form["allowed_values"] = obj.allowed_values
+        searchitems = []
         if data.get("format", False) == obj.UISELECT:
-            data["items"] = obj.get_allowed_items(projectKey) 
+            allowed_items = obj.get_allowed_items(projectKey) 
+            data["items"] = allowed_items[0]
+            searchitems = allowed_items[1]
 
           
         if data.get("format", False) == obj.DATE:
@@ -76,12 +79,13 @@ class PinnedCustomFieldResource(ModelResource):
                 "format": "dd-mm-yyyy"
 
             })
+
         else:
             for item in ["options"]:
                 stuff = data.pop(item, None)
                 if stuff:
                     form[item] = stuff
-        return (obj.name, data, obj.required, form)
+        return (obj.name, data, obj.required, form, searchitems)
 
 class CustomFieldConfigResource(ModelResource):
 
@@ -109,16 +113,25 @@ class CustomFieldConfigResource(ModelResource):
 
     def alter_list_data_to_serialize(self, request, bundle):
         for bun in bundle["objects"]:
-            bun.data["schemaform"] = self.get_schema_form(bun.obj, request.GET.get("projectKey", ""))
+            sf = self.get_schema_form(bun.obj, request.GET.get("projectKey", ""))
+            bun.data["schemaform"] = sf[0]
+            bun.data["searchform"] = sf[1]
+
         return bundle
 
     def get_schema_form(self, obj, projectKey):
         fields = []
         # self.select_related()
+        searchfields = set([])
+        searchfield_items = []
         for f in obj.pinned_custom_field.all():
             pcfr = PinnedCustomFieldResource()
             d = pcfr.get_field_values(f, projectKey)
             fields.append(d)
+            for item in d[4]:
+                if item["value"] not in searchfields:
+                    searchfields.add(item["value"] )
+                    searchfield_items.append(item)
         schemaform = {
                         "schema" :{
                                     "type" : "object",
@@ -127,4 +140,26 @@ class CustomFieldConfigResource(ModelResource):
                         },
                         "form" : [field[0] if not field[3] else field[3] for field in fields ]
                     }
-        return schemaform
+
+
+        searchform = {
+                        "schema" :{
+                                    "type" : "object",
+                                    "properties"   :  {"search_custom_fields":  
+                                                                    { "type": "array", 
+                                                                    "format" : "uiselect", 
+                                                                    "items" : searchfield_items,
+                                                                    "placeholder": "Tagged fields",
+                                                                    "title": "Limit by the following tags:",
+                                                                    # "options": {
+                                                                    #       "tagging": "tagFunction" ,
+                                                                    #       "taggingLabel": "(searching all fields)",
+                                                                    #       "taggingTokens": "",
+                                                                    #  }
+                                                        }
+                                    },
+                                    "required" : []
+                        },
+                        "form" : ["search_custom_fields"]
+                    }
+        return (schemaform, searchform)
