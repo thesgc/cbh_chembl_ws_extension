@@ -23,6 +23,8 @@ try:
 except AttributeError:
     api_name = DEFAULT_API_NAME
 
+
+
 api = Api(api_name=api_name)
 
 api.register(CBHCompoundBatchResource())
@@ -39,10 +41,10 @@ from django.contrib.auth.decorators import login_required
 
 urlpatterns = patterns('',
     # url(r'^%s/' % api_name ,Login.as_view(), name="login1"),
-    url(r'^%s/login' % api_name.split("/") ,Login.as_view(), name="login"),
-    url(r'^%s/logout' % api_name.split("/") ,Logout.as_view(), name="logout"),
-    url(r'^%s/flow/' % api_name.split("/"), include(flow)), #adding this to allow configured upload URL within django-flowjs
-    url(r'^%s/admin/' % api_name.split("/"), include(admin.site.urls)),
+    url(r'^%s/login' % api_name ,Login.as_view(), name="login"),
+    url(r'^%s/logout' % api_name ,Logout.as_view(), name="logout"),
+    url(r'^%s/flow/' % api_name, include(flow)), #adding this to allow configured upload URL within django-flowjs
+    url(r'^%s/admin/' % api_name, include(admin.site.urls)),
 	url(r'^grappelli/', include('grappelli.urls')),
     url(r'^%s/$' % api_name.split("/")[0], login_required(Index.as_view()) )
 
