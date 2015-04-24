@@ -15,7 +15,7 @@ from cbh_chembl_ws_extension.projects import *
 
 from cbh_chembl_ws_extension.base import *
 from django.conf import settings
-
+from django_webauth.views import LoginView
 DEFAULT_API_NAME='chemblws'
 
 try:
@@ -40,8 +40,8 @@ admin.autodiscover()
 from django.contrib.auth.decorators import login_required
 
 urlpatterns = patterns('',
-    # url(r'^%s/' % api_name ,Login.as_view(), name="login1"),
-    url(r'^%s/login' % api_name ,Login.as_view(), name="login"),
+    url(r'^%s/webauth' % api_name.split("/")[0] ,LoginView.as_view(), name="login1"),
+    url(r'^%s/login' % api_name.split("/")[0] ,Login.as_view(), name="login"),
     url(r'^%s/logout' % api_name ,Logout.as_view(), name="logout"),
     url(r'^%s/flow/' % api_name, include(flow)), #adding this to allow configured upload URL within django-flowjs
     url(r'^%s/admin/' % api_name, include(admin.site.urls)),
@@ -54,5 +54,5 @@ urlpatterns += api.urls
 
 if "django_webauth" in settings.INSTALLED_APPS:
     urlpatterns += patterns('',
-                            url(r'^%s/webauth/' % api_name, include('django_webauth.urls', 'webauth')),
+                            url(r'^%s/webauth' % api_name.split("/")[0], include('django_webauth.urls', 'webauth')),
                             )
