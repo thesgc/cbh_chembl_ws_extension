@@ -15,7 +15,6 @@ from cbh_chembl_ws_extension.projects import *
 
 from cbh_chembl_ws_extension.base import *
 from django.conf import settings
-from django_webauth.views import LoginView, LogoutView
 DEFAULT_API_NAME='chemblws'
 
 try:
@@ -52,6 +51,8 @@ urlpatterns = patterns('',
 urlpatterns += api.urls
 
 if "django_webauth" in settings.INSTALLED_APPS:
+    from django_webauth.views import LoginView, LogoutView
+
     urlpatterns += patterns('',
     url(r'^%s/webauth' % api_name.split("/")[0] ,LoginView.as_view(), name="webauthlogin"),  
     url(r'^%s/webauthlogout' % api_name.split("/")[0] ,LogoutView.as_view(), name="webauthlogout"),  
