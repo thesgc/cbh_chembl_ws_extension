@@ -62,6 +62,17 @@ import re
 import json
 
 
+
+from django.views.generic import TemplateView
+
+class Index(TemplateView):
+
+    template_name = 'dist/index.html' # or define get_template_names()
+
+
+
+
+
 class UserResource(ModelResource):
     class Meta:
         queryset = get_user_model().objects.all()

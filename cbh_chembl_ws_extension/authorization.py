@@ -31,7 +31,7 @@ class ProjectListAuthorization(Authorization):
             raise Unauthorized("no_logged_in_user")
 
 
-    def base_checks(self, request, model_klass, data, possible_perm_levels):
+    def base_checks(self, request, model_klass, data, possible_perm_levels, perms=None):
         self.login_checks(request, model_klass)
         if not data.get("project_key", None):
             print "no_project_key"
@@ -39,7 +39,7 @@ class ProjectListAuthorization(Authorization):
 
         project = data.get("project", False)
         
-        has_perm = Project.objects.get_user_permission(project.id, request.user, possible_perm_levels)
+        has_perm = Project.objects.get_user_permission(project.id, request.user, possible_perm_levels, perms=perms)
         if has_perm is True:
             return True
 
@@ -48,13 +48,11 @@ class ProjectListAuthorization(Authorization):
         
 
     def list_checks(self, request, model_klass, data, possible_perm_levels, object_list):
-        self.login_checks(request, model_klass)
-        new_list = []
-        for obj in object_list:
-            if Project.objects.get_user_permission(obj.id, request.user, possible_perm_levels) is True:
-                new_list.append(obj)
-
-        return new_list
+        perms = request.user.get_all_permissions()
+        pids = get_all_project_ids_for_user_perms( perms, possible_perm_levels )
+        self.login_checks(request,  model_klass, )
+    
+        return object_list.filter(pk__in=pids)
 
 
 
@@ -73,6 +71,14 @@ class ProjectListAuthorization(Authorization):
 
 
 
+def get_all_project_ids_for_user_perms( perms, possible_perm_levels ):
+    pids = []
+    for perm in perms:
+        prms= str(perm).split(".")
+        pid = prms[0]
+        if pid[0].isdigit()  and prms[1] in possible_perm_levels:
+           pids.append(int(pid))
+    return pids
 
 
 
@@ -91,7 +97,7 @@ class ProjectAuthorization(Authorization):
     """
 
 
-    def login_checks(self, request, model_klass):
+    def login_checks(self, request, model_klass, perms=None):
 
         # If it doesn't look like a model, we can't check permissions.
         # if not model_klass or not getattr(model_klass, '_meta', None):
@@ -105,67 +111,26 @@ class ProjectAuthorization(Authorization):
 
     def base_checks(self, request, model_klass, data, possible_perm_levels):
         self.login_checks(request, model_klass)
-        if not data.get("project_key", None):
-            print "no_project_key"
-            raise Unauthorized("no_project_key")
+        if not data.get("project__project_key", None):
+            if not data.get("project_key"):
+                if not data.get("projectKey"):
+                    print "no_project_key"
+                    raise Unauthorized("no_project_key")
+                else:
+                    key=data.get("projectKey")
+            else:
+                key=data.get("project_key")
+        else:
+            key = data.get("project__project_key")
 
-        project = data.get("project", False)
-        
-        has_perm = Project.objects.get_user_permission(project.id, request.user, possible_perm_levels)
-        if has_perm is True:
+        project = Project.objects.get(project_key=key)
+        pids = get_all_project_ids_for_user_perms(request.user.get_all_permissions(), possible_perm_levels)
+        if project.id in pids:
             return True
-
-        print "user_does_not_have_correct_permissions_for_operation"
-        raise Unauthorized("user_does_not_have_correct_permissions_for_operation")
+        return False
+        
         
 
-    def list_checks(self, request, model_klass, data, possible_perm_levels, object_list):
-        self.login_checks(request, model_klass)
-        new_list = []
-
-        for obj in object_list:
-            if hasattr( obj, "project_id",):
-                if Project.objects.get_user_permission(obj.project_id, request.user, possible_perm_levels) is True:
-                    new_list.append(obj)
-            elif hasattr( obj, "project",):
-                for p in obj.project.all():
-                    if Project.objects.get_user_permission(p.id, request.user, possible_perm_levels) is True:
-                        new_list.append(obj)
-                        break
-
-        return new_list
-
-
-
-
-
-    #     if klass is False:
-    #         return []
-    #     permission = '%s.view_%s' % (klass._meta.app_label, klass._meta.module_name)
-    #     for obj in object_list:        
-    #         #if bundle.request.user.has_perms(permission,obj):
-    #             read_list.append(obj)
-    #     # GET-style methods are always allowed.
-    #     if read_list:
-    #         return read_list
-    #     raise Unauthorized("You are not allowed to access that resource.")
-
-    # def read_detail(self, object_list, bundle):
-    #     klass = self.base_checks(bundle.request, bundle.obj.__class__, bundle.data)
-    #     read_list=[]
-
-
-    #     if klass is False:
-    #         raise Unauthorized("You are not allowed to access that resource.")
-
-    #     permission = '%s.view_%s' % (klass._meta.app_label, klass._meta.module_name)
-    #     for obj in object_list:        
-    #         #if bundle.request.user.has_perms(permission,obj):
-    #             read_list.append(obj)
-                
-    #     if read_list:
-    #         return True
-    #     raise Unauthorized("You are not allowed to access that resource.")
 
     def create_list(self, object_list, bundle):
         bool = self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
@@ -177,9 +142,7 @@ class ProjectAuthorization(Authorization):
 
 
     def read_detail(self, object_list, bundle):
-        self.login_checks(bundle.request, bundle.obj.__class__,)
-        return Project.objects.get_user_permission(bundle.obj.project_id, bundle.request.user, ["editor","viewer",]) 
-                #return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor","viewer",])
+        return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor","viewer",]) 
 
 
     def update_list(self, object_list, bundle):
@@ -195,88 +158,14 @@ class ProjectAuthorization(Authorization):
 
 
     def read_list(self, object_list, bundle):
-        return self.list_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor","viewer",], object_list)
+        return object_list
+        # data = self.base_checks(bundle.request, bundle.obj.__class__, bundle.request.GET, ["editor","viewer",]) 
+
+        # if data:
+        #     return object_list
+
+        # else:
+        #     return []
+
 
         
-
-        # if klass is False:
-        #     raise Unauthorized("You are not allowed to access that resource.")
-
-        # permission = '%s.add_%s' % (klass._meta.app_label, klass._meta.module_name)
-
-        # for obj in object_list:        
-        #     #if bundle.request.user.has_perms(permission,obj):
-        #         create_list.append(obj)
-                
-        # if create_list:
-        #     return True
-        # raise Unauthorized("You are not allowed to access that resource.")
-
-    # def update_list(self, object_list, bundle):
-    #     klass = self.base_checks(bundle.request, object_list.model, bundle.data)
-    #     update_list=[]
-
-    #     if klass is False:
-    #         return []
-
-    #     permission = '%s.change_%s' % (klass._meta.app_label, klass._meta.module_name)
-
-    #     for obj in object_list:        
-    #         #if bundle.request.user.has_perms(permission,obj):
-    #             update_list.append(obj)
-
-    #     if update_list:
-    #         return update_list
-    #     raise Unauthorized("You are not allowed to access that resource.")
-
-    # def update_detail(self, object_list, bundle):
-    #     update_list=[]
-    #     klass = self.base_checks(bundle.request, bundle.obj.__class__, bundle.data)
-
-    #     if klass is False:
-    #         raise Unauthorized("You are not allowed to access that resource.")
-
-    #     permission = '%s.change_%s' % (klass._meta.app_label, klass._meta.module_name)
-
-    #     for obj in object_list:        
-    #         #if bundle.request.user.has_perms(permission,obj):
-    #             update_list.append(obj)
-
-    #     if update_list:
-    #         return update_list
-    #     raise Unauthorized("You are not allowed to access that resource.")
-
-    # def delete_list(self, object_list, bundle):
-    #     delete_list=[]
-    #     klass = self.base_checks(bundle.request, object_list.model, bundle.data)
-
-    #     if klass is False:
-    #         return []
-
-    #     permission = '%s.delete_%s' % (klass._meta.app_label, klass._meta.module_name)
-
-    #     for obj in object_list:        
-    #         #if bundle.request.user.has_perms(permission,obj):
-    #             delete_list.append(obj)
-
-    #     if delete_list:
-    #         return delete_list
-    #     raise Unauthorized("You are not allowed to access that resource.")
-
-    # def delete_detail(self, object_list, bundle):
-    #     delete_list=[]
-
-    #     klass = self.base_checks(bundle.request, bundle.obj.__class__, bundle.data)
-
-    #     if klass is False:
-    #         raise Unauthorized("You are not allowed to access that resource.")
-
-    #     permission = '%s.delete_%s' % (klass._meta.app_label, klass._meta.module_name)
-
-    #     for obj in object_list:        
-    #         #if bundle.request.user.has_perms(permission,obj):
-    #             delete_list.append(obj)
-
-    #     if delete_list:
-    #         return delete_list
-    #     raise Unauthorized("You are not allowed to access that resource.")

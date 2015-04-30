@@ -102,16 +102,44 @@ class CustomFieldConfigResource(ModelResource):
         serializer = Serializer()
         filtering = {
             
-            "project__project_key": ALL_WITH_RELATIONS,
+            "project__project_key": ALL,
         }
 
 
-    def get_object_list(self, request):
-        return super(CustomFieldConfigResource, self).get_object_list(request).prefetch_related("project").select_related("pinned_custom_field")
 
+
+    def get_object_list(self, request):
+        return super(CustomFieldConfigResource, self).get_object_list(request).select_related("pinned_custom_field")
+
+
+    def obj_get_list(self, bundle, **kwargs):
+        """
+        A ORM-specific implementation of ``obj_get_list``.
+        Takes an optional ``request`` object, whose ``GET`` dictionary can be
+        used to narrow the query.
+        """
+        filters = {}
+
+        if hasattr(bundle.request, 'GET'):
+            # Grab a mutable copy.
+            filters = bundle.request.GET.copy()
+
+        # Update with the provided kwargs.
+        filters.update(kwargs)
+        applicable_filters = self.build_filters(filters=filters)
+        applicable_filters["project__project_key"] = bundle.request.GET.get("project__project_key")
+
+        try:
+            objects = self.apply_filters(bundle.request, applicable_filters)
+
+            return self.authorized_read_list(objects, bundle)
+            
+        except ValueError:
+            raise BadRequest("Invalid resource lookup data provided (mismatched type).")
 
 
     def alter_list_data_to_serialize(self, request, bundle):
+        print len(bundle["objects"])
         for bun in bundle["objects"]:
             sf = self.get_schema_form(bun.obj, request.GET.get("projectKey", ""))
             bun.data["schemaform"] = sf[0]

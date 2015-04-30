@@ -82,7 +82,7 @@ from django.contrib.auth import get_user_model
 
 from rdkit.Chem.AllChem import Compute2DCoords
 
-
+from django.db.models import Prefetch
 
 
             
@@ -122,7 +122,8 @@ class CBHCompoundBatchResource(ModelResource):
                   ('compoundproperties.acd_logp', 'acdLogp'),
                   ('compoundproperties.acd_logd', 'acdLogd'),
                   ('compoundproperties.acd_most_apka', 'acdAcidicPka'),
-                  ('compoundproperties.acd_most_bpka', 'acdBasicPka')]
+                  ('compoundproperties.acd_most_bpka', 'acdBasicPka'),
+                  ('compoundproperties.full_molformula', 'fullMolformula')]
         csv_fieldnames = [('chembl_id', 'UOX ID'),
                   ('pref_name', 'Preferred Name'),
                   ('max_phase', 'Known Drug'),
@@ -176,6 +177,7 @@ class CBHCompoundBatchResource(ModelResource):
         #this is the similarity index for fingerprint-like searching
         fp = request.GET.get("fpValue", None)
         custom_fields = request.GET.get("custom_fields", [])
+
 
 
         cms = None
@@ -681,6 +683,10 @@ class CBHCompoundBatchResource(ModelResource):
 
 
 
+
+
+
+
     def alter_list_data_to_serialize(self, request, data):
         '''use the request type to determine which fields should be limited for file download,
            add extra fields if needed (eg images) and enumerate the custom fields into the 
@@ -782,29 +788,35 @@ class CBHCompoundBatchResource(ModelResource):
     #     #TODO - convert your molfile into smiles or smarts for substructure
     #     #you should interject here, pull the molfile out of the kwargs and do your rdkit conversion etc
     #     #then put back into the request
-
+    #     t1 = time.time()
     #     objects = self.obj_get_list(bundle=base_bundle, **self.remove_api_resource_names(kwargs))
     #     sorted_objects = self.apply_sorting(objects, options=request.GET)
-
+    #     t2 = time.time()
+    #     print t2-t1
     #     paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
     #     to_be_serialized = paginator.page()
-
+    #     t3 = time.time()
     #     # Dehydrate the bundles in preparation for serialization.
     #     bundles = []
 
+    #     print t3-t2
     #     for obj in to_be_serialized[self._meta.collection_name]:
     #         bundle = self.build_bundle(obj=obj, request=request)
     #         bundles.append(self.full_dehydrate(bundle, for_list=True))
+    #     t4 = time.time()
 
+    #     print t4-t3
     #     to_be_serialized[self._meta.collection_name] = bundles
     #     to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
+    #     t5 = time.time()
+    #     print t5-t4
     #     return self.create_response(request, to_be_serialized)
 
 
 
 
     def get_object_list(self, request):
-        return super(CBHCompoundBatchResource, self).get_object_list(request).select_related("related_molregno", "related_molregno__compound_properties").all()
+        return super(CBHCompoundBatchResource, self).get_object_list(request).prefetch_related(Prefetch( "related_molregno__compoundproperties"))
 
 
 
