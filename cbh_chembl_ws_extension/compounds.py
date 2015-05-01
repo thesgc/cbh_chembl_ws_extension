@@ -345,10 +345,8 @@ class CBHCompoundBatchResource(ModelResource):
         url(r"^(?P<resource_name>%s)/validate_files/$" % self._meta.resource_name,
                 self.wrap_view('post_validate_files'), name="api_compound_validate_files"),
         url(r"^(?P<resource_name>%s)/export_file/$" % self._meta.resource_name,
-                self.wrap_view('export_file'), name="api_compound_export_file"),
-        url(r"^(?P<resource_name>%s)/smiles2svg/(?P<structure>\w[\w-]*)/$" % 
-                self._meta.resource_name, self.wrap_view('get_image_from_pipe'),name="smiles2svg"),
-        ]
+                self.wrap_view('export_file'), name="api_compound_export_file"),]
+       
 
     def multi_batch_save(self, request, **kwargs):
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
@@ -424,6 +422,7 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def validate_multi_batch(self,multi_batch, bundle, request):
+        t = time.time()
         sdfstrings = [batch.ctab for batch in multi_batch.uploaded_data]
         sdf = "\n".join(sdfstrings)
         
@@ -434,10 +433,10 @@ class CBHCompoundBatchResource(ModelResource):
 
         import subprocess
         from subprocess import PIPE, Popen
-
         p = Popen([settings.INCHI_BINARIES_LOCATION['1.02'], "-STDIO",  filename], stdout=PIPE, stderr=PIPE)
         a = p.communicate()
         inchis = {}
+        
         inchiparts = a[0].split("\nStructure:")
         
         for i, inch in enumerate(inchiparts):
@@ -450,6 +449,7 @@ class CBHCompoundBatchResource(ModelResource):
             inchis[part] = parts[1]
             
 
+        
 
         total = len(multi_batch.uploaded_data)
         bundle.data["objects"] = []
@@ -476,14 +476,17 @@ class CBHCompoundBatchResource(ModelResource):
                     bundle.data["dupes"] += 1
                 else:
                     already_found.add(batch_key)
-                    self.match_list_to_moleculedictionaries(batch,bundle.data["project"] )
-                    for key in ["new", "linkedproject", "linkedpublic"]:
-                        bundle.data[key] += int(batch.warnings[key])
+                    # self.match_list_to_moleculedictionaries(batch,bundle.data["project"] )
+                    # for key in ["new", "linkedproject", "linkedpublic"]:
+                    #     bundle.data[key] += int(batch.warnings[key])
                 new_uploaded_data.append(batch)
 
+        total_already_in_db = MoleculeDictionary.objects.filter(structure_type="MOL", structure_key__in=already_found).count()
+        bundle.data["linkedproject"] = total_already_in_db
+        bundle.data["new"] = len(multi_batch.uploaded_data) - total_already_in_db - bundle.data["dupes"]
         multi_batch.uploaded_data = new_uploaded_data
         multi_batch.save()
-
+        print t -time.time()
         bundle.data["total"] = total
 
         bundle.data["current_batch"] = multi_batch.pk
@@ -526,13 +529,14 @@ class CBHCompoundBatchResource(ModelResource):
             b.created_by = bundle.request.user.username
 
         multiple_batch.uploaded_data=batches
-        multiple_batch.save()
         bundle.data["current_batch"] = multiple_batch.pk
         return self.validate_multi_batch(multiple_batch, bundle, request)
 
 
 
     def post_validate_files(self, request, **kwargs):
+        
+
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
@@ -592,28 +596,23 @@ class CBHCompoundBatchResource(ModelResource):
                 suppl = Chem.ForwardSDMolSupplier(correct_file.file)
                 mols = [mo for mo in suppl]
                 #read the headers from the first molecule
-                for mol in mols:
-                    if mol is None: 
-                        pass
-                    else:
-                        headers.extend(list(mol.GetPropNames()))
-                headers = list(set(headers))
+                
+                headers = get_all_sdf_headers(correct_file.file.name)
                 data = correct_file.file.read()
                 data = data.replace("\r\n","\n").replace("\r","\n")
                 ctabs = data.split("$$$$")
+                t = time.time()
                 for index, mol in enumerate(mols):
                     if mol is None: 
                         errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
                     else:
                         orig_data = ctabs[index]
                         # try:
-                        t = time.time()
                         try:
-                            b = CBHCompoundBatch.objects.from_rd_mol(mol, orig_ctab=orig_data, smiles=Chem.MolToSmiles(mol), project=bundle.data["project"])
+                            b = CBHCompoundBatch.objects.from_rd_mol(mol, orig_ctab=orig_data, project=bundle.data["project"])
                         except Exception, e:
                             errors.append({"index" : index+1,  "message" : str(e)})
                             b =None
-                            
                         if b:
                             custom_fields = {}
                             for hdr in headers:
@@ -624,8 +623,9 @@ class CBHCompoundBatchResource(ModelResource):
                             
                             b.uncurated_fields = custom_fields
                             batches.append(b)
+               
 
-
+                print t -time.time()
             elif(correct_file.extension in (".xls", ".xlsx")):
                 #we need to know which column contains structural info - this needs to be defined on the mapping page and passed here
                 #read in the specified structural column
@@ -658,27 +658,17 @@ class CBHCompoundBatchResource(ModelResource):
             else:
                 raise BadRequest("Invalid File Format")
 
-
         multiple_batch = CBHCompoundMultipleBatch.objects.create(project = bundle.data["project"])
         for b in batches:
             b.multiple_batch_id = multiple_batch.pk
             b.created_by = bundle.request.user.username
-            ctablines = [item.split("0.0000") for item in b.ctab.split("\n") if "0.0000" in item]
-            needs_redraw = 0
-            for line in ctablines:
-                if len(line) > 3:
-                    needs_redraw +=1
-            if needs_redraw == len(ctablines):
-                #check for overlapping molecules in the CTAB 
-                rd_mol = Chem.MolFromMolBlock(b.ctab)
-                Compute2DCoords(rd_mol)
-                b.ctab = Chem.MolToMolBlock(rd_mol)
-                b.ctab += "\n$$$$"
-
+           
         bundle.data["fileerrors"] = errors
 
         multiple_batch.uploaded_data=batches
-        multiple_batch.save()
+        # multiple_batch.save()
+
+
         return self.validate_multi_batch(multiple_batch, bundle, request)
 
 
@@ -877,20 +867,13 @@ class CBHCompoundBatchUpload(ModelResource):
         file_name = request_json['file_name']
         session_key = request.COOKIES[settings.SESSION_COOKIE_NAME]
         correct_file = self.get_object_list(request).get(identifier="%s-%s" % (session_key, file_name))
-        headers = []
+        
         header_json = { }
-        #get this into a datastructure if excel
 
-        #or just use rdkit if SD file
         if (correct_file.extension == ".sdf"):
             #read in the file
-            suppl = Chem.ForwardSDMolSupplier(correct_file.file)
+            headers = get_all_sdf_headers(correct_file.file.name)
 
-            #read the headers from the first molecule
-
-            for mol in suppl:
-                if mol is None: continue
-                headers.extend(list(mol.GetPropNames()))
 
         elif(correct_file.extension in (".xls", ".xlsx")):
             #read in excel file, use pandas to read the headers
@@ -906,5 +889,13 @@ class CBHCompoundBatchUpload(ModelResource):
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
-
-    
+def get_all_sdf_headers(filename):
+    from subprocess import Popen, PIPE
+    from shlex import split
+    p1 = Popen(split('grep "^>" %s' % filename), stdout=PIPE)
+    p2 = Popen(split('cut -d "<" -f2'), stdin=p1.stdout, stdout=PIPE)
+    p3 = Popen(split('cut -d ">" -f1'), stdin=p2.stdout, stdout=PIPE)
+    p4 = Popen(split('sort'), stdin=p3.stdout, stdout=PIPE)
+    p5 = Popen(split('uniq'), stdin=p4.stdout, stdout=PIPE)
+    out = p5.communicate()
+    return [i for i in out[0].split("\n") if i]
