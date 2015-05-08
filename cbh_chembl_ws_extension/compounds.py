@@ -312,8 +312,10 @@ class CBHCompoundBatchResource(ModelResource):
         return deserialized
 
     def alter_deserialized_detail_data(self, request, deserialized):
-        proj = Project.objects.get(project_key=deserialized["project_key"])
-        deserialized["project"] = proj
+        '''A project may be necessary for create statements'''
+        if deserialized["project_key"]:
+            proj = Project.objects.get(project_key=deserialized["project_key"])
+            deserialized["project"] = proj
         return deserialized
 
     def full_hydrate(self, bundle):

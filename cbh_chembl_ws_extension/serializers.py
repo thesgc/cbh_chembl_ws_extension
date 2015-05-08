@@ -306,7 +306,7 @@ class CamelCaseJSONSerializer(Serializer):
                                     try:
                                         value[k] = json.loads(v)
                                         continue
-                                    except ValueError:
+                                    except:
                                         pass
                                 elif "." in v:
                                     try:
