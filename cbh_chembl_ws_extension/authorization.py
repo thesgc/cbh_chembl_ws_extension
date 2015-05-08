@@ -54,8 +54,6 @@ class ProjectListAuthorization(Authorization):
     
         return object_list.filter(pk__in=pids)
 
-
-
     def read_list(self, object_list, bundle):
         return self.list_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor","viewer",], object_list)
 
@@ -111,11 +109,16 @@ class ProjectAuthorization(Authorization):
 
     def base_checks(self, request, model_klass, data, possible_perm_levels):
         self.login_checks(request, model_klass)
+
         if not data.get("project__project_key", None):
             if not data.get("project_key"):
                 if not data.get("projectKey"):
-                    print "no_project_key"
-                    raise Unauthorized("no_project_key")
+                    try:
+                        key = data.project.project_key
+                    except:
+
+                        print "no_project_key"
+                        raise Unauthorized("no_project_key")
                 else:
                     key=data.get("projectKey")
             else:
@@ -129,10 +132,15 @@ class ProjectAuthorization(Authorization):
             return True
         return False
         
-        
+
+    def project_ids(self, request, ):
+        pids = get_all_project_ids_for_user_perms( request.user.get_all_permissions(), ["editor","viewer",] )
+        return pids
+
 
 
     def create_list(self, object_list, bundle):
+        print "create"
         bool = self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
         if bool is True:
             return object_list
@@ -142,30 +150,45 @@ class ProjectAuthorization(Authorization):
 
 
     def read_detail(self, object_list, bundle):
-        return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor","viewer",]) 
+        print "readdet"
+
+        self.login_checks(bundle.request, bundle.obj.__class__)
+        pids = get_all_project_ids_for_user_perms(bundle.request.user.get_all_permissions(), ["editor","viewer"])
+        if bundle.obj.project.id in pids:
+            return True
+        else:
+            raise Unauthorized("not authroized for project")
+
 
 
     def update_list(self, object_list, bundle):
-        return self.create_list(self, object_list, bundle)
+        print "update"
+
+        return []
 
 
     def create_detail(self, object_list, bundle):
-        return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
+        self.login_checks(bundle.request, bundle.obj.__class__)
+        pids = get_all_project_ids_for_user_perms(bundle.request.user.get_all_permissions(), ["editor",])
+        if bundle.data["project"].id in pids:
+            return True
+        else:
+            raise Unauthorized("not authroized for project")
+        #return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
 
 
     def update_detail(self, object_list, bundle):
-        return self.base_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor",])
+        self.login_checks(bundle.request, bundle.obj.__class__)
+        pids = get_all_project_ids_for_user_perms(bundle.request.user.get_all_permissions(), ["editor",])
+        if bundle.obj.project.id in pids:
+            return True
+
+        raise Unauthorized("not authroized for project")
 
 
     def read_list(self, object_list, bundle):
         return object_list
-        # data = self.base_checks(bundle.request, bundle.obj.__class__, bundle.request.GET, ["editor","viewer",]) 
 
-        # if data:
-        #     return object_list
-
-        # else:
-        #     return []
 
 
         

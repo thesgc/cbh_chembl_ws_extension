@@ -97,7 +97,7 @@ def step(context, action=None, projkey=None, responsecode=202):
     from cbh_chembl_model_extension.models import Project
     if action =="validate":
       #something
-      path = "/devapi/cbh_compound_batches/validate/"
+      path = "/dev/cbh_compound_batches/validate/"
       func = context.api_client.post
       context.post_data["projectKey"] = projkey
       resp = func(
@@ -107,7 +107,7 @@ def step(context, action=None, projkey=None, responsecode=202):
           )
       assert int(resp.status_code) == int(responsecode)  
     elif action =='create':
-      path = "/devapi/cbh_compound_batches/"
+      path = "/dev/cbh_compound_batches/"
       func = context.api_client.post
       context.post_data["projectKey"] = projkey
       #print(context.post_data)
@@ -124,7 +124,7 @@ def step(context, action=None, projkey=None, responsecode=202):
     from cbh_chembl_model_extension.models import Project
     if action =="validate":
       #something
-      path = "/devapi/cbh_compound_batches/validate_list/"
+      path = "/dev/cbh_compound_batches/validate_list/"
       func = context.api_client.post
       context.post_data["projectKey"] = projkey
       resp = func(
@@ -135,7 +135,7 @@ def step(context, action=None, projkey=None, responsecode=202):
       context.post_data['current_batch'] = context.ser.deserialize(resp.content)["currentBatch"]
       assert int(resp.status_code) == int(responsecode)  
     elif action =='create':
-      path = "/devapi/cbh_compound_batches/multi_batch_save/"
+      path = "/dev/cbh_compound_batches/multi_batch_save/"
       func = context.api_client.post
       context.post_data["projectKey"] = projkey
       #print(context.post_data)
@@ -153,7 +153,7 @@ def step(context, action=None, projkey=None):
   from rdkit import Chem
   from rdkit.Chem import AllChem, inchi
   
-  path = "/devapi/cbh_compound_batches/"
+  path = "/dev/cbh_compound_batches/"
   resp = context.api_client.get(
       path,
       format='json',
@@ -180,7 +180,7 @@ def step(context, action=None, projkey=None):
   from rdkit import Chem
   from rdkit.Chem import AllChem, inchi
   
-  path = "/devapi/cbh_compound_batches/"
+  path = "/dev/cbh_compound_batches/"
   resp = context.api_client.get(
       path,
       format='json',

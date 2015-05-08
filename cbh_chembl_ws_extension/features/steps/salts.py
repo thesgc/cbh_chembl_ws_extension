@@ -66,7 +66,7 @@ def step(context, action=None, projkey=None):
   from rdkit import Chem
   from rdkit.Chem import AllChem, inchi
   
-  path = "/devapi/cbh_compound_batches/"
+  path = "/dev/cbh_compound_batches/"
   resp = context.api_client.get(
       path,
       format='json',

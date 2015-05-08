@@ -89,7 +89,9 @@ class UserResource(ModelResource):
     def get_object_list(self, request):
         return super(UserResource, self).get_object_list(request).filter(pk=request.user.id)
 
-
+    def get_permissions():
+        """Placeholder for permissions service"""
+        pass
 
 
 
