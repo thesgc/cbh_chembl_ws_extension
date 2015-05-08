@@ -68,6 +68,7 @@ class CustomFieldConfigAdmin(ModelAdmin):
                                                 position=field["positon"],
                                                 name=field["key"],
                                                 description=field["placeholder"])
+        
                                                 
                 
 
@@ -80,7 +81,7 @@ class CustomFieldConfigAdmin(ModelAdmin):
         super(CustomFieldConfigAdmin, self).log_change(request, object, message)
         cfr = ProjectResource()
         if object.__class__.__name__ == "CustomFieldConfig":
-            schemaform = json.dumps(cfr.get_schema_form(object))
+            schemaform = json.dumps(cfr.get_schema_form(object,"" ))
             object.schemaform = schemaform
             object.save()
 
