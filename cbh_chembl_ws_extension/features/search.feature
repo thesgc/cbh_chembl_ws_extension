@@ -6,7 +6,7 @@ Feature: Search results are consistent with the search parameters
     Scenario: User submits a search query with no constraints.
         Given a User
         and my user is a member of a group
-        and I have viewer permissions
+        and I have viewer privileges
         When I log in
         #search parameter building statements would go at this point
         then I submit my search
@@ -18,8 +18,8 @@ Feature: Search results are consistent with the search parameters
         and my user is a member of a group
         and I have given myself viewer privileges for proja
         When I log in
-        and I specify a start date start
-        and I specify an end date end
+        and I specify a start date
+        and I specify an end date
         then I submit my search
         and I can see search results
         and all the results are viewable by user
@@ -30,7 +30,6 @@ Feature: Search results are consistent with the search parameters
         Given a User
         and my user is a member of a group
         and I have given myself viewer privileges for proja
-        and I have viewer permissions
         When I log in
         and I specify a project proja
         then I submit my search
@@ -42,7 +41,6 @@ Feature: Search results are consistent with the search parameters
         Given a User
         and my user is a member of a group
         and I have given myself viewer privileges for proja
-        and I have viewer permissions
         When I log in
         and I specify a project proja
         and I specify a custom field tag taga
@@ -56,28 +54,26 @@ Feature: Search results are consistent with the search parameters
         Given a User
         and my user is a member of a group
         and I have given myself viewer privileges for proja
-        and I have viewer permissions
+        and I have valid stereochem compound with multiple stereocentres
         When I log in
         and I specify a project proja
-        and I specify a structure struca
-        and I specify structural search type exact
+        and I specify structural search type flexmatch
         then I submit my search
         and I can see search results
         and all the results are viewable by user
         and all the results belong to proja
-        and all the results exact match struca
+        and all the results flexmatch match struca
 
     Scenario: User submits a search query with a structure to find a structural substructure match.
         Given a User
         and my user is a member of a group
         and I have given myself viewer privileges for proja
-        and I have viewer permissions
+        and I have valid stereochem compound with multiple stereocentres
         When I log in
         and I specify a project proja
-        and I specify a structure struca
-        and I specify structural search type substructure
+        and I specify structural search type with_substructure
         then I submit my search
         and I can see search results
         and all the results are viewable by user
         and all the results belong to proja
-        and all the results substructure match struca
+        and all the results with_substructure match struca
