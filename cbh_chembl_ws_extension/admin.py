@@ -68,6 +68,7 @@ class CustomFieldConfigAdmin(ModelAdmin):
                                                 position=field["positon"],
                                                 name=field["key"],
                                                 description=field["placeholder"])
+        
                                                 
                 
 
