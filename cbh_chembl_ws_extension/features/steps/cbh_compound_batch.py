@@ -104,10 +104,10 @@ def step(context, action=None, projkey=None, responsecode=None):
     from cbh_chembl_model_extension.models import Project    
     if action in ["validate","create"]:
         if action =="validate":
-            path = "/devapi/cbh_compound_batches/validate/"
+            path = "/dev/cbh_compound_batches/validate/"
             func = context.api_client.post
         elif action == "create":
-            path = "/devapi/cbh_compound_batches/"
+            path = "/dev/cbh_compound_batches/"
             func = context.api_client.post
         context.post_data["projectKey"] = projkey
         resp = func(
@@ -115,17 +115,21 @@ def step(context, action=None, projkey=None, responsecode=None):
             format='json' ,
             data=context.post_data,
             )
+        print(resp.status_code)
+        print(resp.__dict__)
         assert resp.status_code == int(responsecode)
     else:
         from cbh_chembl_model_extension.models import Project
         
-        path = "/devapi/cbh_compound_batches/"
+        path = "/dev/cbh_compound_batches/"
         if action == "get":
             path = path + str(context.batch.id)
             #print(path)
         resp = context.api_client.get(
             path,
             )
+        print(resp.status_code)
+        print(resp.__dict__)
         if action == "get":
             assert resp.status_code == int(responsecode)
         else:

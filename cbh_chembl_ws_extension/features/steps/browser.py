@@ -30,6 +30,6 @@ def step(context):
 @then('I see a 401 error')
 def step(context):
 
-    resp = context.api_client.get("/devapi/users/",  format='json')
+    resp = context.api_client.get("/dev/users/",  format='json')
     
     assert resp.status_code == 401

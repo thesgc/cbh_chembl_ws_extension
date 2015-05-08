@@ -30,8 +30,7 @@ api.register(CBHCompoundBatchResource())
 api.register(CBHCompoundBatchUpload())
 api.register(UserResource())
 api.register(ProjectResource())
-api.register(CustomFieldConfigResource())
-api.register(PinnedCustomFieldResource())
+
 
 admin.autodiscover()
 

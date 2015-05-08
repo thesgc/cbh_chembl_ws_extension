@@ -2,7 +2,7 @@ from django.contrib import admin
 from cbh_chembl_model_extension.models import Project, PinnedCustomField, CustomFieldConfig
 
 from django.contrib.admin import ModelAdmin
-from cbh_chembl_ws_extension.projects import CustomFieldConfigResource
+from cbh_chembl_ws_extension.projects import ProjectResource
 
 from django.forms.widgets import HiddenInput, TextInput
 from django.db import models
@@ -78,9 +78,9 @@ class CustomFieldConfigAdmin(ModelAdmin):
         The default implementation creates an admin LogEntry object.
         """
         super(CustomFieldConfigAdmin, self).log_change(request, object, message)
-        cfr = CustomFieldConfigResource()
+        cfr = ProjectResource()
         if object.__class__.__name__ == "CustomFieldConfig":
-            schemaform = json.dumps(cfr.get_schema_form(object, ""))
+            schemaform = json.dumps(cfr.get_schema_form(object))
             object.schemaform = schemaform
             object.save()
 

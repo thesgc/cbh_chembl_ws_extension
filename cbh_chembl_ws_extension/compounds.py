@@ -176,10 +176,6 @@ class CBHCompoundBatchResource(ModelResource):
         fm = request.GET.get("flexmatch", None)
         #this is the similarity index for fingerprint-like searching
         fp = request.GET.get("fpValue", None)
-        custom_fields = request.GET.get("custom_fields", [])
-
-
-
         cms = None
 
         if ws:
@@ -196,14 +192,23 @@ class CBHCompoundBatchResource(ModelResource):
             cms = CompoundMols.objects.flexmatch(smiles)
         #else:
         #    cms = CompoundMols.objects.all()
-
+        #To be generalised
+        cust = request.GET.get("search_custom_fields__kv_any", None)
+        if cust:
+            applicable_filters["custom_fields__kv_any"] = cust
         if cms != None:
             #run the sql for pulling in new compounds into compound_mols
             indexed = CBHCompoundBatch.objects.index_new_compounds()
             applicable_filters["related_molregno_id__in"] = cms.values_list("molecule_id", flat=True)
 
-        return self.get_object_list(request).filter(**applicable_filters).order_by("-created")
+        pids = self._meta.authorization.project_ids(request)
+        return self.get_object_list(request).filter(**applicable_filters).filter(project_id__in=set(pids)).order_by("-created")
     
+    
+
+   
+
+
     def convert_mol_string(self, strn):
         #commit
         try:
