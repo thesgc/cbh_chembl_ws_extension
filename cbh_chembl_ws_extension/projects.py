@@ -51,13 +51,13 @@ class ProjectResource(ModelResource):
                                 {
                                   "key": "dateStart",
                                   "minDate": "2004-01-01",
-                                  "htmlClass": "col-xs-5",
+                                  "htmlClass": "col-xs-6",
                                   "disableSuccessState": True,
                                 },
                                 {
                                   "key": "dateEnd",
                                   "minDate": "2004-01-01",
-                                  "htmlClass": "col-xs-5 marg-left",
+                                  "htmlClass": "col-xs-6",
                                   "disableSuccessState": True,
                                 },
                                 {
