@@ -321,9 +321,10 @@ class CBHCompoundBatchResource(ModelResource):
     def full_hydrate(self, bundle):
         '''As the object is created we run the validate code on it'''
         bundle = super(CBHCompoundBatchResource, self).full_hydrate(bundle)
-        bundle.obj.created_by=bundle.request.user.username
-        bundle.obj.validate()
-        self.match_list_to_moleculedictionaries(bundle.obj,bundle.data["project"] )
+        if not bundle.obj.id:
+            bundle.obj.created_by=bundle.request.user.username
+            bundle.obj.validate()
+            self.match_list_to_moleculedictionaries(bundle.obj,bundle.data["project"] )
         return bundle
 
     def obj_build(self, bundle, kwargs):
