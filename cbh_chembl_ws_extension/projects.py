@@ -176,7 +176,7 @@ class ProjectResource(ModelResource):
 
 
 
-    def get_schema_form(self, custom_field_config, project_key, searchfield_items=set([]), searchfields=[],):
+    def get_schema_form(self, custom_field_config, project_key, searchfield_items=[], searchfields=set([]),):
         fields = []
 
         for f in custom_field_config.pinned_custom_field.all():
