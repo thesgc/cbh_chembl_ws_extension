@@ -898,8 +898,8 @@ class CBHCompoundBatchUpload(ModelResource):
 
 
 def get_all_sdf_headers(filename):
-    import os.path
-    if os.path.isfile(filename):
+    
+    try:
         from subprocess import Popen, PIPE
         from shlex import split
         p1 = Popen(split('grep "^>" %s' % filename), stdout=PIPE)
@@ -909,6 +909,6 @@ def get_all_sdf_headers(filename):
         p5 = Popen(split('uniq'), stdin=p4.stdout, stdout=PIPE)
         out = p5.communicate()
         return [i for i in out[0].split("\n") if i]
-    else:
+    except:
         time.sleep(50)
         return get_all_sdf_headers(filename)
