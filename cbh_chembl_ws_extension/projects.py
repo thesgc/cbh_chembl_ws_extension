@@ -69,7 +69,7 @@ class ProjectResource(ModelResource):
                                   "disableSuccessState": True,
                                 },
                                 {
-                                  "key": "strucOpt",
+                                  "key": "substruc",
                                   "style": {
                                     "selected": "btn-success",
                                     "unselected": "btn-default"
@@ -129,7 +129,7 @@ class ProjectResource(ModelResource):
                                                   "type": "string",
                                                 },
 
-                                                "strucOpt": {
+                                                "substruc": {
                                                   "title": "Structural search type",
                                                   "type": "string",
                                                   "enum": [
