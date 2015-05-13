@@ -902,10 +902,10 @@ def get_all_sdf_headers(filename):
     copyfile(filename, filename+"x")
     from subprocess import Popen, PIPE
     from shlex import split
-    p1 = Popen(split('grep "^>" %sx' % filename), stdout=PIPE)
-    p2 = Popen(split('cut -d "<" -f2'), stdin=p1.stdout, stdout=PIPE)
-    p3 = Popen(split('cut -d ">" -f1'), stdin=p2.stdout, stdout=PIPE)
-    p4 = Popen(split('sort'), stdin=p3.stdout, stdout=PIPE)
-    p5 = Popen(split('uniq'), stdin=p4.stdout, stdout=PIPE)
+    p1 = Popen(split('/bin/grep "^>" %sx' % filename), stdout=PIPE)
+    p2 = Popen(split('/usr/bin/cut -d "<" -f2'), stdin=p1.stdout, stdout=PIPE)
+    p3 = Popen(split('/usr/bin/cut -d ">" -f1'), stdin=p2.stdout, stdout=PIPE)
+    p4 = Popen(split('/usr/bin/sort'), stdin=p3.stdout, stdout=PIPE)
+    p5 = Popen(split('/usr/bin/uniq'), stdin=p4.stdout, stdout=PIPE)
     out = p5.communicate()
     return [i for i in out[0].split("\n") if i]
