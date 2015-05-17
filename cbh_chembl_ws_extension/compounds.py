@@ -201,12 +201,29 @@ class CBHCompoundBatchResource(ModelResource):
             indexed = CBHCompoundBatch.objects.index_new_compounds()
             applicable_filters["related_molregno_id__in"] = cms.values_list("molecule_id", flat=True)
 
+        if request.GET.get("related_molregno__chembl__chembl_id__in", None):
+            applicable_filters["related_molregno__chembl__chembl_id__in"] = request.GET.get("related_molregno__chembl__chembl_id__in").split(",")
         pids = self._meta.authorization.project_ids(request)
         return self.get_object_list(request).filter(**applicable_filters).filter(project_id__in=set(pids)).order_by("-created")
     
     
 
-   
+    def get_chembl_ids(self, request, **kwargs):
+        '''Get a single list of pinned fields for the project previously listed all custom fields in the DB but this was unwieldy'''
+        bundle = self.build_bundle(request=request)
+
+        pids = self._meta.authorization.project_ids(request)
+        filters = {"project__id__in" : pids}
+        prefix = request.GET.get("chembl_id__chembl_id__startswith", None)
+        if(prefix):
+            filters["chembl_id__chembl_id__startswith"] = prefix
+        uox_ids = list(MoleculeDictionary.objects.filter(**filters).values_list("chembl_id", flat=True)[0:20])
+        bundle.data = [{"value" :uox, "label" : uox} for uox in uox_ids]
+        desired_format = self.determine_format(request)
+        serialized = json.dumps(bundle.data)
+        rc = HttpResponse(content=serialized, content_type=build_content_type(desired_format), )
+
+        return rc
 
 
     def convert_mol_string(self, strn):
@@ -340,6 +357,8 @@ class CBHCompoundBatchResource(ModelResource):
 
     def prepend_urls(self):
         return [
+        url(r"^(?P<resource_name>%s)/get_chembl_ids/$" % self._meta.resource_name,
+            self.wrap_view('get_chembl_ids'), name="api_get_chembl_ids"),
         url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,
                 self.wrap_view('post_validate'), name="api_validate_compound_batch"),
         url(r"^(?P<resource_name>%s)/validate_list/$" % self._meta.resource_name,
