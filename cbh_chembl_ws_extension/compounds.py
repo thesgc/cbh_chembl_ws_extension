@@ -190,6 +190,8 @@ class CBHCompoundBatchResource(ModelResource):
         elif fm:
             smiles = self.convert_mol_string(fm)
             cms = CompoundMols.objects.flexmatch(smiles)
+
+        
         #else:
         #    cms = CompoundMols.objects.all()
         #To be generalised
@@ -204,7 +206,14 @@ class CBHCompoundBatchResource(ModelResource):
         if request.GET.get("related_molregno__chembl__chembl_id__in", None):
             applicable_filters["related_molregno__chembl__chembl_id__in"] = request.GET.get("related_molregno__chembl__chembl_id__in").split(",")
         pids = self._meta.authorization.project_ids(request)
-        return self.get_object_list(request).filter(**applicable_filters).filter(project_id__in=set(pids)).order_by("-created")
+        
+        dataset = self.get_object_list(request).filter(**applicable_filters).filter(project_id__in=set(pids))
+        func_group = request.GET.get("functional_group", None)
+        if func_group:
+            print("funct")
+            funccms = CompoundMols.objects.with_substructure(func_group)
+            dataset = dataset.filter(related_molregno_id__in=funccms.values_list("molecule_id", flat=True))
+        return dataset.order_by("-created")
     
     
 
