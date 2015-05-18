@@ -1468,6 +1468,9 @@ class ProjectResource(ModelResource):
             allowed_items = obj.get_allowed_items(projectKey) 
             data["items"] = allowed_items[0]
             searchitems = allowed_items[1]
+        else:
+            allowed_items = obj.get_allowed_items(projectKey)
+            searchitems = allowed_items[1]
 
           
         if data.get("format", False) == obj.DATE:
