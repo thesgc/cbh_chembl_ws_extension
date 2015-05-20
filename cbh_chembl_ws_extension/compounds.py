@@ -223,13 +223,18 @@ class CBHCompoundBatchResource(ModelResource):
 
         pids = self._meta.authorization.project_ids(request)
         filters = {"project__id__in" : pids}
-        prefix = request.GET.get("chembl_id__chembl_id__startswith", None)
+        prefix = request.GET.get("chembl_id__chembl_id__startswith", None).upper()
+        desired_format = self.determine_format(request)
+
         if(prefix):
             filters["chembl_id__chembl_id__startswith"] = prefix
-        uox_ids = list(MoleculeDictionary.objects.filter(**filters).values_list("chembl_id", flat=True)[0:20])
-        bundle.data = [{"value" :uox, "label" : uox} for uox in uox_ids]
-        desired_format = self.determine_format(request)
-        serialized = json.dumps(bundle.data)
+            uox_ids = list(MoleculeDictionary.objects.filter(**filters).values_list("chembl_id", flat=True)[0:20])
+            bundle.data = [{"value" :uox, "label" : uox} for uox in uox_ids]
+            serialized = json.dumps(bundle.data)
+        else:
+            serialized = "[]"
+
+       
         rc = HttpResponse(content=serialized, content_type=build_content_type(desired_format), )
 
         return rc
