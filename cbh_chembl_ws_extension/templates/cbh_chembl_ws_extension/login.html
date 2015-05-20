@@ -1,4 +1,4 @@
-    {% load static %}
+    {% load static
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -18,21 +18,21 @@
     <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
     <!-- build:css(.) styles/vendor.css -->
     <!-- bower:css -->
-    <link rel='stylesheet' href="{% static 'bower_components/chembiohub-theme/css/main.css' %}" />
-    <link rel='stylesheet' href="{% static 'bower_components/bootstrap/dist/css/bootstrap.css' %}" />
-    <link rel='stylesheet' href="{% static 'bower_components/angular-grid/ng-grid.css' %}" />
+    <link rel='stylesheet' href="bower_components/chembiohub-theme/css/main.css" />
+    <link rel='stylesheet' href="bower_components/bootstrap/dist/css/bootstrap.css" />
+    <link rel='stylesheet' href="bower_components/angular-grid/ng-grid.css" />
     <!-- endbower -->
     <!-- endbuild -->
     <!-- build:css(.) styles/main.css -->
-        <link rel='stylesheet' href="{% static 'bower_components/chembiohub-theme/css/main.css' %}" />
+        <link rel='stylesheet' href="bower_components/chembiohub-theme/css/main.css" />
 
-    <link rel="stylesheet" href="{% static 'bower_components/chembiohub-theme/css/cbh-template-header.css' %}">
-    <link rel="stylesheet" href="{% static 'bower_components/chembiohub-theme/css/font.css' %}">
+    <link rel="stylesheet" href="bower_components/chembiohub-theme/css/cbh-template-header.css">
+    <link rel="stylesheet" href="bower_components/chembiohub-theme/css/font.css">
     <link rel="stylesheet" href="styles/chemreg-specific.css">
 
 
-    <link rel="stylesheet" href="{% static 'bower_components/chemdoodle/install/ChemDoodleWeb.css">
-    <link rel="stylesheet" href="{% static 'bower_componentschemdoodle/install/uis/jquery-ui-1.10.3.custom.css">
+    <link rel="stylesheet" href="bower_components/chemdoodle/install/ChemDoodleWeb.css">
+    <link rel="stylesheet" href="bower_componentschemdoodle/install/uis/jquery-ui-1.10.3.custom.css">
     <!-- endbuild -->    <!-- Chemdoodle sketcher css -->
 
 
@@ -50,7 +50,7 @@
     <![endif]-->
   </head>
   <body style="margin: 0;" ng-app="ngChemApp">
- <!--  <div ng-include="'/static/app/views/templates/header.html'"></div> -->
+ <!--  <div ng-include="'/static/app/views/templates/header.html"></div> -->
  <nav class="navbar navbar-default" role="navigation" style="border-bottom:10px solid #72777f; border-top:5px solid #002147;">
 
   <div class="container">
@@ -66,7 +66,7 @@
         
       </div>
       <div class="col-xs-4" id="slogan">
-        <h2 class="text-center" style="padding-top:5px;"><a href="https://chembiohub.ox.ac.uk" target="_blank"><img src="{% static 'bower_components/chembiohub-theme/img/CBH_2_2_LowRes.png' %}" style="height:45px"></a>  ChemReg <small><sup>alpha</sup></small></h2>
+        <h2 class="text-center" style="padding-top:5px;"><a href="https://chembiohub.ox.ac.uk" target="_blank"><img src="bower_components/chembiohub-theme/img/CBH_2_2_LowRes.png" style="height:45px"></a>  ChemReg <small><sup>alpha</sup></small></h2>
       </div>
       <div class="col-xs-3">
         <!-- Login and top level nav -->
@@ -117,8 +117,8 @@ $('.btn-toggle').dropdown()
           <small>Currently in alpha testing</small></h2>
           <p>We need your help to test this application so please <a href="mailto:info@chembiohub.ox.ac.uk?subject=ChemReg Issue">let us know</a> about any bugs you find (or suggestions for future features).</p>
           <p>Please use this service to register small molecules you are synthesising or using.</p>
-          <p>{% if password_login %}Simply enter your account details in the box.{% endif %} 
-            {% if webauth_login %}Simply click the button below to log in via webauth.{% endif %}
+          <p>{% if password_loginSimply enter your account details in the box.{% endif 
+            {% if webauth_loginSimply click the button below to log in via webauth.{% endif
            You will find these in an email from <a href="mailto:info@chembiohub.ox.ac.uk">info@chembiohub.ox.ac.uk</a>.  If you haven’t heard from us – drop us a line and we will create an account for you.</p>
           <p><strong>Coming soon</strong> - Single Sign On (so you won't have to add separate account details)</p>
 
@@ -128,10 +128,10 @@ $('.btn-toggle').dropdown()
 
     <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
             
-{% if password_login %}
+{% if password_login
       <form class="form-horizontal mt" method="post">
-            <label>{% if logout %}Logged out, log in again below{% else %}Please Login {% endif %}</label>
-{% csrf_token %}
+            <label>{% if logoutLogged out, log in again below{% elsePlease Login {% endif</label>
+{% csrf_token
           <fieldset><div id="div_id_username" class="form-group"><label for="id_username" class="control-label  requiredField">
                       Username<span class="asteriskField">*</span></label><div class="controls "><input class="textinput textInput form-control" id="id_username" maxlength="254" name="username" type="text"> </div></div>
                       <div id="div_id_password" class="form-group"><label for="id_password" class="control-label  requiredField">
@@ -139,11 +139,11 @@ $('.btn-toggle').dropdown()
                   </fieldset>
                       <div class="form-actions"><input type="submit" name="save" value="Sign in" class="btn btn-primary" id="submit-id-save"> </div>
       </form>
-{% endif %}
-{% if webauth_login %}
+{% endif
+{% if webauth_login
 <p><a role="button" href="webauth" value="Sign in with webauth" class="btn btn-primary" > Sign in with webauth</a></p> 
 <p><a href="https://webauth.ox.ac.uk/logout" role="button" class="btn btn-danger">Log out of Webauth entirely</a></p></div>
-{% endif %}
+{% endif
   </div>
   <div class="row">
     <div class="row centered">
@@ -151,15 +151,15 @@ $('.btn-toggle').dropdown()
           <h2><small>ChemReg is built using:</small></h2>
         </div>
         <div class="col-xs-6 col-sm-3">
-          <a href="https://www.djangoproject.com/" onclick="return !window.open(this.href);"><img src="{% static 'bower_components/chembiohub-theme/img/django.png' %}" alt="Django Framework" title="Django Framework"></a>
+          <a href="https://www.djangoproject.com/" onclick="return !window.open(this.href);"><img src="bower_components/chembiohub-theme/img/django.png" alt="Django Framework" title="Django Framework"></a>
         </div>
         <div class="col-xs-6 col-sm-3">
-          <a href="https://www.ebi.ac.uk/chembl/ws" onclick="return !window.open(this.href);"><img src="{% static 'bower_components/chembiohub-theme/img/chembl.png' %}" alt="ChEMBL" title="ChEMBL"></a>
+          <a href="https://www.ebi.ac.uk/chembl/ws" onclick="return !window.open(this.href);"><img src="bower_components/chembiohub-theme/img/chembl.png" alt="ChEMBL" title="ChEMBL"></a>
         </div>
         <div class="col-xs-6 col-sm-3">
-          <a href="https://angularjs.org/" onclick="return !window.open(this.href);"><img src="{% static 'bower_components/chembiohub-theme/img/angular.png' %}" alt="AngularJS framework" title="AngularJS framework"></a>
+          <a href="https://angularjs.org/" onclick="return !window.open(this.href);"><img src="bower_components/chembiohub-theme/img/angular.png" alt="AngularJS framework" title="AngularJS framework"></a>
         </div><div class="col-xs-6 col-sm-3">
-          <a href="https://github.com/" onclick="return !window.open(this.href);"><img src="{% static 'bower_components/chembiohub-theme/img/github.png' %}" alt="GitHub" title="GitHub"></a>
+          <a href="https://github.com/" onclick="return !window.open(this.href);"><img src="bower_components/chembiohub-theme/img/github.png" alt="GitHub" title="GitHub"></a>
         </div>
         
       </div>
@@ -182,7 +182,7 @@ $('.btn-toggle').dropdown()
 
     <!-- build:js(.) scripts/vendor.js -->
    
-    <script src="{% static 'bower_components/jquery/dist/jquery.js' %}"></script>
+    <script src="bower_components/jquery/dist/jquery.js"></script>
   
 
     <!-- endbower -->
