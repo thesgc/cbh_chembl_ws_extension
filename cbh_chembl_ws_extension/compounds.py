@@ -13,6 +13,8 @@ from itertools import chain
 from pybel import readfile , readstring
 import re
 import shortuuid
+from dateutil.parser import parse
+
 try:
     from rdkit import Chem
     from rdkit.Chem import AllChem
@@ -206,13 +208,17 @@ class CBHCompoundBatchResource(ModelResource):
         if request.GET.get("related_molregno__chembl__chembl_id__in", None):
             applicable_filters["related_molregno__chembl__chembl_id__in"] = request.GET.get("related_molregno__chembl__chembl_id__in").split(",")
         pids = self._meta.authorization.project_ids(request)
-        
+        dateend = applicable_filters.get("created__lte", None)
+        if dateend:
+            applicable_filters["created__lte"] += " 23:59:59"
         dataset = self.get_object_list(request).filter(**applicable_filters).filter(project_id__in=set(pids))
         func_group = request.GET.get("functional_group", None)
+        
         if func_group:
             print("funct")
             funccms = CompoundMols.objects.with_substructure(func_group)
             dataset = dataset.filter(related_molregno_id__in=funccms.values_list("molecule_id", flat=True))
+
         return dataset.order_by("-created")
     
     
