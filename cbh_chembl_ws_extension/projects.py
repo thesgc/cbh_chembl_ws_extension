@@ -43,6 +43,7 @@ class ProjectResource(ModelResource):
                                     {"key": "related_molregno__chembl__chembl_id__in",
                                     "title" : "%s ID" % settings.ID_PREFIX,
                                     "placeholder" : "Search multiple IDs",
+                                    "description": "Add your ids and click on them as they appear in the drop-down.",
                                     "options": {
                                       "async": {
 

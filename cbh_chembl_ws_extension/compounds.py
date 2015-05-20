@@ -223,7 +223,7 @@ class CBHCompoundBatchResource(ModelResource):
 
         pids = self._meta.authorization.project_ids(request)
         filters = {"project__id__in" : pids}
-        prefix = request.GET.get("chembl_id__chembl_id__startswith", None)
+        prefix = request.GET.get("chembl_id__chembl_id__startswith", None).upper()
         desired_format = self.determine_format(request)
 
         if(prefix):
