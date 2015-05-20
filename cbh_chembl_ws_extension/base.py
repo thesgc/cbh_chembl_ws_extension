@@ -78,7 +78,7 @@ class UserResource(ModelResource):
         queryset = get_user_model().objects.all()
         resource_name = 'users'
         allowed_methods = ["get",] 
-        excludes = ['email', 'password', 'is_active', 'is_staff', 'is_superuser']
+        excludes = ['email', 'password', 'is_active']
         authentication = SessionAuthentication()
         authorization = Authorization()
 
@@ -87,7 +87,8 @@ class UserResource(ModelResource):
         return object_list.get(pk=request.user.id)
 
     def get_object_list(self, request):
-        return super(UserResource, self).get_object_list(request).filter(pk=request.user.id)
+        #return super(UserResource, self).get_object_list(request).filter(pk=request.user.id)
+        return super(UserResource, self).get_object_list(request)
 
     def get_permissions():
         """Placeholder for permissions service"""

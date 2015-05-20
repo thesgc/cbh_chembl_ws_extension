@@ -7,6 +7,7 @@ from itertools import chain
 
 
 from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project, CustomFieldConfig, PinnedCustomField
+from cbh_chembl_ws_extension.base import UserResource
 from cbh_chembl_ws_extension.authorization import ProjectAuthorization, ProjectListAuthorization
 from tastypie.serializers import Serializer
 from tastypie.authentication import SessionAuthentication
@@ -1409,6 +1410,11 @@ class ProjectResource(ModelResource):
     def alter_list_data_to_serialize(self, request, bundle):
         '''Here we append a list of tags to the data of the GET request if the
         search fields are required'''
+        userres = UserResource()
+        userbundle = userres.build_bundle(obj=request.user, request=request)
+        userbundle = userres.full_dehydrate(userbundle)
+        bundle['user'] = userbundle.data
+
         if request.GET.get("schemaform", None):
             searchfields = set([])
             searchfield_items = []
