@@ -69,8 +69,12 @@ class Index(TemplateView):
 
     template_name = 'dist/index.html' # or define get_template_names()
 
-
-
+    
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        from django.middleware.csrf import get_token
+        csrf_token = get_token(request)
+        return self.render_to_response(context)
 
 
 class UserResource(ModelResource):
@@ -106,22 +110,27 @@ class Login(FormView):
     template_name = "cbh_chembl_ws_extension/login.html"
     logout = None
     def get(self, request, *args, **kwargs):
-        print AuthenticationForm()
-        # logout = None
-        # if logout in kwargs:
-        #     logout = kwargs.pop("logout")
-        #     print logout
-        redirect_to = settings.LOGIN_REDIRECT_URL
-        '''Borrowed from django base detail view'''
-        # username = request.META.get('REMOTE_USER', None)
-        # if not username:
-        #     username = request.META.get('HTTP_X_WEBAUTH_USER', None)
-        # if  username and "django_webauth" in settings.INSTALLED_APPS:
-        #     return HttpResponseRedirect(reverse("webauth:login"))
+
         from django.middleware.csrf import get_token
         csrf_token = get_token(request)
         context = self.get_context_data(form=self.get_form(self.get_form_class()))
-        context["logout"] = self.logout
+        redirect_to = settings.LOGIN_REDIRECT_URL
+        '''Borrowed from django base detail view'''
+        
+        
+        
+        if "django_webauth" in settings.INSTALLED_APPS:
+            context["webauth_login"] = True
+            username = request.META.get('REMOTE_USER', None)
+            if not username:
+                #Here we check if this was a redirect after logout in which case we show the button to log out of webauth entirely
+                username = request.META.get('HTTP_X_WEBAUTH_USER', None)
+            if  username:
+                context["logout"] = True
+        else:
+            context["password_login"] = True
+
+
         if request.user.is_authenticated():
             return HttpResponseRedirect(redirect_to)
         return self.render_to_response(context)

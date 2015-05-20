@@ -117,7 +117,9 @@ $('.btn-toggle').dropdown()
           <small>Currently in alpha testing</small></h2>
           <p>We need your help to test this application so please <a href="mailto:info@chembiohub.ox.ac.uk?subject=ChemReg Issue">let us know</a> about any bugs you find (or suggestions for future features).</p>
           <p>Please use this service to register small molecules you are synthesising or using.</p>
-          <p>Simply enter your account details in the box.  You will find these in an email from <a href="mailto:info@chembiohub.ox.ac.uk">info@chembiohub.ox.ac.uk</a>.  If you haven’t heard from us – drop us a line and we will create an account for you.</p>
+          <p>{% if password_login %}Simply enter your account details in the box.{% endif %} 
+            {% if webauth_login %}Simply click the button below to log in via webauth.{% endif %}
+           You will find these in an email from <a href="mailto:info@chembiohub.ox.ac.uk">info@chembiohub.ox.ac.uk</a>.  If you haven’t heard from us – drop us a line and we will create an account for you.</p>
           <p><strong>Coming soon</strong> - Single Sign On (so you won't have to add separate account details)</p>
 
         </div>
@@ -126,7 +128,7 @@ $('.btn-toggle').dropdown()
 
     <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
             
-
+{% if password_login %}
       <form class="form-horizontal mt" method="post">
             <label>{% if logout %}Logged out, log in again below{% else %}Please Login {% endif %}</label>
 {% csrf_token %}
@@ -137,6 +139,10 @@ $('.btn-toggle').dropdown()
                   </fieldset>
                       <div class="form-actions"><input type="submit" name="save" value="Sign in" class="btn btn-primary" id="submit-id-save"> </div>
       </form>
+{% endif %}
+{% if webauth_login %}
+<div class="form-actions"><p><a href="webauth" value="Sign in with webauth" class="btn btn-primary" > </a></p> <p><a href="https://webauth.ox.ac.uk/logout" role="button" class="btn btn-danger">Log out of Webauth entirely</a></p></div>
+{% endif %}
     </div>
   </div>
   <div class="row">
