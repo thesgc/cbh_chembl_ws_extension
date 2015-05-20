@@ -18,7 +18,7 @@
     <!-- build:css(.) styles/vendor.css -->
     <!-- bower:css -->
     <link rel='stylesheet' href="bower_components/chembiohub-theme/css/main.css" />
-    <link rel='stylesheet' href="bower_components/bootstrap/dist/css/bootstrap.css" />
+    <link rel='stylesheet' href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" />
     <link rel='stylesheet' href="bower_components/angular-grid/ng-grid.css" />
     <!-- endbower -->
     <!-- endbuild -->
@@ -78,22 +78,13 @@
           </div> -->
         
       </div>
-      <div class="col-xs-1">
-        <div class="row">
-          <div class="dropdown pull-right" ng-show="isLoggedIn()">
-            
-          </div>
-        </div>
-      </div>
+
 
     </div>
   </div>
 
 </nav>
 
-<script>
-$('.btn-toggle').dropdown()
-</script>
 
     <!--[if lt IE 7]>
       <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
@@ -119,7 +110,6 @@ $('.btn-toggle').dropdown()
           <p>{% if password_login %}Simply enter your account details in the box.{% endif %} 
             {% if webauth_login %}Simply click the button below to log in via webauth.{% endif %}
            You will find these in an email from <a href="mailto:info@chembiohub.ox.ac.uk">info@chembiohub.ox.ac.uk</a>.  If you haven’t heard from us – drop us a line and we will create an account for you.</p>
-          <p><strong>Coming soon</strong> - Single Sign On (so you won't have to add separate account details)</p>
 
         </div>
         
