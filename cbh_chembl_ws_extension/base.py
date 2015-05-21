@@ -1,4 +1,4 @@
-from tastypie.resources import Resource
+from tastypie.resources import Resource, ALL, ALL_WITH_RELATIONS
 from tastypie.serializers import Serializer
 from tastypie.serializers import XML_ENCODING
 from tastypie.api import Api
@@ -79,6 +79,9 @@ class Index(TemplateView):
 
 class UserResource(ModelResource):
     class Meta:
+        filtering = {
+            "username": ALL_WITH_RELATIONS
+        }
         queryset = get_user_model().objects.all()
         resource_name = 'users'
         allowed_methods = ["get",] 
@@ -86,6 +89,10 @@ class UserResource(ModelResource):
         authentication = SessionAuthentication()
         authorization = Authorization()
 
+    # def apply_filters(self, request, applicable_filters):
+    #     username = request.GET.get('username')
+    #     applicable_filters['username'] = 
+    #     dataset = self.get_object_list(request).filter(**applicable_filters)
 
     def apply_authorization_limits(self, request, object_list):
         return object_list.get(pk=request.user.id)
