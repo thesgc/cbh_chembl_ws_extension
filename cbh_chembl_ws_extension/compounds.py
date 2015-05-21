@@ -471,8 +471,9 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def validate_multi_batch(self,multi_batch, bundle, request):
-        t = time.time()
-        sdfstrings = [batch.ctab for batch in multi_batch.uploaded_data]
+        batches_with_structures = [batch for batch in multi_batch.uploaded_data if not batch.blinded_batch_id]
+        blinded_data =  [batch for batch in multi_batch.uploaded_data if batch.blinded_batch_id]
+        sdfstrings = [batch.ctab for batch in batches_with_structures]
         sdf = "\n".join(sdfstrings)
         
         filename = "/tmp/" + shortuuid.ShortUUID().random()
@@ -496,9 +497,6 @@ class CBHCompoundBatchResource(ModelResource):
             ints =[s for s in parts[0].split() if s.isdigit()]
             part = "".join(ints)
             inchis[part] = parts[1]
-            
-
-        
 
         total = len(multi_batch.uploaded_data)
         bundle.data["objects"] = []
@@ -511,7 +509,7 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["dupes"] = 0
         new_uploaded_data = []
         already_found = set([])
-        for i, batch in enumerate(multi_batch.uploaded_data):
+        for i, batch in enumerate(batches_with_structures):
             batch.standard_inchi = inchis[str(i+1)]
             batch.validate(temp_props=False)
             if batch.__dict__["errors"] != {}:
@@ -533,9 +531,10 @@ class CBHCompoundBatchResource(ModelResource):
         total_already_in_db = MoleculeDictionary.objects.filter(structure_type="MOL", structure_key__in=already_found).count()
         bundle.data["linkedproject"] = total_already_in_db
         bundle.data["new"] = len(multi_batch.uploaded_data) - total_already_in_db - bundle.data["dupes"]
-        multi_batch.uploaded_data = new_uploaded_data
+        
+        multi_batch.uploaded_data = new_uploaded_data + blinded_data
+        bundle.data["blinded"] = len(blinded_data)
         multi_batch.save()
-        print t -time.time()
         bundle.data["total"] = total
 
         bundle.data["current_batch"] = multi_batch.pk
@@ -679,29 +678,32 @@ class CBHCompoundBatchResource(ModelResource):
                 #we need to know which column contains structural info - this needs to be defined on the mapping page and passed here
                 #read in the specified structural column
                 structure_col = bundle.data["struc_col"]
+
                 df = pd.read_excel(correct_file.file)
                 #read the smiles string value out of here, when we know which column it is.
                 row_iterator = df.iterrows()
                 headers = list(df)
                 for index, row in row_iterator:
-                    smiles_str = row[structure_col]
-                    struc = Chem.MolFromSmiles(smiles_str)
-                    if struc:
-                        Compute2DCoords(struc)
-                        try:
-                            b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
-                        except Exception, e:
-                            errors.append({"index" : index+1,  "message" : str(e)})
-                            b =None
-                        #work out custom fields from mapping object
-                        #new_fields, remapped_fields, ignored_fields
-                        if b:
-                            custom_fields = {}
-                            for hdr in headers:
-                                custom_fields[ hdr] = row[hdr] 
-                            #Set excel fields as uncurated
-                            b.uncurated_fields = custom_fields
-                            batches.append(b)
+                    if structure_col:
+                        smiles_str = row[structure_col]
+                        struc = Chem.MolFromSmiles(smiles_str)
+                        if struc:
+                            Compute2DCoords(struc)
+                            try:
+                                b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
+                            except Exception, e:
+                                errors.append({"index" : index+1,  "message" : str(e)})
+                                b =None
+                    else:
+                        b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])                    
+
+                    if b:
+                        custom_fields = {}
+                        for hdr in headers:
+                            custom_fields[ hdr] = row[hdr] 
+                        #Set excel fields as uncurated
+                        b.uncurated_fields = custom_fields
+                        batches.append(b)
                     else:
                         errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this identifier",  "SMILES": smiles_str})
             else:
@@ -794,15 +796,22 @@ class CBHCompoundBatchResource(ModelResource):
         data = bundle.obj.related_molregno
         user = None
         
+        for names in self.Meta.fieldnames:
+            if not bundle.obj.blinded_batch_id:
+                try:
+                    bundle.data[names[1]] = deepgetattr(data, names[0], None)
+                except(AttributeError):   
+                    bundle.data[names[1]] = ""
+            else:
+                if names[1] == "chemblId":
+                    bundle.data[names[1]] = bundle.obj.blinded_batch_id
+                else:
+                    bundle.data[names[1]] = ""
         if bundle.obj.created_by:
           #user = User.objects.get(username=bundle.obj.created_by)
             User = get_user_model()
             user = User.objects.get(username=bundle.obj.created_by)
-        for names in self.Meta.fieldnames:
-            try:
-                bundle.data[names[1]] = deepgetattr(data, names[0], None)
-            except(AttributeError):
-                bundle.data[names[1]] = ""
+
 
         mynames = ["editable_by","uncurated_fields", "warnings", "properties", "custom_fields", "errors"]
         for name in mynames:
