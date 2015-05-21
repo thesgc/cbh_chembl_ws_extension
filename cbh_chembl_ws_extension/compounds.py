@@ -93,7 +93,7 @@ from django.db.models import Prefetch
 
 class CBHCompoundBatchResource(ModelResource):
     project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
-
+    substructure_smarts = ""
     class Meta:
         filtering = {
             "std_ctab": ALL_WITH_RELATIONS,
@@ -166,6 +166,7 @@ class CBHCompoundBatchResource(ModelResource):
         default_format = 'application/json'
         authentication = SessionAuthentication()
         paginator_class = Paginator
+    
 
     def apply_filters(self, request, applicable_filters):
         """
@@ -173,6 +174,7 @@ class CBHCompoundBatchResource(ModelResource):
         The default simply applies the ``applicable_filters`` as ``**kwargs``,
         but should make it possible to do more advanced things.
         """
+        self.substructure_smarts = ""
         ws = request.GET.get("with_substructure", None)
         st = request.GET.get("similar_to", None)
         fm = request.GET.get("flexmatch", None)
@@ -215,7 +217,6 @@ class CBHCompoundBatchResource(ModelResource):
         func_group = request.GET.get("functional_group", None)
         
         if func_group:
-            print("funct")
             funccms = CompoundMols.objects.with_substructure(func_group)
             dataset = dataset.filter(related_molregno_id__in=funccms.values_list("molecule_id", flat=True))
 
@@ -253,6 +254,7 @@ class CBHCompoundBatchResource(ModelResource):
             smiles = Chem.MolToSmiles(mol)
         except:
             smiles = strn
+        self.substructure_smarts = smiles 
         return smiles
 
 
@@ -728,6 +730,10 @@ class CBHCompoundBatchResource(ModelResource):
         '''use the request type to determine which fields should be limited for file download,
            add extra fields if needed (eg images) and enumerate the custom fields into the 
            rest of the calculated fields'''
+        if self.substructure_smarts:
+            for index, b in enumerate(data["objects"]):
+                ctab = b.data["properties"]["substructureMatch"] = self.substructure_smarts
+
         if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or request.GET.get("format") == "sdf" or self.determine_format(request) == 'chemical/x-mdl-sdfile' ):
             
             df_data = []
@@ -761,7 +767,8 @@ class CBHCompoundBatchResource(ModelResource):
                 df_data.append(new_data)               
             df = pd.DataFrame(df_data)
             data['export'] = df.to_json()            
-            
+        
+
         return data
 
     def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
