@@ -56,7 +56,7 @@ class ProjectResource(ModelResource):
                                     ]
                                 },
                                 {
-                                  "key": "project",
+                                  "key": "project__project_key__in",
                                   "type": "checkboxes",
                                  # "description": "<info-box freetext='Limit your search results to items tagged with project-specific information'></info-box>",
                                   "placeholder": "Check the console",
@@ -150,7 +150,7 @@ class ProjectResource(ModelResource):
                                                   }
                                                 }
                                                 },
-                                                "project": {
+                                                "project__project_key__in": {
                                                   "title": "Project",
                                                   "type": "string",
                                                     "enum" :[p.obj.project_key for p in bundle["objects"]],
@@ -1323,11 +1323,11 @@ class ProjectResource(ModelResource):
                                                                     "value":"([!-0!-1!-2!-3!-4].[!+0!+1!+2!+3!+4])",
                                                                    # "description":"Variously charged moieties that are within the same molecule but not-necessarily connected. Uses component-level grouping. <dl>"
                                                                   },
-                                                                  {
-                                                                    "label":"Hydrogen-bond acceptor",
-                                                                    "value":"[#6,#7;R0]=[#8]",
-                                                                   # "description":"Only hits carbonyl and nitroso. Matches a 2-atom pattern consisting of a carbon or nitrogen not in a ring, double bonded to an oxyge n."
-                                                                  },
+                                                                  # {
+                                                                  #   "label":"Hydrogen-bond acceptor",
+                                                                  #   "value":"[#6,#7;R0]=[#8]",
+                                                                  #  # "description":"Only hits carbonyl and nitroso. Matches a 2-atom pattern consisting of a carbon or nitrogen not in a ring, double bonded to an oxyge n."
+                                                                  # },
                                                                   {
                                                                     "label":"Hydrogen-bond acceptor",
                                                                     "value":"[!$([#6,F,Cl,Br,I,o,s,nX3,#7v5,#15v5,#16v4,#16v6,*+1,*+2,*+3])]",
@@ -1338,11 +1338,11 @@ class ProjectResource(ModelResource):
                                                                     "value":"[!$([#6,H0,-,-2,-3])]",
                                                                    # "description":"A H-bond donor is a non-negatively charged heteroatom with at least one H"
                                                                   },
-                                                                  {
-                                                                    "label":"Hydrogen-bond donor.",
-                                                                    "value":"[!H0;#7,#8,#9]",
-                                                                   # "description":"Must have an N-H bond, an O-H bond, or a F-H bond"
-                                                                  },
+                                                                  # {
+                                                                  #   "label":"Hydrogen-bond donor.",
+                                                                  #   "value":"[!H0;#7,#8,#9]",
+                                                                  #  # "description":"Must have an N-H bond, an O-H bond, or a F-H bond"
+                                                                  # },
                                                                   {
                                                                     "label":"Possible intramolecular H-bond",
                                                                     "value":"[O,N;!H0]-*~*-*=[$([C,N;R0]=O)]",
