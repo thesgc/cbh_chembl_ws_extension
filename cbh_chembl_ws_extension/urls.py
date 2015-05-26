@@ -27,6 +27,7 @@ except AttributeError:
 api = Api(api_name=api_name)
 
 api.register(CBHCompoundBatchResource())
+api.register(CBHCompoundMultipleBatchResource())
 api.register(CBHCompoundBatchUpload())
 api.register(UserResource())
 api.register(ProjectResource())

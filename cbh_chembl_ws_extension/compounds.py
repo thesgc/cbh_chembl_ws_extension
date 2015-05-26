@@ -889,10 +889,15 @@ def deepgetattr(obj, attr, ex):
 
 
 class CBHCompoundMultipleBatchResource(ModelResource):
+    #comp_batch = fields.ForeignKey(CBHCompoundBatchResource, 'cbh_compound_batches', blank=False, null=False)
+    #batches = fields.ToManyField(CBHCompoundBatchResource, 'batches', full=True)
     class Meta:
+        filtering = {
+            "created_by": ALL_WITH_RELATIONS,
+        }
         always_return_data = True
-        queryset = FlowFile.objects.all()
-        resource_name = 'cbh_batch_upload'
+        queryset = CBHCompoundMultipleBatch.objects.all()
+        resource_name = 'cbh_multiple_batches'
         authorization = Authorization()
         include_resource_uri = False
         allowed_methods = ['get']
