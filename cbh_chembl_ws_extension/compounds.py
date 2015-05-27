@@ -891,6 +891,7 @@ def deepgetattr(obj, attr, ex):
 class CBHCompoundMultipleBatchResource(ModelResource):
     #comp_batch = fields.ForeignKey(CBHCompoundBatchResource, 'cbh_compound_batches', blank=False, null=False)
     #batches = fields.ToManyField(CBHCompoundBatchResource, 'batches', full=True)
+    project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False, full=True)
     class Meta:
         filtering = {
             "created_by": ALL_WITH_RELATIONS,
