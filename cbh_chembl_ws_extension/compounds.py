@@ -220,7 +220,7 @@ class CBHCompoundBatchResource(ModelResource):
             funccms = CompoundMols.objects.with_substructure(func_group)
             dataset = dataset.filter(related_molregno_id__in=funccms.values_list("molecule_id", flat=True))
 
-        return dataset.order_by("-created")
+        return dataset.order_by("-id")
     
     
 
