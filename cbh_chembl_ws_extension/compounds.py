@@ -810,7 +810,10 @@ class CBHCompoundBatchResource(ModelResource):
         if bundle.obj.created_by:
           #user = User.objects.get(username=bundle.obj.created_by)
             User = get_user_model()
-            user = User.objects.get(username=bundle.obj.created_by)
+            try:
+                user = User.objects.get(username=bundle.obj.created_by)
+            except ObjectDoesNotExist:
+                pass
 
 
         mynames = ["editable_by","uncurated_fields", "warnings", "properties", "custom_fields", "errors"]
