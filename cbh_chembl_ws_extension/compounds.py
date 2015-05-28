@@ -700,7 +700,7 @@ class CBHCompoundBatchResource(ModelResource):
                     if b:
                         custom_fields = {}
                         for hdr in headers:
-                            if str(row[hdr]) == "nan":
+                            if row[hdr] == "nan":
                                 custom_fields[hdr] = ""
                             else:
                                 custom_fields[hdr] = row[hdr] 
