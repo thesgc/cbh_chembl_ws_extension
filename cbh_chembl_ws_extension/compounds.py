@@ -700,7 +700,10 @@ class CBHCompoundBatchResource(ModelResource):
                     if b:
                         custom_fields = {}
                         for hdr in headers:
-                            custom_fields[ hdr] = row[hdr] 
+                            if row[hdr].isnull():
+                                custom_fields[hdr] = ""
+                            else:
+                                custom_fields[hdr] = row[hdr] 
                         #Set excel fields as uncurated
                         b.uncurated_fields = custom_fields
                         batches.append(b)
