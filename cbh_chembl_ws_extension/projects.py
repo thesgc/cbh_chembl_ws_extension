@@ -39,7 +39,7 @@ class ProjectResource(ModelResource):
         return { "form": [     
                                 {
                                     "type": "fieldset",
-                                    "htmlClass": "col-xs-12",
+                                    "htmlClass": "col-sm-12",
                                     "items": [
                                     {"key": "related_molregno__chembl__chembl_id__in",
                                     "title" : "%s ID" % settings.ID_PREFIX,
@@ -60,7 +60,7 @@ class ProjectResource(ModelResource):
                                   "type": "checkboxes",
                                  # "description": "<info-box freetext='Limit your search results to items tagged with project-specific information'></info-box>",
                                   "placeholder": "Check the console",
-                                  "htmlClass": "col-xs-12",
+                                  "htmlClass": "col-sm-12",
                                   "onChange": "getSearchCustomFields()",
                                   "titleMap": {
                                         p.obj.project_key : p.obj.name for p in  bundle["objects"]
@@ -71,22 +71,22 @@ class ProjectResource(ModelResource):
                                 {
                                   "key": "dateStart",
                                   "minDate": "2004-01-01",
-                                  "htmlClass": "col-xs-6",
+                                  "htmlClass": "col-sm-6",
                                   "disableSuccessState": True,
                                 },
                                 {
                                   "key": "dateEnd",
                                   "minDate": "2004-01-01",
-                                  "htmlClass": "col-xs-6",
+                                  "htmlClass": "col-sm-6",
                                   "disableSuccessState": True,
                                 },
                                 {
                                     "type": "fieldset",
-                                    "htmlClass": "row",
+                                    "htmlClass": "col-sm-12",
                                     "items": [
                                       {
                                           "type": "fieldset",
-                                          "htmlClass": "col-xs-4",
+                                          "htmlClass": "col-sm-4",
                                           "items": [
                                            "functional_group",
                                           ]
@@ -96,7 +96,7 @@ class ProjectResource(ModelResource):
                                         "placeholder": "Search SMILES or SMARTS string",
                                         "append": "today",
                                         "feedback": False,
-                                        "htmlClass": "col-xs-7",
+                                        "htmlClass": "col-sm-7",
                                         "disableSuccessState": True,
                                       },
                                     ]
@@ -108,7 +108,7 @@ class ProjectResource(ModelResource):
                                     "selected": "btn-success",
                                     "unselected": "btn-default"
                                   },
-                                  "htmlClass": "col-xs-12",
+                                  "htmlClass": "col-sm-12",
                                   "type": "radiobuttons",
                                   "disableSuccessState": True,
                                   "titleMap": [
@@ -124,7 +124,7 @@ class ProjectResource(ModelResource):
                                 },
                                 {
                                     "type": "fieldset",
-                                    "htmlClass": "col-xs-12",
+                                    "htmlClass": "col-sm-12",
                                     "items": [
                                      "search_custom_fields__kv_any",
                                 ]
