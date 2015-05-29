@@ -899,15 +899,22 @@ class CBHCompoundMultipleBatchResource(ModelResource):
     class Meta:
         filtering = {
             "created_by": ALL_WITH_RELATIONS,
+            "project": ALL_WITH_RELATIONS,
         }
         always_return_data = True
         queryset = CBHCompoundMultipleBatch.objects.all()
         resource_name = 'cbh_multiple_batches'
-        authorization = Authorization()
+        authorization = ProjectAuthorization()
         include_resource_uri = False
         allowed_methods = ['get']
         default_format = 'application/json'
-        authentication = SessionAuthentication()    
+        authentication = SessionAuthentication()  
+
+    def apply_filters(self, request, applicable_filters):
+        pids = self._meta.authorization.project_ids(request)
+        dataset = self.get_object_list(request).filter(**applicable_filters).filter(project_id__in=set(pids))
+        return dataset.order_by("-created")
+
 
 
 
