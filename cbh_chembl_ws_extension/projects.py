@@ -81,6 +81,12 @@ class ProjectResource(ModelResource):
                                   "disableSuccessState": True,
                                 },
                                 {
+                                  "key": "multiple_batch_id",
+                                  "htmlClass": "col-xs-3",
+                                  "disableSuccessState": True,
+
+                                },
+                                {
                                     "type": "fieldset",
                                     "htmlClass": "row",
                                     "items": [
@@ -156,6 +162,10 @@ class ProjectResource(ModelResource):
                                                     "enum" :[p.obj.project_key for p in bundle["objects"]],
                                                  "default" : [p.obj.project_key for p in bundle["objects"]]
 
+                                                },
+                                                "multiple_batch_id": {
+                                                  "title": "Multiple Batch ID",
+                                                  "type": "string",
                                                 },
                                                 "functional_group": {
                                                     "title" : "Functional Group",
