@@ -81,12 +81,6 @@ class ProjectResource(ModelResource):
                                   "disableSuccessState": True,
                                 },
                                 {
-                                  "key": "multiple_batch_id",
-                                  "htmlClass": "col-xs-3",
-                                  "disableSuccessState": True,
-
-                                },
-                                {
                                     "type": "fieldset",
                                     "htmlClass": "col-sm-12",
                                     "items": [
@@ -114,7 +108,7 @@ class ProjectResource(ModelResource):
                                     "selected": "btn-success",
                                     "unselected": "btn-default"
                                   },
-                                  "htmlClass": "col-sm-12",
+                                  "htmlClass": "col-sm-6",
                                   "type": "radiobuttons",
                                   "disableSuccessState": True,
                                   "titleMap": [
@@ -127,6 +121,12 @@ class ProjectResource(ModelResource):
                                       "name": "Exact Match"
                                     }
                                   ]
+                                },
+                                {
+                                  "key": "multiple_batch_id",
+                                  "htmlClass": "col-xs-3",
+                                  "disableSuccessState": True,
+
                                 },
                                 {
                                     "type": "fieldset",
