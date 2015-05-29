@@ -108,7 +108,7 @@ class ProjectResource(ModelResource):
                                     "selected": "btn-success",
                                     "unselected": "btn-default"
                                   },
-                                  "htmlClass": "col-sm-12",
+                                  "htmlClass": "col-sm-6",
                                   "type": "radiobuttons",
                                   "disableSuccessState": True,
                                   "titleMap": [
@@ -121,6 +121,12 @@ class ProjectResource(ModelResource):
                                       "name": "Exact Match"
                                     }
                                   ]
+                                },
+                                {
+                                  "key": "multiple_batch_id",
+                                  "htmlClass": "col-xs-3",
+                                  "disableSuccessState": True,
+
                                 },
                                 {
                                     "type": "fieldset",
@@ -156,6 +162,10 @@ class ProjectResource(ModelResource):
                                                     "enum" :[p.obj.project_key for p in bundle["objects"]],
                                                  "default" : [p.obj.project_key for p in bundle["objects"]]
 
+                                                },
+                                                "multiple_batch_id": {
+                                                  "title": "Multiple Batch ID",
+                                                  "type": "string",
                                                 },
                                                 "functional_group": {
                                                     "title" : "Functional Group",
