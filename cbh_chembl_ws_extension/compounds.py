@@ -220,7 +220,7 @@ class CBHCompoundBatchResource(ModelResource):
             funccms = CompoundMols.objects.with_substructure(func_group)
             dataset = dataset.filter(related_molregno_id__in=funccms.values_list("molecule_id", flat=True))
 
-        return dataset.order_by("-created")
+        return dataset.order_by("-id")
     
     
 
@@ -700,7 +700,10 @@ class CBHCompoundBatchResource(ModelResource):
                     if b:
                         custom_fields = {}
                         for hdr in headers:
-                            custom_fields[ hdr] = row[hdr] 
+                            if unicode(row[hdr]) == u"nan":
+                                custom_fields[hdr] = ""
+                            else:
+                                custom_fields[hdr] = row[hdr] 
                         #Set excel fields as uncurated
                         b.uncurated_fields = custom_fields
                         batches.append(b)
@@ -810,7 +813,10 @@ class CBHCompoundBatchResource(ModelResource):
         if bundle.obj.created_by:
           #user = User.objects.get(username=bundle.obj.created_by)
             User = get_user_model()
-            user = User.objects.get(username=bundle.obj.created_by)
+            try:
+                user = User.objects.get(username=bundle.obj.created_by)
+            except ObjectDoesNotExist:
+                pass
 
 
         mynames = ["editable_by","uncurated_fields", "warnings", "properties", "custom_fields", "errors"]
