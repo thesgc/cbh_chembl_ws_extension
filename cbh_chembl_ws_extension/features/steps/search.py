@@ -26,23 +26,23 @@ def step(context, struc_search_type):
 
 @then("I submit my search")
 def step(context):
-	path = "/devapi/cbh_compound_batches/"
-      func = context.api_client.post
+    path = "/devapi/cbh_compound_batches/"
+    func = context.api_client.post
       #context.post_data["projectKey"] = projkey
       #print(context.post_data)
-      resp = func(
+    resp = func(
           path,
           format='json',
           data=context.post_data,
           )
-      context.returned_data = resp
-      assert resp.status_code == 201
+    context.returned_data = resp
+    assert resp.status_code == 201
 
 
 @then("I can see search results")
 def step(context):
-	found_cmpds = context.ser.deserialize(context.returned_data.content)["objects"]
+    found_cmpds = context.ser.deserialize(context.returned_data.content)["objects"]
   	#retrieve registered inchi
   	#reg_inchi = found_cmpds[0]['standardInchi']
-	assert len(found_cmpds) > 0
+    assert len(found_cmpds) > 0
 
