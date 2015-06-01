@@ -879,7 +879,7 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def get_object_list(self, request):
-        return super(CBHCompoundBatchResource, self).get_object_list(request).prefetch_related(Prefetch( "related_molregno__compoundproperties"))
+        return super(CBHCompoundBatchResource, self).get_object_list(request).prefetch_related(Prefetch( "related_molregno__compoundproperties")).prefetch_related(Prefetch( "project"))
 
 
 
@@ -921,12 +921,16 @@ class CBHCompoundMultipleBatchResource(ModelResource):
         dataset = self.get_object_list(request).filter(**applicable_filters).filter(project_id__in=set(pids))
         return dataset.order_by("-created")
 
+    def get_object_list(self, request):
+        return super(CBHCompoundMultipleBatchResource, self).get_object_list(request).defer('uploaded_data').prefetch_related(Prefetch( "project"))
 
 
 
 class CBHCompoundBatchUpload(ModelResource):
 
     class Meta:
+        excludes = ['uploaded_data']
+
         always_return_data = True
         queryset = FlowFile.objects.all()
         resource_name = 'cbh_batch_upload'
