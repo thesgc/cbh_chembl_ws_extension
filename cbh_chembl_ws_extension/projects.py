@@ -177,12 +177,12 @@ class ProjectResource(ModelResource):
                                                       },
                                                       "default" : "",
                                                       "copyValueTo" : "smiles",
-                                                    "items" : [
-                                                                  {
-                                                                    "label":"Pick a group",
+                                                    "items" : [{
+                                                                    "label":"None",
                                                                     "value":"",
                                                                    # "description":""
-                                                                  },
+                                                                  },] + sorted([
+                                                                  
                                                                   {
                                                                     "label":"Alkyl Carbon",
                                                                     "value":"[CX4]",
@@ -373,216 +373,216 @@ class ProjectResource(ModelResource):
                                                                     "value":"[NX3][$(C=C),$(cc)]",
                                                                    # "description":""
                                                                   },
-                                                                  {
-                                                                    "label":"Generic amino acid: low specificity.",
-                                                                    "value":"[NX3,NX4+][CX4H]([*])[CX3](=[OX1])[O,N]",
-                                                                   # "description":"For use w/ non-standard a.a. search. hits pro but not gly. Hits acids and conjugate bases. Hits single a.a.s and specific residues w/in polypeptides (internal, or terminal)."
-                                                                  },
-                                                                  {
-                                                                    "label":"Dipeptide group. generic amino acid: low specificity.",
-                                                                    "value":"[NX3H2,NH3X4+][CX4H]([*])[CX3](=[OX1])[NX3,NX4+][CX4H]([*])[CX3](=[OX1])[OX2H,OX1-]",
-                                                                   # "description":"Won't hit pro or gly. Hits acids and conjugate bases."
-                                                                  },
-                                                                  {
-                                                                    "label":"Amino Acid",
-                                                                    "value":"[$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([*])[CX3](=[OX1])[OX2H,OX1-,N]",
-                                                                   # "description":"Replace * w/ a specific a.a. side chain from the 18_standard_side_chains list to hit a specific standard a.a. Won't work with Proline or Glycine, they have their own SMARTS (see side chain list). Hits acids and conjugate bases. Hits single a.a.s and specific residues w/i n polypeptides (internal, or terminal). {e.g. usage: Alanine side chain is [CH3X4] . Search is [$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([ CH3X4])[CX3](=[OX1])[OX2H,OX1-,N]}"
-                                                                  },
-                                                                  {
-                                                                    "label":"Alanine side chain",
-                                                                    "value":"[CH3X4]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Arginine side chain.",
-                                                                    "value":"[CH2X4][CH2X4][CH2X4][NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]",
-                                                                   # "description":"Hits acid and conjugate base."
-                                                                  },
-                                                                  {
-                                                                    "label":"Aspargine side chain.",
-                                                                    "value":"[CH2X4][CX3](=[OX1])[NX3H2]",
-                                                                   # "description":"Also hits Gln side chain when used alone."
-                                                                  },
-                                                                  {
-                                                                    "label":"Aspartate (or Aspartic acid) side chain.",
-                                                                    "value":"[CH2X4][CX3](=[OX1])[OH0-,OH]",
-                                                                   # "description":"Hits acid and conjugate base. Also hits Glu side chain when used alone."
-                                                                  },
-                                                                  {
-                                                                    "label":"Cysteine side chain.",
-                                                                    "value":"[CH2X4][SX2H,SX1H0-]",
-                                                                   # "description":"Hits acid and conjugate base"
-                                                                  },
-                                                                  {
-                                                                    "label":"Glutamate (or Glutamic acid) side chain.",
-                                                                    "value":"[CH2X4][CH2X4][CX3](=[OX1])[OH0-,OH]",
-                                                                   # "description":"Hits acid and conjugate base."
-                                                                  },
-                                                                  {
-                                                                    "label":"Glycine",
-                                                                    "value":"[$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H2][CX3](=[OX1])[OX2H,OX1-,N])]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Histidine side chain.",
-                                                                    "value":"[CH2X4][#6X3]1:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]:<br>[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]1",
-                                                                   # "description":"Hits acid & conjugate base for either Nitrogen. Note that the Ns can be either ([(Cationic 3-connected with one H) or (Neutral 2-connected without any Hs)] where there is a second-neighbor who is [3-connected with one H]) or (3-connected with one H)."
-                                                                  },
-                                                                  {
-                                                                    "label":"Isoleucine side chain",
-                                                                    "value":"[CHX4]([CH3X4])[CH2X4][CH3X4]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Leucine side chain",
-                                                                    "value":"[CH2X4][CHX4]([CH3X4])[CH3X4]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Lysine side chain.",
-                                                                    "value":"[CH2X4][CH2X4][CH2X4][CH2X4][NX4+,NX3+0]",
-                                                                   # "description":"Acid and conjugate base"
-                                                                  },
-                                                                  {
-                                                                    "label":"Methionine side chain",
-                                                                    "value":"[CH2X4][CH2X4][SX2][CH3X4]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Phenylalanine side chain",
-                                                                    "value":"[CH2X4][cX3]1[cX3H][cX3H][cX3H][cX3H][cX3H]1",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Proline",
-                                                                    "value":"[$([NX3H,NX4H2+]),$([NX3](C)(C)(C))]1[CX4H]([CH2][CH2][CH2]1)[CX3](=[OX1])[OX2H,OX1-,N]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Serine side chain",
-                                                                    "value":"[CH2X4][OX2H]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Thioamide",
-                                                                    "value":"[NX3][CX3]=[SX1]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Threonine side chain",
-                                                                    "value":"[CHX4]([CH3X4])[OX2H]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Tryptophan side chain",
-                                                                    "value":"[CH2X4][cX3]1[cX3H][nX3H][cX3]2[cX3H][cX3H][cX3H][cX3H][cX3]12",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Tyrosine side chain.",
-                                                                    "value":"[CH2X4][cX3]1[cX3H][cX3H][cX3]([OHX2,OH0X1-])[cX3H][cX3H]1",
-                                                                   # "description":"Acid and conjugate base"
-                                                                  },
-                                                                  {
-                                                                    "label":"Valine side chain",
-                                                                    "value":"[CHX4]([CH3X4])[CH3X4]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Alanine side chain",
-                                                                    "value":"[CH3X4]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Arginine side chain.",
-                                                                    "value":"[CH2X4][CH2X4][CH2X4][NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]",
-                                                                   # "description":"Hits acid and conjugate base."
-                                                                  },
-                                                                  {
-                                                                    "label":"Aspargine side chain.",
-                                                                    "value":"[CH2X4][CX3](=[OX1])[NX3H2]",
-                                                                   # "description":"Also hits Gln side chain when used alone."
-                                                                  },
-                                                                  {
-                                                                    "label":"Aspartate (or Aspartic acid) side chain.",
-                                                                    "value":"[CH2X4][CX3](=[OX1])[OH0-,OH]",
-                                                                   # "description":"Hits acid and conjugate base. Also hits Glu side chain when used alone."
-                                                                  },
-                                                                  {
-                                                                    "label":"Cysteine side chain.",
-                                                                    "value":"[CH2X4][SX2H,SX1H0-]",
-                                                                   # "description":"Hits acid and conjugate base"
-                                                                  },
-                                                                  {
-                                                                    "label":"Glutamate (or Glutamic acid) side chain.",
-                                                                    "value":"[CH2X4][CH2X4][CX3](=[OX1])[OH0-,OH]",
-                                                                   # "description":"Hits acid and conjugate base."
-                                                                  },
-                                                                  {
-                                                                    "label":"Glycine",
-                                                                    "value":"N[CX4H2][CX3](=[OX1])[O,N]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Histidine side chain.",
-                                                                    "value":"[CH2X4][#6X3]1:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]:<br>[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]1",
-                                                                   # "description":"Hits acid & conjugate base for either Nitrogen. Note that the Ns can be either ([(Cationic 3-connected with one H) or (Neutral 2-connected without any Hs)] where there is a second-neighbor who is [3-connected"
-                                                                  },
-                                                                  {
-                                                                    "label":"Isoleucine side chain",
-                                                                    "value":"[CHX4]([CH3X4])[CH2X4][CH3X4]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Leucine side chain",
-                                                                    "value":"[CH2X4][CHX4]([CH3X4])[CH3X4]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Lysine side chain.",
-                                                                    "value":"[CH2X4][CH2X4][CH2X4][CH2X4][NX4+,NX3+0]",
-                                                                   # "description":"Acid and conjugate base"
-                                                                  },
-                                                                  {
-                                                                    "label":"Methionine side chain",
-                                                                    "value":"[CH2X4][CH2X4][SX2][CH3X4]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Phenylalanine side chain",
-                                                                    "value":"[CH2X4][cX3]1[cX3H][cX3H][cX3H][cX3H][cX3H]1",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Proline",
-                                                                    "value":"N1[CX4H]([CH2][CH2][CH2]1)[CX3](=[OX1])[O,N]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Serine side chain",
-                                                                    "value":"[CH2X4][OX2H]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Threonine side chain",
-                                                                    "value":"[CHX4]([CH3X4])[OX2H]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Tryptophan side chain",
-                                                                    "value":"[CH2X4][cX3]1[cX3H][nX3H][cX3]2[cX3H][cX3H][cX3H][cX3H][cX3]12",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Tyrosine side chain.",
-                                                                    "value":"[CH2X4][cX3]1[cX3H][cX3H][cX3]([OHX2,OH0X1-])[cX3H][cX3H]1",
-                                                                   # "description":"Acid and conjugate base"
-                                                                  },
-                                                                  {
-                                                                    "label":"Valine side chain",
-                                                                    "value":"[CHX4]([CH3X4])[CH3X4]",
-                                                                   # "description":""
-                                                                  },
+                                                                  # {
+                                                                  #   "label":"Generic amino acid: low specificity.",
+                                                                  #   "value":"[NX3,NX4+][CX4H]([*])[CX3](=[OX1])[O,N]",
+                                                                  #  # "description":"For use w/ non-standard a.a. search. hits pro but not gly. Hits acids and conjugate bases. Hits single a.a.s and specific residues w/in polypeptides (internal, or terminal)."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Dipeptide group. generic amino acid: low specificity.",
+                                                                  #   "value":"[NX3H2,NH3X4+][CX4H]([*])[CX3](=[OX1])[NX3,NX4+][CX4H]([*])[CX3](=[OX1])[OX2H,OX1-]",
+                                                                  #  # "description":"Won't hit pro or gly. Hits acids and conjugate bases."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Amino Acid",
+                                                                  #   "value":"[$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([*])[CX3](=[OX1])[OX2H,OX1-,N]",
+                                                                  #  # "description":"Replace * w/ a specific a.a. side chain from the 18_standard_side_chains list to hit a specific standard a.a. Won't work with Proline or Glycine, they have their own SMARTS (see side chain list). Hits acids and conjugate bases. Hits single a.a.s and specific residues w/i n polypeptides (internal, or terminal). {e.g. usage: Alanine side chain is [CH3X4] . Search is [$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([ CH3X4])[CX3](=[OX1])[OX2H,OX1-,N]}"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Alanine side chain",
+                                                                  #   "value":"[CH3X4]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Arginine side chain.",
+                                                                  #   "value":"[CH2X4][CH2X4][CH2X4][NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]",
+                                                                  #  # "description":"Hits acid and conjugate base."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Aspargine side chain.",
+                                                                  #   "value":"[CH2X4][CX3](=[OX1])[NX3H2]",
+                                                                  #  # "description":"Also hits Gln side chain when used alone."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Aspartate (or Aspartic acid) side chain.",
+                                                                  #   "value":"[CH2X4][CX3](=[OX1])[OH0-,OH]",
+                                                                  #  # "description":"Hits acid and conjugate base. Also hits Glu side chain when used alone."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Cysteine side chain.",
+                                                                  #   "value":"[CH2X4][SX2H,SX1H0-]",
+                                                                  #  # "description":"Hits acid and conjugate base"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Glutamate (or Glutamic acid) side chain.",
+                                                                  #   "value":"[CH2X4][CH2X4][CX3](=[OX1])[OH0-,OH]",
+                                                                  #  # "description":"Hits acid and conjugate base."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Glycine",
+                                                                  #   "value":"[$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H2][CX3](=[OX1])[OX2H,OX1-,N])]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Histidine side chain.",
+                                                                  #   "value":"[CH2X4][#6X3]1:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]:<br>[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]1",
+                                                                  #  # "description":"Hits acid & conjugate base for either Nitrogen. Note that the Ns can be either ([(Cationic 3-connected with one H) or (Neutral 2-connected without any Hs)] where there is a second-neighbor who is [3-connected with one H]) or (3-connected with one H)."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Isoleucine side chain",
+                                                                  #   "value":"[CHX4]([CH3X4])[CH2X4][CH3X4]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Leucine side chain",
+                                                                  #   "value":"[CH2X4][CHX4]([CH3X4])[CH3X4]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Lysine side chain.",
+                                                                  #   "value":"[CH2X4][CH2X4][CH2X4][CH2X4][NX4+,NX3+0]",
+                                                                  #  # "description":"Acid and conjugate base"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Methionine side chain",
+                                                                  #   "value":"[CH2X4][CH2X4][SX2][CH3X4]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Phenylalanine side chain",
+                                                                  #   "value":"[CH2X4][cX3]1[cX3H][cX3H][cX3H][cX3H][cX3H]1",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Proline",
+                                                                  #   "value":"[$([NX3H,NX4H2+]),$([NX3](C)(C)(C))]1[CX4H]([CH2][CH2][CH2]1)[CX3](=[OX1])[OX2H,OX1-,N]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Serine side chain",
+                                                                  #   "value":"[CH2X4][OX2H]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Thioamide",
+                                                                  #   "value":"[NX3][CX3]=[SX1]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Threonine side chain",
+                                                                  #   "value":"[CHX4]([CH3X4])[OX2H]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Tryptophan side chain",
+                                                                  #   "value":"[CH2X4][cX3]1[cX3H][nX3H][cX3]2[cX3H][cX3H][cX3H][cX3H][cX3]12",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Tyrosine side chain.",
+                                                                  #   "value":"[CH2X4][cX3]1[cX3H][cX3H][cX3]([OHX2,OH0X1-])[cX3H][cX3H]1",
+                                                                  #  # "description":"Acid and conjugate base"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Valine side chain",
+                                                                  #   "value":"[CHX4]([CH3X4])[CH3X4]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Alanine side chain",
+                                                                  #   "value":"[CH3X4]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Arginine side chain.",
+                                                                  #   "value":"[CH2X4][CH2X4][CH2X4][NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]",
+                                                                  #  # "description":"Hits acid and conjugate base."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Aspargine side chain.",
+                                                                  #   "value":"[CH2X4][CX3](=[OX1])[NX3H2]",
+                                                                  #  # "description":"Also hits Gln side chain when used alone."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Aspartate (or Aspartic acid) side chain.",
+                                                                  #   "value":"[CH2X4][CX3](=[OX1])[OH0-,OH]",
+                                                                  #  # "description":"Hits acid and conjugate base. Also hits Glu side chain when used alone."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Cysteine side chain.",
+                                                                  #   "value":"[CH2X4][SX2H,SX1H0-]",
+                                                                  #  # "description":"Hits acid and conjugate base"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Glutamate (or Glutamic acid) side chain.",
+                                                                  #   "value":"[CH2X4][CH2X4][CX3](=[OX1])[OH0-,OH]",
+                                                                  #  # "description":"Hits acid and conjugate base."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Glycine",
+                                                                  #   "value":"N[CX4H2][CX3](=[OX1])[O,N]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Histidine side chain.",
+                                                                  #   "value":"[CH2X4][#6X3]1:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]:<br>[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]1",
+                                                                  #  # "description":"Hits acid & conjugate base for either Nitrogen. Note that the Ns can be either ([(Cationic 3-connected with one H) or (Neutral 2-connected without any Hs)] where there is a second-neighbor who is [3-connected"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Isoleucine side chain",
+                                                                  #   "value":"[CHX4]([CH3X4])[CH2X4][CH3X4]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Leucine side chain",
+                                                                  #   "value":"[CH2X4][CHX4]([CH3X4])[CH3X4]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Lysine side chain.",
+                                                                  #   "value":"[CH2X4][CH2X4][CH2X4][CH2X4][NX4+,NX3+0]",
+                                                                  #  # "description":"Acid and conjugate base"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Methionine side chain",
+                                                                  #   "value":"[CH2X4][CH2X4][SX2][CH3X4]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Phenylalanine side chain",
+                                                                  #   "value":"[CH2X4][cX3]1[cX3H][cX3H][cX3H][cX3H][cX3H]1",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Proline",
+                                                                  #   "value":"N1[CX4H]([CH2][CH2][CH2]1)[CX3](=[OX1])[O,N]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Serine side chain",
+                                                                  #   "value":"[CH2X4][OX2H]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Threonine side chain",
+                                                                  #   "value":"[CHX4]([CH3X4])[OX2H]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Tryptophan side chain",
+                                                                  #   "value":"[CH2X4][cX3]1[cX3H][nX3H][cX3]2[cX3H][cX3H][cX3H][cX3H][cX3]12",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Tyrosine side chain.",
+                                                                  #   "value":"[CH2X4][cX3]1[cX3H][cX3H][cX3]([OHX2,OH0X1-])[cX3H][cX3H]1",
+                                                                  #  # "description":"Acid and conjugate base"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Valine side chain",
+                                                                  #   "value":"[CHX4]([CH3X4])[CH3X4]",
+                                                                  #  # "description":""
+                                                                  # },
                                                                   {
                                                                     "label":"Azide group.",
                                                                     "value":"[$(*-[NX2-]-[NX2+]#[NX1]),$(*-[NX2]=[NX2+]=[NX1-])]",
@@ -913,276 +913,272 @@ class ProjectResource(ModelResource):
                                                                     "value":"[F,Cl,Br,I]",
                                                                    # "description":""
                                                                   },
-                                                                  {
-                                                                    "label":"Three_halides groups",
-                                                                    "value":"[F,Cl,Br,I].[F,Cl,Br,I].[F,Cl,Br,I]",
-                                                                   # "description":"Hits SMILES that have three halides."
-                                                                  },
-                                                                  {
-                                                                    "label":"Acyl Halide",
-                                                                    "value":"[CX3](=[OX1])[F,Cl,Br,I]",
-                                                                   # "description":"(acid halide, -oyl halide)"
-                                                                  },
-                                                                  {
-                                                                    "label":"sp2 cationic carbon",
-                                                                    "value":"[$([cX2+](:*):*)]",
-                                                                   # "description":"Aromatic cationic sp2 carbon with a free electron in a non-bonding sp2 hybrid orbital"
-                                                                  },
-                                                                  {
-                                                                    "label":"Aromatic sp2 carbon.",
-                                                                    "value":"[$([cX3](:*):*),$([cX2+](:*):*)]",
-                                                                   # "description":"The first recursive SMARTS matches carbons that are three-connected, the second case matches two-connected carbons (i.e cations with a free electron in a non-bonding sp2 hybrid orbital)"
-                                                                  },
-                                                                  {
-                                                                    "label":"Any sp2 carbon.",
-                                                                    "value":"[$([cX3](:*):*),$([cX2+](:*):*),$([CX3]=*),$([CX2+]=*)]",
-                                                                   # "description":"The first recursive SMARTS matches carbons that are three-connected and aromatic. The second case matches two-connected aromatic ca rbons (i.e cations with a free electron in a non-bonding sp2 hybrid orbital). The third case matches three-connected non-aromatic carbons ( alkenes). The fourth case matches non-aromatic cationic alkene carbons."
-                                                                  },
-                                                                  {
-                                                                    "label":"Any sp2 nitrogen.",
-                                                                    "value":"[$([nX3](:*):*),$([nX2](:*):*),$([#7X2]=*),$([NX3](=*)=*),$([#7X3+](-*)=*),$([#7X3+H]=*)]",
-                                                                   # "description":"Can be aromatic 3-connected with 2 aromatic bonds (eg pyrrole,Pyridine-N-oxide), aromatic 2-connected with 2 aromatic bonds (and a free pair of electrons in a nonbonding orbital, e.g.Pyridine), either aromatic or non-aromatic 2-connected with a double bond (and a free pair of electrons in a nonbonding orbital, e.g. C=N ), non aromatic 3-connected with 2 double bonds (e.g. a nitro group; this form does not exist in reality, SMILES can represent the charge-separated resonance structures as a single uncharged structure), either aromatic or non-aromatic 3-connected cation w/ 1 single bond and 1 double bond (e.g. a nitro group, here the individual charge-separated resonance structures are specified), either aromatic or non-aromatic 3-connected hydrogenated cation with a double bond (as the previous case but R is hydrogen), rspectively."
-                                                                  },
-                                                                  {
-                                                                    "label":"Explicit Hydrogen on sp2-Nitrogen",
-                                                                    "value":"[$([#1X1][$([nX3](:*):*),$([nX2](:*):*),$([#7X2]=*),$([NX3](=*)=*),$([#7X3+](-*)=*),$([#7X3+H]=*)])]",
-                                                                   # "description":"(H must be an isotope or ion)"
-                                                                  },
-                                                                  {
-                                                                    "label":"sp3 nitrogen",
-                                                                    "value":"[$([NX4+]),$([NX3]);!$(*=*)&!$(*:*)]",
-                                                                   # "description":"One atom that is (a 4-connected N cation or a 3-connected N) and is not double bonded and is not aromatically bonded."
-                                                                  },
-                                                                  {
-                                                                    "label":"Explicit Hydrogen on an sp3 N.",
-                                                                    "value":"[$([#1X1][$([NX4+]),$([NX3]);!$(*=*)&!$(*:*)])]",
-                                                                   # "description":"One atom that is a 1-connected H that is bonded to an sp3 N. (H must be an isotope or ion)"
-                                                                  },
-                                                                  {
-                                                                    "label":"sp2 N in N-Oxide",
-                                                                    "value":"[$([$([NX3]=O),$([NX3+][O-])])]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"sp3 N in N-Oxide Exclusive:",
-                                                                    "value":"[$([$([NX4]=O),$([NX4+][O-])])]",
-                                                                   # "description":"Only hits if O is explicitly present. Won't hit if * is in SMILES in place of O."
-                                                                  },
-                                                                  {
-                                                                    "label":"sp3 N in N-Oxide Inclusive:",
-                                                                    "value":"[$([$([NX4]=O),$([NX4+][O-,#0])])]",
-                                                                   # "description":"Hits if O could be present. Hits if * if used in place of O in smiles."
-                                                                  },
-                                                                  {
-                                                                    "label":"Quaternary Nitrogen",
-                                                                    "value":"[$([NX4+]),$([NX4]=*)]",
-                                                                   # "description":"Hits non-aromatic Ns."
-                                                                  },
-                                                                  {
-                                                                    "label":"Tricoordinate S double bonded to N.",
-                                                                    "value":"[$([SX3]=N)]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"S double-bonded to Carbon",
-                                                                    "value":"[$([SX1]=[#6])]",
-                                                                   # "description":"Hits terminal (1-connected S)"
-                                                                  },
-                                                                  {
-                                                                    "label":"Triply bonded N",
-                                                                    "value":"[$([NX1]#*)]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Divalent Oxygen",
-                                                                    "value":"[$([OX2])]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Unbranched_alkane groups.",
-                                                                    "value":"[R0;D2][R0;D2][R0;D2][R0;D2]",
-                                                                   # "description":"Only hits alkanes (single-bond chains). Only hits chains of at-least 4 members. All non-(implicit-hydrogen) atoms count as branches (e.g. halide substituted chains count as branched)."
-                                                                  },
-                                                                  {
-                                                                    "label":"Unbranched_chain groups.",
-                                                                    "value":"[R0;D2]~[R0;D2]~[R0;D2]~[R0;D2]",
-                                                                   # "description":"Hits any bond (single, double, triple). Only hits chains of at-least 4 members. All non-(implicit-hydrogen) atoms count as branches (e.g. halide substituted chains count as branched)."
-                                                                  },
-                                                                  {
-                                                                    "label":"Long_chain groups.",
-                                                                    "value":"[AR0]~[AR0]~[AR0]~[AR0]~[AR0]~[AR0]~[AR0]~[AR0]",
-                                                                   # "description":"Aliphatic chains at-least 8 members long."
-                                                                  },
-                                                                  {
-                                                                    "label":"Atom_fragment",
-                                                                    "value":"[!$([#6+0]);!$(C(F)(F)F);!$(c(:[!c]):[!c])!$([#6]=,#[!#6])]",
-                                                                   # "description":"(CLOGP definition) A fragment atom is a not an isolating carbon"
-                                                                  },
-                                                                  {
-                                                                    "label":"Carbon_isolating",
-                                                                    "value":"[$([#6+0]);!$(C(F)(F)F);!$(c(:[!c]):[!c])!$([#6]=,#[!#6])]",
-                                                                   # "description":"This definition is based on that in CLOGP, so it is a charge-neutral carbon, which is not a CF3 or an aromatic C between two aromati c hetero atoms eg in tetrazole, it is not multiply bonded to a hetero atom."
-                                                                  },
-                                                                  {
-                                                                    "label":"Terminal S bonded to P",
-                                                                    "value":"[$([SX1]~P)]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Nitrogen on -N-C=N-",
-                                                                    "value":"[$([NX3]C=N)]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Nitrogen on -N-N=C-",
-                                                                    "value":"[$([NX3]N=C)]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Nitrogen on -N-N=N-",
-                                                                    "value":"[$([NX3]N=N)]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Oxygen in -O-C=N-",
-                                                                    "value":"[$([OX2]C=N)]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Rotatable bond",
-                                                                    "value":"[!$(*#*)&!D1]-!@[!$(*#*)&!D1]",
-                                                                   # "description":"An atom which is not triply bonded and not one-connected i.e.terminal connected by a single non-ring bond to and equivalent atom. Note that logical operators can be applied to bonds (\"-&!@\"). Here, the overall SMARTS consists of two atoms and one bond. The bond is \"site and not ring\". *#* any atom triple bonded to any atom. By enclosing this SMARTS in parentheses and preceding with $, this enables us to use $(*#*) to write a recursive SMARTS using that string as an atom primitive. The purpose is to avoid bonds such as c1ccccc1-C#C which wo be considered rotatable without this specification."
-                                                                  },
-                                                                  {
-                                                                    "label":"Bicyclic",
-                                                                    "value":"[$([*R2]([*R])([*R])([*R]))].[$([*R2]([*R])([*R])([*R]))]",
-                                                                   # "description":"Bicyclic compounds have 2 bridgehead atoms with 3 arms connecting the bridgehead atoms."
-                                                                  },
-                                                                  {
-                                                                    "label":"Ortho",
-                                                                    "value":"*-!:aa-!:*",
-                                                                   # "description":"Ortho-substituted ring"
-                                                                  },
-                                                                  {
-                                                                    "label":"Meta",
-                                                                    "value":"*-!:aaa-!:*",
-                                                                   # "description":"Meta-substituted ring"
-                                                                  },
-                                                                  {
-                                                                    "label":"Para",
-                                                                    "value":"*-!:aaaa-!:*",
-                                                                   # "description":"Para-substituted ring"
-                                                                  },
-                                                                  {
-                                                                    "label":"Acylic-bonds",
-                                                                    "value":"*!@*",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Single bond and not in a ring",
-                                                                    "value":"*-!@*",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Non-ring atom",
-                                                                    "value":"[R0] or [!R]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Macrocycle groups.",
-                                                                    "value":"[r;!r3;!r4;!r5;!r6;!r7]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"S in aromatic 5-ring with lone pair",
-                                                                    "value":"[sX2r5]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Aromatic 5-Ring O with Lone Pair",
-                                                                    "value":"[oX2r5]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"N in 5-sided aromatic ring",
-                                                                    "value":"[nX2r5]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Spiro-ring center",
-                                                                    "value":"[X4;R2;r4,r5,r6](@[r4,r5,r6])(@[r4,r5,r6])(@[r4,r5,r6])@[r4,r5,r6]rings size 4-6",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"N in 5-ring arom",
-                                                                    "value":"[$([nX2r5]:[a-]),$([nX2r5]:[a]:[a-])] anion",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"CIS or TRANS double bond in a ring",
-                                                                    "value":"*/,\\[R]=;@[R]/,\\*",
-                                                                   # "description":"An isomeric SMARTS consisting of four atoms and three bonds."
-                                                                  },
-                                                                  {
-                                                                    "label":"CIS or TRANS double or aromatic bond in a ring",
-                                                                    "value":"*/,\\[R]=,:;@[R]/,\\*",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Unfused benzene ring",
-                                                                    "value":"[cR1]1[cR1][cR1][cR1][cR1][cR1]1",
-                                                                   # "description":"To find a benzene ring which is not fused, we write a SMARTS of 6 aromatic carbons in a ring where each atom is only in one ring:"
-                                                                  },
-                                                                  {
-                                                                    "label":"Multiple non-fused benzene rings",
-                                                                    "value":"[cR1]1[cR1][cR1][cR1][cR1][cR1]1.[cR1]1[cR1][cR1][cR1][cR1][cR1]1",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Fused benzene rings",
-                                                                    "value":"c12ccccc1cccc2",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Generic amino acid: low specificity.",
-                                                                    "value":"[NX3,NX4+][CX4H]([*])[CX3](=[OX1])[O,N]",
-                                                                   # "description":"For use w/ non-standard a.a. search. hits pro but not gly. Hits acids and conjugate bases. Hits single a.a.s and specific residues w/in polypeptides (internal, or terminal)."
-                                                                  },
-                                                                  {
-                                                                    "label":"A.A. Template for 20 standard a.a.s",
-                                                                    "value":"[$([$([NX3H,NX4H2+]),$([NX3](C)(C)(C))]1[CX4H]([CH2][CH2][CH2]1)[CX3](=[OX1])[OX2H,OX1-,N]),<br>$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H2][CX3](=[OX1])[OX2H,OX1-,N]),$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([*])[CX3](=[OX1])[OX2H,OX1-,N])]",
-                                                                   # "description":"Pro, Gly, Other. Replace * w/ the entire 18_standard_side_chains list to get \"any standard a.a.\" Hits acids and conjugate bases. Hits single a.a.s and specific residues w/in polypeptides (internal, or terminal)."
-                                                                  },
-                                                                  {
-                                                                    "label":"Proline",
-                                                                    "value":"[$([NX3H,NX4H2+]),$([NX3](C)(C)(C))]1[CX4H]([CH2][CH2][CH2]1)[CX3](=[OX1])[OX2H,OX1-,N]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Glycine",
-                                                                    "value":"[$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H2][CX3](=[OX1])[OX2H,OX1-,N])]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Other a.a.",
-                                                                    "value":"[$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([*])[CX3](=[OX1])[OX2H,OX1-,N]",
-                                                                   # "description":"Replace * w/ a specific a.a. side chain from the 18_standard_side_chains list to hit a specific standard a.a. Won't work with Proline or Glycine, they have their own SMARTS (see side chain list). Hits acids and conjugate bases. Hits single a.a.s and specific residues w/i polypeptides (internal, or terminal). Example usage: Alanine side chain is [CH3X4] Alanine Search is [$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([CH3X4])[CX3](=[OX1])[OX2H,OX1-,N]"
-                                                                  },
-                                                                  {
-                                                                    "label":"18_standard_aa_side_chains.",
-                                                                    "value":"([$([CH3X4]),$([CH2X4][CH2X4][CH2X4][NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]),$([CH2X4][CX3](=[OX1])[NX3H2]),$([CH2X4][CX3](=[OX1])[OH0-,OH]),$([CH2X4][SX2H,SX1H0-]),$([CH2X4][CH2X4][CX3](=[OX1])[OH0-,OH]),$([CH2X4][#6X3]1:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]1),$([CHX4]([CH3X4])[CH2X4][CH3X4]),$([CH2X4][CHX4]([CH3X4])[CH3X4]),$([CH2X4][CH2X4][CH2X4][CH2X4][NX4+,NX3+0]),$([CH2X4][CH2X4][SX2][CH3X4]),$([CH2X4][cX3]1[cX3H][cX3H][cX3H][cX3H][cX3H]1),$([CH2X4][OX2H]),$([CHX4]([CH3X4])[OX2H]),$([CH2X4][cX3]1[cX3H][nX3H][cX3]2[cX3H][cX3H][cX3H][cX3H][cX3]12),$([CH2X4][cX3]1[cX3H][cX3H][cX3]([OHX2,OH0X1-])[cX3H][cX3H]1),$([CHX4]([CH3X4])[CH3X4])])",
-                                                                   # "description":"Can be any of the standard 18 (Pro & Gly are treated separately) Hits acids and conjugate bases."
-                                                                  },
-                                                                  {
-                                                                    "label":"N in Any_standard_amino_acid.",
-                                                                    "value":"[$([$([NX3H,NX4H2+]),$([NX3](C)(C)(C))]1[CX4H]([CH2][CH2][CH2]1)[CX3](=[OX1])[OX2H,OX1-,N]),$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H2][CX3](=[OX1])[OX2H,OX1-,N]),$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([$([CH3X4]),$([CH2X4][CH2X4][CH2X4][NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]),$([CH2X4][CX3](=[OX1])[NX3H2]),$([CH2X4][CX3](=[OX1])[OH0-,OH]),$([CH2X4][SX2H,SX1H0-]),$([CH2X4][CH2X4][CX3](=[OX1])[OH0-,OH]),$([CH2X4][#6X3]1:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]1),$([CHX4]([CH3X4])[CH2X4][CH3X4]),$([CH2X4][CHX4]([CH3X4])[CH3X4]),$([CH2X4][CH2X4][CH2X4][CH2X4][NX4+,NX3+0]),$([CH2X4][CH2X4][SX2][CH3X4]),$([CH2X4][cX3]1[cX3H][cX3H][cX3H][cX3H][cX3H]1),$([CH2X4][OX2H]),$([CHX4]([CH3X4])[OX2H]),$([CH2X4][cX3]1[cX3H][nX3H][cX3]2[cX3H][cX3H][cX3H][cX3H][cX3]12),$([CH2X4][cX3]1[cX3H][cX3H][cX3]([OHX2,OH0X1-])[cX3H][cX3H]1),$([CHX4]([CH3X4])[CH3X4])])[CX3](=[OX1])[OX2H,OX1-,N])]",
-                                                                   # "description":"Format is A.A.Template for 20 standard a.a.s. where * is replaced by the entire 18_standard_side_chains list (or'd together). A generic amino acid with any of the 18 side chains or, proline or glycine. Hits \"standard\" amino acids that have terminally appended groups (i.e. \"standard\" refers to the side chains). (Pro, Gly, or 18 normal a.a.s.) Hits single a.a.s and specific residues w/in polypeptides (internal, or terminal)."
-                                                                  },
-                                                                  {
-                                                                    "label":"Non-standard amino acid.",
-                                                                    "value":"[$([NX3,NX4+][CX4H]([*])[CX3](=[OX1])[O,N]);!$([$([$([NX3H,NX4H2+]),$([NX3](C)(C)(C))]1[CX4H]([CH2][CH2][CH2]1)[CX3](=[OX1])[OX2H,OX1-,N]),$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H2][CX3](=[OX1])[OX2H,OX1-,N]),$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([$([CH3X4]),$([CH2X4][CH2X4][CH2X4][NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]),$([CH2X4][CX3](=[OX1])[NX3H2]),$([CH2X4][CX3](=[OX1])[OH0-,OH]),$([CH2X4][SX2H,SX1H0-]),$([CH2X4][CH2X4][CX3](=[OX1])[OH0-,OH]),$([CH2X4][#6X3]1:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]1),$([CHX4]([CH3X4])[CH2X4][CH3X4]),$([CH2X4][CHX4]([CH3X4])[CH3X4]),$([CH2X4][CH2X4][CH2X4][CH2X4][NX4+,NX3+0]),$([CH2X4][CH2X4][SX2][CH3X4]),$([CH2X4][cX3]1[cX3H][cX3H][cX3H][cX3H][cX3H]1),$([CH2X4][OX2H]),$([CHX4]([CH3X4])[OX2H]),$([CH2X4][cX3]1[cX3H][nX3H][cX3]2[cX3H][cX3H][cX3H][cX3H][cX3]12),$([CH2X4][cX3]1[cX3H][cX3H][cX3]([OHX2,OH0X1-])[cX3H][cX3H]1),$([CHX4]([CH3X4])[CH3X4])])[CX3](=[OX1])[OX2H,OX1-,N])])]",
-                                                                   # "description":"Generic amino acid but not a \"standard\" amino acid (\"standard\" refers to the 20 normal side chains). Won't hit amino acids that are non-standard due solely to the fact that groups are terminally-appended to the polypeptide chain (N or C term). format is [$(generic a.a.);!$(not a standard one)] Hits single a.a.s and specific residues w/in polypeptides (internal, or terminal)."
-                                                                  },
+                                                                  # {
+                                                                  #   "label":"Three_halides groups",
+                                                                  #   "value":"[F,Cl,Br,I].[F,Cl,Br,I].[F,Cl,Br,I]",
+                                                                  #  # "description":"Hits SMILES that have three halides."
+                                                                  # },
+                                                                  
+                                                                  # {
+                                                                  #   "label":"sp2 cationic carbon",
+                                                                  #   "value":"[$([cX2+](:*):*)]",
+                                                                  #  # "description":"Aromatic cationic sp2 carbon with a free electron in a non-bonding sp2 hybrid orbital"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Aromatic sp2 carbon.",
+                                                                  #   "value":"[$([cX3](:*):*),$([cX2+](:*):*)]",
+                                                                  #  # "description":"The first recursive SMARTS matches carbons that are three-connected, the second case matches two-connected carbons (i.e cations with a free electron in a non-bonding sp2 hybrid orbital)"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"sp2 carbon.",
+                                                                  #   "value":"[$([cX3](:*):*),$([cX2+](:*):*),$([CX3]=*),$([CX2+]=*)]",
+                                                                  #  # "description":"The first recursive SMARTS matches carbons that are three-connected and aromatic. The second case matches two-connected aromatic ca rbons (i.e cations with a free electron in a non-bonding sp2 hybrid orbital). The third case matches three-connected non-aromatic carbons ( alkenes). The fourth case matches non-aromatic cationic alkene carbons."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"sp2 nitrogen.",
+                                                                  #   "value":"[$([nX3](:*):*),$([nX2](:*):*),$([#7X2]=*),$([NX3](=*)=*),$([#7X3+](-*)=*),$([#7X3+H]=*)]",
+                                                                  #  # "description":"Can be aromatic 3-connected with 2 aromatic bonds (eg pyrrole,Pyridine-N-oxide), aromatic 2-connected with 2 aromatic bonds (and a free pair of electrons in a nonbonding orbital, e.g.Pyridine), either aromatic or non-aromatic 2-connected with a double bond (and a free pair of electrons in a nonbonding orbital, e.g. C=N ), non aromatic 3-connected with 2 double bonds (e.g. a nitro group; this form does not exist in reality, SMILES can represent the charge-separated resonance structures as a single uncharged structure), either aromatic or non-aromatic 3-connected cation w/ 1 single bond and 1 double bond (e.g. a nitro group, here the individual charge-separated resonance structures are specified), either aromatic or non-aromatic 3-connected hydrogenated cation with a double bond (as the previous case but R is hydrogen), rspectively."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Explicit Hydrogen on sp2-Nitrogen",
+                                                                  #   "value":"[$([#1X1][$([nX3](:*):*),$([nX2](:*):*),$([#7X2]=*),$([NX3](=*)=*),$([#7X3+](-*)=*),$([#7X3+H]=*)])]",
+                                                                  #  # "description":"(H must be an isotope or ion)"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"sp3 nitrogen",
+                                                                  #   "value":"[$([NX4+]),$([NX3]);!$(*=*)&!$(*:*)]",
+                                                                  #  # "description":"One atom that is (a 4-connected N cation or a 3-connected N) and is not double bonded and is not aromatically bonded."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Explicit Hydrogen on an sp3 N.",
+                                                                  #   "value":"[$([#1X1][$([NX4+]),$([NX3]);!$(*=*)&!$(*:*)])]",
+                                                                  #  # "description":"One atom that is a 1-connected H that is bonded to an sp3 N. (H must be an isotope or ion)"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"sp2 N in N-Oxide",
+                                                                  #   "value":"[$([$([NX3]=O),$([NX3+][O-])])]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"sp3 N in N-Oxide Exclusive:",
+                                                                  #   "value":"[$([$([NX4]=O),$([NX4+][O-])])]",
+                                                                  #  # "description":"Only hits if O is explicitly present. Won't hit if * is in SMILES in place of O."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"sp3 N in N-Oxide Inclusive:",
+                                                                  #   "value":"[$([$([NX4]=O),$([NX4+][O-,#0])])]",
+                                                                  #  # "description":"Hits if O could be present. Hits if * if used in place of O in smiles."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Quaternary Nitrogen",
+                                                                  #   "value":"[$([NX4+]),$([NX4]=*)]",
+                                                                  #  # "description":"Hits non-aromatic Ns."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Tricoordinate S double bonded to N.",
+                                                                  #   "value":"[$([SX3]=N)]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"S double-bonded to Carbon",
+                                                                  #   "value":"[$([SX1]=[#6])]",
+                                                                  #  # "description":"Hits terminal (1-connected S)"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Triply bonded N",
+                                                                  #   "value":"[$([NX1]#*)]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Divalent Oxygen",
+                                                                  #   "value":"[$([OX2])]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Unbranched_alkane groups.",
+                                                                  #   "value":"[R0;D2][R0;D2][R0;D2][R0;D2]",
+                                                                  #  # "description":"Only hits alkanes (single-bond chains). Only hits chains of at-least 4 members. All non-(implicit-hydrogen) atoms count as branches (e.g. halide substituted chains count as branched)."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Unbranched_chain groups.",
+                                                                  #   "value":"[R0;D2]~[R0;D2]~[R0;D2]~[R0;D2]",
+                                                                  #  # "description":"Hits any bond (single, double, triple). Only hits chains of at-least 4 members. All non-(implicit-hydrogen) atoms count as branches (e.g. halide substituted chains count as branched)."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Long_chain groups.",
+                                                                  #   "value":"[AR0]~[AR0]~[AR0]~[AR0]~[AR0]~[AR0]~[AR0]~[AR0]",
+                                                                  #  # "description":"Aliphatic chains at-least 8 members long."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Atom_fragment",
+                                                                  #   "value":"[!$([#6+0]);!$(C(F)(F)F);!$(c(:[!c]):[!c])!$([#6]=,#[!#6])]",
+                                                                  #  # "description":"(CLOGP definition) A fragment atom is a not an isolating carbon"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Carbon_isolating",
+                                                                  #   "value":"[$([#6+0]);!$(C(F)(F)F);!$(c(:[!c]):[!c])!$([#6]=,#[!#6])]",
+                                                                  #  # "description":"This definition is based on that in CLOGP, so it is a charge-neutral carbon, which is not a CF3 or an aromatic C between two aromati c hetero atoms eg in tetrazole, it is not multiply bonded to a hetero atom."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Terminal S bonded to P",
+                                                                  #   "value":"[$([SX1]~P)]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Nitrogen on -N-C=N-",
+                                                                  #   "value":"[$([NX3]C=N)]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Nitrogen on -N-N=C-",
+                                                                  #   "value":"[$([NX3]N=C)]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Nitrogen on -N-N=N-",
+                                                                  #   "value":"[$([NX3]N=N)]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Oxygen in -O-C=N-",
+                                                                  #   "value":"[$([OX2]C=N)]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Rotatable bond",
+                                                                  #   "value":"[!$(*#*)&!D1]-!@[!$(*#*)&!D1]",
+                                                                  #  # "description":"An atom which is not triply bonded and not one-connected i.e.terminal connected by a single non-ring bond to and equivalent atom. Note that logical operators can be applied to bonds (\"-&!@\"). Here, the overall SMARTS consists of two atoms and one bond. The bond is \"site and not ring\". *#* any atom triple bonded to any atom. By enclosing this SMARTS in parentheses and preceding with $, this enables us to use $(*#*) to write a recursive SMARTS using that string as an atom primitive. The purpose is to avoid bonds such as c1ccccc1-C#C which wo be considered rotatable without this specification."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Bicyclic",
+                                                                  #   "value":"[$([*R2]([*R])([*R])([*R]))].[$([*R2]([*R])([*R])([*R]))]",
+                                                                  #  # "description":"Bicyclic compounds have 2 bridgehead atoms with 3 arms connecting the bridgehead atoms."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Ortho",
+                                                                  #   "value":"*-!:aa-!:*",
+                                                                  #  # "description":"Ortho-substituted ring"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Meta",
+                                                                  #   "value":"*-!:aaa-!:*",
+                                                                  #  # "description":"Meta-substituted ring"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Para",
+                                                                  #   "value":"*-!:aaaa-!:*",
+                                                                  #  # "description":"Para-substituted ring"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Acylic-bonds",
+                                                                  #   "value":"*!@*",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Single bond and not in a ring",
+                                                                  #   "value":"*-!@*",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Non-ring atom",
+                                                                  #   "value":"[R0] or [!R]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Macrocycle groups.",
+                                                                  #   "value":"[r;!r3;!r4;!r5;!r6;!r7]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"S in aromatic 5-ring with lone pair",
+                                                                  #   "value":"[sX2r5]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Aromatic 5-Ring O with Lone Pair",
+                                                                  #   "value":"[oX2r5]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"N in 5-sided aromatic ring",
+                                                                  #   "value":"[nX2r5]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Spiro-ring center",
+                                                                  #   "value":"[X4;R2;r4,r5,r6](@[r4,r5,r6])(@[r4,r5,r6])(@[r4,r5,r6])@[r4,r5,r6]rings size 4-6",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"N in 5-ring arom",
+                                                                  #   "value":"[$([nX2r5]:[a-]),$([nX2r5]:[a]:[a-])] anion",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"CIS or TRANS double bond in a ring",
+                                                                  #   "value":"*/,\\[R]=;@[R]/,\\*",
+                                                                  #  # "description":"An isomeric SMARTS consisting of four atoms and three bonds."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"CIS or TRANS double or aromatic bond in a ring",
+                                                                  #   "value":"*/,\\[R]=,:;@[R]/,\\*",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Unfused benzene ring",
+                                                                  #   "value":"[cR1]1[cR1][cR1][cR1][cR1][cR1]1",
+                                                                  #  # "description":"To find a benzene ring which is not fused, we write a SMARTS of 6 aromatic carbons in a ring where each atom is only in one ring:"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Multiple non-fused benzene rings",
+                                                                  #   "value":"[cR1]1[cR1][cR1][cR1][cR1][cR1]1.[cR1]1[cR1][cR1][cR1][cR1][cR1]1",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Fused benzene rings",
+                                                                  #   "value":"c12ccccc1cccc2",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Generic amino acid: low specificity.",
+                                                                  #   "value":"[NX3,NX4+][CX4H]([*])[CX3](=[OX1])[O,N]",
+                                                                  #  # "description":"For use w/ non-standard a.a. search. hits pro but not gly. Hits acids and conjugate bases. Hits single a.a.s and specific residues w/in polypeptides (internal, or terminal)."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"A.A. Template for 20 standard a.a.s",
+                                                                  #   "value":"[$([$([NX3H,NX4H2+]),$([NX3](C)(C)(C))]1[CX4H]([CH2][CH2][CH2]1)[CX3](=[OX1])[OX2H,OX1-,N]),<br>$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H2][CX3](=[OX1])[OX2H,OX1-,N]),$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([*])[CX3](=[OX1])[OX2H,OX1-,N])]",
+                                                                  #  # "description":"Pro, Gly, Other. Replace * w/ the entire 18_standard_side_chains list to get \"any standard a.a.\" Hits acids and conjugate bases. Hits single a.a.s and specific residues w/in polypeptides (internal, or terminal)."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Proline",
+                                                                  #   "value":"[$([NX3H,NX4H2+]),$([NX3](C)(C)(C))]1[CX4H]([CH2][CH2][CH2]1)[CX3](=[OX1])[OX2H,OX1-,N]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Glycine",
+                                                                  #   "value":"[$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H2][CX3](=[OX1])[OX2H,OX1-,N])]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Other a.a.",
+                                                                  #   "value":"[$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([*])[CX3](=[OX1])[OX2H,OX1-,N]",
+                                                                  #  # "description":"Replace * w/ a specific a.a. side chain from the 18_standard_side_chains list to hit a specific standard a.a. Won't work with Proline or Glycine, they have their own SMARTS (see side chain list). Hits acids and conjugate bases. Hits single a.a.s and specific residues w/i polypeptides (internal, or terminal). Example usage: Alanine side chain is [CH3X4] Alanine Search is [$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([CH3X4])[CX3](=[OX1])[OX2H,OX1-,N]"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"18_standard_aa_side_chains.",
+                                                                  #   "value":"([$([CH3X4]),$([CH2X4][CH2X4][CH2X4][NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]),$([CH2X4][CX3](=[OX1])[NX3H2]),$([CH2X4][CX3](=[OX1])[OH0-,OH]),$([CH2X4][SX2H,SX1H0-]),$([CH2X4][CH2X4][CX3](=[OX1])[OH0-,OH]),$([CH2X4][#6X3]1:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]1),$([CHX4]([CH3X4])[CH2X4][CH3X4]),$([CH2X4][CHX4]([CH3X4])[CH3X4]),$([CH2X4][CH2X4][CH2X4][CH2X4][NX4+,NX3+0]),$([CH2X4][CH2X4][SX2][CH3X4]),$([CH2X4][cX3]1[cX3H][cX3H][cX3H][cX3H][cX3H]1),$([CH2X4][OX2H]),$([CHX4]([CH3X4])[OX2H]),$([CH2X4][cX3]1[cX3H][nX3H][cX3]2[cX3H][cX3H][cX3H][cX3H][cX3]12),$([CH2X4][cX3]1[cX3H][cX3H][cX3]([OHX2,OH0X1-])[cX3H][cX3H]1),$([CHX4]([CH3X4])[CH3X4])])",
+                                                                  #  # "description":"Can be any of the standard 18 (Pro & Gly are treated separately) Hits acids and conjugate bases."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"N in Any_standard_amino_acid.",
+                                                                  #   "value":"[$([$([NX3H,NX4H2+]),$([NX3](C)(C)(C))]1[CX4H]([CH2][CH2][CH2]1)[CX3](=[OX1])[OX2H,OX1-,N]),$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H2][CX3](=[OX1])[OX2H,OX1-,N]),$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([$([CH3X4]),$([CH2X4][CH2X4][CH2X4][NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]),$([CH2X4][CX3](=[OX1])[NX3H2]),$([CH2X4][CX3](=[OX1])[OH0-,OH]),$([CH2X4][SX2H,SX1H0-]),$([CH2X4][CH2X4][CX3](=[OX1])[OH0-,OH]),$([CH2X4][#6X3]1:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]1),$([CHX4]([CH3X4])[CH2X4][CH3X4]),$([CH2X4][CHX4]([CH3X4])[CH3X4]),$([CH2X4][CH2X4][CH2X4][CH2X4][NX4+,NX3+0]),$([CH2X4][CH2X4][SX2][CH3X4]),$([CH2X4][cX3]1[cX3H][cX3H][cX3H][cX3H][cX3H]1),$([CH2X4][OX2H]),$([CHX4]([CH3X4])[OX2H]),$([CH2X4][cX3]1[cX3H][nX3H][cX3]2[cX3H][cX3H][cX3H][cX3H][cX3]12),$([CH2X4][cX3]1[cX3H][cX3H][cX3]([OHX2,OH0X1-])[cX3H][cX3H]1),$([CHX4]([CH3X4])[CH3X4])])[CX3](=[OX1])[OX2H,OX1-,N])]",
+                                                                  #  # "description":"Format is A.A.Template for 20 standard a.a.s. where * is replaced by the entire 18_standard_side_chains list (or'd together). A generic amino acid with any of the 18 side chains or, proline or glycine. Hits \"standard\" amino acids that have terminally appended groups (i.e. \"standard\" refers to the side chains). (Pro, Gly, or 18 normal a.a.s.) Hits single a.a.s and specific residues w/in polypeptides (internal, or terminal)."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Non-standard amino acid.",
+                                                                  #   "value":"[$([NX3,NX4+][CX4H]([*])[CX3](=[OX1])[O,N]);!$([$([$([NX3H,NX4H2+]),$([NX3](C)(C)(C))]1[CX4H]([CH2][CH2][CH2]1)[CX3](=[OX1])[OX2H,OX1-,N]),$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H2][CX3](=[OX1])[OX2H,OX1-,N]),$([$([NX3H2,NX4H3+]),$([NX3H](C)(C))][CX4H]([$([CH3X4]),$([CH2X4][CH2X4][CH2X4][NHX3][CH0X3](=[NH2X3+,NHX2+0])[NH2X3]),$([CH2X4][CX3](=[OX1])[NX3H2]),$([CH2X4][CX3](=[OX1])[OH0-,OH]),$([CH2X4][SX2H,SX1H0-]),$([CH2X4][CH2X4][CX3](=[OX1])[OH0-,OH]),$([CH2X4][#6X3]1:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]:[$([#7X3H+,#7X2H0+0]:[#6X3H]:[#7X3H]),$([#7X3H])]:[#6X3H]1),$([CHX4]([CH3X4])[CH2X4][CH3X4]),$([CH2X4][CHX4]([CH3X4])[CH3X4]),$([CH2X4][CH2X4][CH2X4][CH2X4][NX4+,NX3+0]),$([CH2X4][CH2X4][SX2][CH3X4]),$([CH2X4][cX3]1[cX3H][cX3H][cX3H][cX3H][cX3H]1),$([CH2X4][OX2H]),$([CHX4]([CH3X4])[OX2H]),$([CH2X4][cX3]1[cX3H][nX3H][cX3]2[cX3H][cX3H][cX3H][cX3H][cX3]12),$([CH2X4][cX3]1[cX3H][cX3H][cX3]([OHX2,OH0X1-])[cX3H][cX3H]1),$([CHX4]([CH3X4])[CH3X4])])[CX3](=[OX1])[OX2H,OX1-,N])])]",
+                                                                  #  # "description":"Generic amino acid but not a \"standard\" amino acid (\"standard\" refers to the 20 normal side chains). Won't hit amino acids that are non-standard due solely to the fact that groups are terminally-appended to the polypeptide chain (N or C term). format is [$(generic a.a.);!$(not a standard one)] Hits single a.a.s and specific residues w/in polypeptides (internal, or terminal)."
+                                                                  # },
                                                                   {
                                                                     "label":"Sulfide",
                                                                     "value":"[#16X2H0]",
@@ -1198,141 +1194,141 @@ class ProjectResource(ModelResource):
                                                                     "value":"[#16X2H0][#16X2H0]",
                                                                    # "description":"Won't hit thiols. Won't hit mono-sulfides."
                                                                   },
-                                                                  {
-                                                                    "label":"Two sulfides",
-                                                                    "value":"[#16X2H0][!#16].[#16X2H0][!#16]",
-                                                                   # "description":"Won't hit thiols. Won't hit mono-sulfides. Won't hit disulfides."
-                                                                  },
-                                                                  {
-                                                                    "label":"Acid/conj-base",
-                                                                    "value":"[OX2H,OX1H0-]",
-                                                                   # "description":"Hits acid and conjugate base. acid/base"
-                                                                  },
-                                                                  {
-                                                                    "label":"Non-acid Oxygen",
-                                                                    "value":"[OX2H0]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Acid/base",
-                                                                    "value":"[H1,H0-]",
-                                                                   # "description":"Works for any atom if base form has no Hs & acid has only one."
-                                                                  },
-                                                                  {
-                                                                    "label":"Any carbon aromatic or non-aromatic",
-                                                                    "value":"[#6] or [c,C]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"SMILES wildcard",
-                                                                    "value":"[#0]",
-                                                                   # "description":"This SMARTS hits the SMILES *"
-                                                                  },
-                                                                  {
-                                                                    "label":"Factoring",
-                                                                    "value":"[OX2,OX1-][OX2,OX1-] or [O;X2,X1-][O;X2,X1-]",
-                                                                   # "description":"Factor out common atomic expressions in the recursive SMARTS. May improve human readability."
-                                                                  },
-                                                                  {
-                                                                    "label":"High-precidence \"and\"",
-                                                                    "value":"[N&X4&+,N&X3&+0] or [NX4+,NX3+0]",
-                                                                   # "description":"High-precidence \"and\" (&) is the default logical operator. \"Or\" (,) is higher precidence than & and low-precidence \"and\" (;) is lower precidence than &."
-                                                                  },
-                                                                  {
-                                                                    "label":"Any atom w/ at-least 1 H",
-                                                                    "value":"[*!H0,#1]",
-                                                                   # "description":"In SMILES and SMARTS, Hydrogen is not considered an atom (unless it is specified as an isotope). The hydrogen count is instead consi dered a property of an atom. This SMARTS provides a way to effectively hit Hs themselves."
-                                                                  },
-                                                                  {
-                                                                    "label":"Hs on Carbons",
-                                                                    "value":"[#6!H0,#1]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Atoms w/ 1 H",
-                                                                    "value":"[H,#1]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Acid",
-                                                                    "value":"[!H0;F,Cl,Br,I,N+,$([OH]-*=[!#6]),+]",
-                                                                   # "description":"Proton donor"
-                                                                  },
-                                                                  {
-                                                                    "label":"Carboxylic acid",
-                                                                    "value":"[CX3](=O)[OX2H1]",
-                                                                   # "description":"(-oic acid, COOH)"
-                                                                  },
-                                                                  {
-                                                                    "label":"Carboxylic acid or conjugate base.",
-                                                                    "value":"[CX3](=O)[OX1H0-,OX2H1]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Hydroxyl_acidic",
-                                                                    "value":"[$([OH]-*=[!#6])]",
-                                                                   # "description":"An acidic hydroxyl is a hydroxyl bonded to an atom which is multiply bonded to a hetero atom, this includes carboxylic, sulphur, pho sphorous, halogen and nitrogen oxyacids"
-                                                                  },
-                                                                  {
-                                                                    "label":"Phosphoric_Acid",
-                                                                    "value":"[$(P(=[OX1])([$([OX2H]),$([OX1-]),$([OX2]P)])([$([OX2H]),$([OX1-]),$([OX2]P)])[$([OX2H]),$([OX1-]),$([OX2]P)]),$([P+]([OX1-])([$([OX2H]),$([OX1-]),$([OX2]P)])([$([OX2H]),$([OX1-]),$([OX2]P)])[$([OX2H]),$([OX1-]),$([OX2]P)])]",
-                                                                   # "description":"Hits both forms. Hits orthophosphoric acid and polyphosphoric acid anhydrides. Doesn't hit monophosphoric acid anhydride esters (in cluding acidic mono- & di- esters) but will hit some polyphosphoric acid anhydride esters (mono- esters on pyrophosphoric acid and longe r, di- esters on linear triphosphoric acid and longer). Hits acid and conjugate base."
-                                                                  },
-                                                                  {
-                                                                    "label":"Sulfonic Acid. High specificity.",
-                                                                    "value":"[$([#16X4](=[OX1])(=[OX1])([#6])[OX2H,OX1H0-]),$([#16X4+2]([OX1-])([OX1-])([#6])[OX2H,OX1H0-])]",
-                                                                   # "description":"Only hits carbo- sulfonic acids (Won't hit herteroatom-substituted molecules). Hits acid and conjugate base. Hits Both Depiction Fo rms. Hits Arene sulfonic acids."
-                                                                  },
-                                                                  {
-                                                                    "label":"Acyl Halide",
-                                                                    "value":"[CX3](=[OX1])[F,Cl,Br,I]",
-                                                                   # "description":"(acid halide, -oyl halide) <dl>"
-                                                                  },
-                                                                  {
-                                                                    "label":"Anionic divalent Nitrogen",
-                                                                    "value":"[NX2-]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Oxenium Oxygen",
-                                                                    "value":"[OX2H+]=*",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Oxonium Oxygen",
-                                                                    "value":"[OX3H2+]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"Carbocation",
-                                                                    "value":"[#6+]",
-                                                                   # "description":""
-                                                                  },
-                                                                  {
-                                                                    "label":"sp2 cationic carbon.",
-                                                                    "value":"[$([cX2+](:*):*)]",
-                                                                   # "description":"Aromatic cationic sp2 carbon with a free electron in a non-bonding sp2 hybrid orbital"
-                                                                  },
-                                                                  {
-                                                                    "label":"Azide ion.",
-                                                                    "value":"[$([NX1-]=[NX2+]=[NX1-]),$([NX1]#[NX2+]-[NX1-2])]",
-                                                                   # "description":"Hits N in azide ion"
-                                                                  },
-                                                                  {
-                                                                    "label":"Zwitterion High Specificity",
-                                                                    "value":"[+1]~*~*~[-1]",
-                                                                   # "description":"+1 charged atom separated by any 3 bonds from a -1 charged atom."
-                                                                  },
-                                                                  {
-                                                                    "label":"Zwitterion Low Specificity, Crude",
-                                                                    "value":"[$([!-0!-1!-2!-3!-4]~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~*~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~*~*~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~*~*~*~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~*~*~*~*~*~*~[!+0!+1!+2!+3!+4])]",
-                                                                   # "description":"Variously charged moieties separated by up to ten bonds."
-                                                                  },
-                                                                  {
-                                                                    "label":"Zwitterion Low Specificity",
-                                                                    "value":"([!-0!-1!-2!-3!-4].[!+0!+1!+2!+3!+4])",
-                                                                   # "description":"Variously charged moieties that are within the same molecule but not-necessarily connected. Uses component-level grouping. <dl>"
-                                                                  },
+                                                                  # {
+                                                                  #   "label":"Two sulfides",
+                                                                  #   "value":"[#16X2H0][!#16].[#16X2H0][!#16]",
+                                                                  #  # "description":"Won't hit thiols. Won't hit mono-sulfides. Won't hit disulfides."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Acid/conj-base",
+                                                                  #   "value":"[OX2H,OX1H0-]",
+                                                                  #  # "description":"Hits acid and conjugate base. acid/base"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Non-acid Oxygen",
+                                                                  #   "value":"[OX2H0]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Acid/base",
+                                                                  #   "value":"[H1,H0-]",
+                                                                  #  # "description":"Works for any atom if base form has no Hs & acid has only one."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Any carbon aromatic or non-aromatic",
+                                                                  #   "value":"[#6] or [c,C]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"SMILES wildcard",
+                                                                  #   "value":"[#0]",
+                                                                  #  # "description":"This SMARTS hits the SMILES *"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Factoring",
+                                                                  #   "value":"[OX2,OX1-][OX2,OX1-] or [O;X2,X1-][O;X2,X1-]",
+                                                                  #  # "description":"Factor out common atomic expressions in the recursive SMARTS. May improve human readability."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"High-precidence \"and\"",
+                                                                  #   "value":"[N&X4&+,N&X3&+0] or [NX4+,NX3+0]",
+                                                                  #  # "description":"High-precidence \"and\" (&) is the default logical operator. \"Or\" (,) is higher precidence than & and low-precidence \"and\" (;) is lower precidence than &."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Any atom w/ at-least 1 H",
+                                                                  #   "value":"[*!H0,#1]",
+                                                                  #  # "description":"In SMILES and SMARTS, Hydrogen is not considered an atom (unless it is specified as an isotope). The hydrogen count is instead consi dered a property of an atom. This SMARTS provides a way to effectively hit Hs themselves."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Hs on Carbons",
+                                                                  #   "value":"[#6!H0,#1]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Atoms w/ 1 H",
+                                                                  #   "value":"[H,#1]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Acid",
+                                                                  #   "value":"[!H0;F,Cl,Br,I,N+,$([OH]-*=[!#6]),+]",
+                                                                  #  # "description":"Proton donor"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Carboxylic acid",
+                                                                  #   "value":"[CX3](=O)[OX2H1]",
+                                                                  #  # "description":"(-oic acid, COOH)"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Carboxylic acid or conjugate base.",
+                                                                  #   "value":"[CX3](=O)[OX1H0-,OX2H1]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Hydroxyl_acidic",
+                                                                  #   "value":"[$([OH]-*=[!#6])]",
+                                                                  #  # "description":"An acidic hydroxyl is a hydroxyl bonded to an atom which is multiply bonded to a hetero atom, this includes carboxylic, sulphur, pho sphorous, halogen and nitrogen oxyacids"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Phosphoric_Acid",
+                                                                  #   "value":"[$(P(=[OX1])([$([OX2H]),$([OX1-]),$([OX2]P)])([$([OX2H]),$([OX1-]),$([OX2]P)])[$([OX2H]),$([OX1-]),$([OX2]P)]),$([P+]([OX1-])([$([OX2H]),$([OX1-]),$([OX2]P)])([$([OX2H]),$([OX1-]),$([OX2]P)])[$([OX2H]),$([OX1-]),$([OX2]P)])]",
+                                                                  #  # "description":"Hits both forms. Hits orthophosphoric acid and polyphosphoric acid anhydrides. Doesn't hit monophosphoric acid anhydride esters (in cluding acidic mono- & di- esters) but will hit some polyphosphoric acid anhydride esters (mono- esters on pyrophosphoric acid and longe r, di- esters on linear triphosphoric acid and longer). Hits acid and conjugate base."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Sulfonic Acid. High specificity.",
+                                                                  #   "value":"[$([#16X4](=[OX1])(=[OX1])([#6])[OX2H,OX1H0-]),$([#16X4+2]([OX1-])([OX1-])([#6])[OX2H,OX1H0-])]",
+                                                                  #  # "description":"Only hits carbo- sulfonic acids (Won't hit herteroatom-substituted molecules). Hits acid and conjugate base. Hits Both Depiction Fo rms. Hits Arene sulfonic acids."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Acyl Halide",
+                                                                  #   "value":"[CX3](=[OX1])[F,Cl,Br,I]",
+                                                                  #  # "description":"(acid halide, -oyl halide) <dl>"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Anionic divalent Nitrogen",
+                                                                  #   "value":"[NX2-]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Oxenium Oxygen",
+                                                                  #   "value":"[OX2H+]=*",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Oxonium Oxygen",
+                                                                  #   "value":"[OX3H2+]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Carbocation",
+                                                                  #   "value":"[#6+]",
+                                                                  #  # "description":""
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"sp2 cationic carbon.",
+                                                                  #   "value":"[$([cX2+](:*):*)]",
+                                                                  #  # "description":"Aromatic cationic sp2 carbon with a free electron in a non-bonding sp2 hybrid orbital"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Azide ion.",
+                                                                  #   "value":"[$([NX1-]=[NX2+]=[NX1-]),$([NX1]#[NX2+]-[NX1-2])]",
+                                                                  #  # "description":"Hits N in azide ion"
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Zwitterion High Specificity",
+                                                                  #   "value":"[+1]~*~*~[-1]",
+                                                                  #  # "description":"+1 charged atom separated by any 3 bonds from a -1 charged atom."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Zwitterion Low Specificity, Crude",
+                                                                  #   "value":"[$([!-0!-1!-2!-3!-4]~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~*~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~*~*~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~*~*~*~*~*~[!+0!+1!+2!+3!+4]),$([!-0!-1!-2!-3!-4]~*~*~*~*~*~*~*~*~*~[!+0!+1!+2!+3!+4])]",
+                                                                  #  # "description":"Variously charged moieties separated by up to ten bonds."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Zwitterion Low Specificity",
+                                                                  #   "value":"([!-0!-1!-2!-3!-4].[!+0!+1!+2!+3!+4])",
+                                                                  #  # "description":"Variously charged moieties that are within the same molecule but not-necessarily connected. Uses component-level grouping. <dl>"
+                                                                  # },
                                                                   # {
                                                                   #   "label":"Hydrogen-bond acceptor",
                                                                   #   "value":"[#6,#7;R0]=[#8]",
@@ -1353,22 +1349,22 @@ class ProjectResource(ModelResource):
                                                                   #   "value":"[!H0;#7,#8,#9]",
                                                                   #  # "description":"Must have an N-H bond, an O-H bond, or a F-H bond"
                                                                   # },
-                                                                  {
-                                                                    "label":"Possible intramolecular H-bond",
-                                                                    "value":"[O,N;!H0]-*~*-*=[$([C,N;R0]=O)]",
-                                                                   # "description":"Note that the overall SMARTS consists of five atoms. The fifth atom is defined by a \"recursive SMARTS\", where \"$()\" encloses a valid nested SMARTS and acts syntactically like an atom-primitive in the overall SMARTS. Multiple nesting is allowed."
-                                                                  },
-                                                                  {
-                                                                    "label":"Carbon Free-Radical",
-                                                                    "value":"[#6;X3v3+0]",
-                                                                   # "description":"Hits a neutral carbon with three single bonds."
-                                                                  },
-                                                                  {
-                                                                    "label":"Nitrogen Free-Radical",
-                                                                    "value":"[#7;X2v4+0]",
-                                                                   # "description":"Hits a neutral nitrogen with two single bonds or with a single and a triple bond."
-                                                                  }
-                                                                ]
+                                                                  # {
+                                                                  #   "label":"Possible intramolecular H-bond",
+                                                                  #   "value":"[O,N;!H0]-*~*-*=[$([C,N;R0]=O)]",
+                                                                  #  # "description":"Note that the overall SMARTS consists of five atoms. The fifth atom is defined by a \"recursive SMARTS\", where \"$()\" encloses a valid nested SMARTS and acts syntactically like an atom-primitive in the overall SMARTS. Multiple nesting is allowed."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Carbon Free-Radical",
+                                                                  #   "value":"[#6;X3v3+0]",
+                                                                  #  # "description":"Hits a neutral carbon with three single bonds."
+                                                                  # },
+                                                                  # {
+                                                                  #   "label":"Nitrogen Free-Radical",
+                                                                  #   "value":"[#7;X2v4+0]",
+                                                                  #  # "description":"Hits a neutral nitrogen with two single bonds or with a single and a triple bond."
+                                                                  # }
+                                                                ], key=lambda k: k['label']) 
                                                 },
 
                                                 "dateStart": {

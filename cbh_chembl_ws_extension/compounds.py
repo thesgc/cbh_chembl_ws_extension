@@ -312,8 +312,16 @@ class CBHCompoundBatchResource(ModelResource):
         else:
             self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
 
-        updated_bundle = self.obj_build(bundle, dict_strip_unicode_keys(deserialized))
-        bundle.obj.std_ctab = bundle.obj.ctab
+        #updated_bundle = self.obj_build(bundle, dict_strip_unicode_keys(deserialized))
+        try:
+            m = Chem.MolFromMolBlock(bundle.data["ctab"])                
+            if not m:
+                raise Exception("valancy_or_other_error")
+        except:
+            raise Exception("valancy_or_other_error")
+
+        obj = CBHCompoundBatch.objects.from_rd_mol(m, orig_ctab=bundle.data["ctab"], )
+        bundle.obj = obj
         bundle.obj.validate()
         self.match_list_to_moleculedictionaries(bundle.obj,bundle.data["project"] )
         dictdata = bundle.obj.__dict__
@@ -366,16 +374,7 @@ class CBHCompoundBatchResource(ModelResource):
             self.match_list_to_moleculedictionaries(bundle.obj,bundle.data["project"] )
         return bundle
 
-    def obj_build(self, bundle, kwargs):
-        """
-        A ORM-specific implementation of ``obj_create``.
-        """
-        bundle.obj = self._meta.object_class()
-        for key, value in kwargs.items():
-            setattr(bundle.obj, key, value)
-        setattr(bundle.obj, "id", -1)
-        
-        return bundle
+
 
     def prepend_urls(self):
         return [
