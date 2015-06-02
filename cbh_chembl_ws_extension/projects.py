@@ -1401,7 +1401,7 @@ class ProjectResource(ModelResource):
                                                         "format" : "uiselect", 
                                                         "items" : sorted(searchfield_items),
                                                          "placeholder": "Tagged fields",
-                                                         "title": "Limit by the following tags:",
+                                                         "title": "Any of the following custom field values:",
                                                    
                                                 }
 

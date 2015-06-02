@@ -331,16 +331,6 @@ class CBHCompoundBatchResource(ModelResource):
         return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
 
 
-    def get_project_custom_field_names(self, request, **kwargs):
-        '''Get a single list of pinned fields for the project previously listed all custom fields in the DB but this was unwieldy'''
-        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'text/plain'))  
-        deserialized = self.alter_deserialized_detail_data(request, deserialized)
-        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
-
-        pinned_fields = list(PinnedCustomField.objects.filter(custom_field_config__project=bundle.data["project"]).values())
-        bundle.data['field_names'] = pinned_fields
-        return self.create_response(request, bundle, response_class=http.HttpAccepted)
-
 
     def save_related(self, bundle):
 
@@ -384,8 +374,6 @@ class CBHCompoundBatchResource(ModelResource):
                 self.wrap_view('post_validate'), name="api_validate_compound_batch"),
         url(r"^(?P<resource_name>%s)/validate_list/$" % self._meta.resource_name,
                 self.wrap_view('post_validate_list'), name="api_validate_compound_list"),
-        url(r"^(?P<resource_name>%s)/existing/$" % self._meta.resource_name,
-                self.wrap_view('get_project_custom_field_names'), name="api_batch_existing_fields"),
         url(r"^(?P<resource_name>%s)/multi_batch_save/$" % self._meta.resource_name,
                 self.wrap_view('multi_batch_save'), name="multi_batch_save"),
         url(r"^(?P<resource_name>%s)/multi_batch_custom_fields/$" % self._meta.resource_name,
