@@ -86,6 +86,7 @@ from rdkit.Chem.AllChem import Compute2DCoords
 
 from django.db.models import Prefetch
 
+import dateutil.parser
 
             
 
@@ -405,13 +406,30 @@ class CBHCompoundBatchResource(ModelResource):
 
 
         for batch in batches:
-
+                print batch.uncurated_fields
                 
                 batch.generate_structure_and_dictionary()
                 #batch.save(validate=False)
                 bundle.data["saved"] += 1
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
+    def convert_custom_field(self, uncurated_value, field_schema):
+        curated_value = uncurated_value
+        if field_schema.get("format", "") == "yyyy-mm-dd":
+            if uncurated_value:
+                
+                curated_value = dateutil.parser.parse(uncurated_value).strftime("%Y-%m-%d")
+
+        elif field_schema.get("field_type" == PinnedCustomField.UISELECTTAGS):
+            curated_value = json.dumps(uncurated_value.split(","))
+        elif field_schema.get("field_type" == PinnedCustomField.INTEGER):
+            curated_value = int(uncurated_value)     
+        elif field_schema.get("field_type" == PinnedCustomField.NUMBER):
+            curated_value = float(uncurated_value)    
+        return curated_value
+
+
+    
 
     def multi_batch_custom_fields(self, request, **kwargs):
         '''Save custom fields from the mapping section when adding ID/SMILES list'''
@@ -446,7 +464,16 @@ class CBHCompoundBatchResource(ModelResource):
                         for mapping in mappings["remapped_fields"]:
                             #Remapped fields are added to the curated fields as only curated data will be present
                             if hdr in [field["name"] for field in mapping["list"]]:
-                                custom_fields[mapping["name"]] = b.uncurated_fields.pop(hdr, "")
+                                #expect only 1 value in this list per mapping as UI is set up that way
+                                value_to_be_mapped_as_custom_field = b.uncurated_fields.pop(hdr, "")
+                                try:
+                                    converted = self.convert_custom_field(value_to_be_mapped_as_custom_field, mapping)
+                                    custom_fields[mapping["name"]] = converted
+                                except:
+                                    #The value cannot be converted properly
+                                    b.uncurated_fields["Failed Mapping: %s" % mapping["name"] ] = value_to_be_mapped_as_custom_field
+
+                                
                 b.custom_fields = custom_fields
             else:
                 #Only curated fields can be added via the standard UI
@@ -651,7 +678,7 @@ class CBHCompoundBatchResource(ModelResource):
                             custom_fields = {}
                             for hdr in headers:
                                 try:
-                                    custom_fields[hdr] = mol.GetProp(hdr) 
+                                    custom_fields[hdr] = str(mol.GetProp(hdr))
                                 except KeyError:
                                     custom_fields[hdr]   = ""
                             
@@ -689,7 +716,8 @@ class CBHCompoundBatchResource(ModelResource):
                             if unicode(row[hdr]) == u"nan":
                                 custom_fields[hdr] = ""
                             else:
-                                custom_fields[hdr] = row[hdr] 
+
+                                custom_fields[hdr] = unicode(row[hdr]) 
                         #Set excel fields as uncurated
                         b.uncurated_fields = custom_fields
                         batches.append(b)
@@ -712,11 +740,6 @@ class CBHCompoundBatchResource(ModelResource):
         return self.validate_multi_batch(multiple_batch, bundle, request)
 
 
-
-
-
-
-
     def alter_list_data_to_serialize(self, request, data):
         '''use the request type to determine which fields should be limited for file download,
            add extra fields if needed (eg images) and enumerate the custom fields into the 
@@ -725,14 +748,22 @@ class CBHCompoundBatchResource(ModelResource):
             for index, b in enumerate(data["objects"]):
                 ctab = b.data["properties"]["substructureMatch"] = self.substructure_smarts
 
+        print "testing1"
         if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or request.GET.get("format") == "sdf" or self.determine_format(request) == 'chemical/x-mdl-sdfile' ):
             
+            ordered_cust_fields = PinnedCustomField.objects.filter(custom_field_config__project__project_key__in = request.GET.get("project__project_key__in","").split(",")).order_by("custom_field_config__project__id","position").values("name", "field_type")
+            print ordered_cust_fields
+            seen = set()
+            deduplicated_cfs = [x for x in ordered_cust_fields if x["name"] not in seen and not seen.add(x["name"])]
+            print deduplicated_cfs
             df_data = []
             ordered_cust_fields = []
-            keys_list = []
+            projects = set([]) 
+            uncurated_field_names = set()
             for index, b in enumerate(data["objects"]):
                 #remove items which are not listed as being kept
                 new_data = {}
+                projects.add(b.obj.project_id)
                 for k, v in b.data.iteritems():
                     for name, display_name in self.Meta.fields_to_keep.iteritems():
                         if k == name:
@@ -742,23 +773,36 @@ class CBHCompoundBatchResource(ModelResource):
                     new_data['ctab'] = b.data['ctab']
                 #dummy
                 #not every row has a value for every custom field
-                for field, value in b.data['custom_fields'].iteritems():
-                    new_data[field] = value
-                    keys_list.append(field)
+                for item in deduplicated_cfs:
+                    cf_value = b.data["custom_fields"].get(item["name"], "")
+                    if item["field_type"] == PinnedCustomField.UISELECTTAGS:
+                        if isinstance(cf_value, basestring):
+                            try:
+                                cf_value = json.loads(cf_value).join(",")
+                            except:
+                                pass
+                        elif isinstance(cf_value, list):
+                            cf_value = cf_value.join(",")
+                    new_data[item["name"]] = cf_value 
                     
                 #now remove custom_fields
                 del(new_data['custom_fields'])
-                # for field, value in b.data['uncurated_fields'].iteritems():
-                #     new_data[field] = value
-                #     keys_list.append(field)
+                for field, value in b.data['uncurated_fields'].iteritems():
+                    new_data[field] = value
+                    uncurated_field_names.add(field)
                     
                 # #now remove custom_fields
                 # del(new_data['uncurated_fields'])
                 b.data = new_data
                 df_data.append(new_data)               
             df = pd.DataFrame(df_data)
-            data['export'] = df.to_json()            
-        
+            data['export'] = df.to_json() 
+            data["headers"] = {
+                "cbh" : [display_name for name, display_name in self.Meta.fields_to_keep.iteritems()],
+                "custom_fields" : [cf["name"] for cf in deduplicated_cfs] ,
+                "uncurated_fields" : sorted(list(uncurated_field_names))
+            }
+            
 
         return data
 

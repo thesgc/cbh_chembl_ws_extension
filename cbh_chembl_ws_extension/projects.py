@@ -1485,13 +1485,12 @@ class ProjectResource(ModelResource):
             allowed_items = obj.get_allowed_items(projectKey)
             searchitems = allowed_items[1]
 
-          
+        maxdate = time.strftime("%Y-%m-%d")
         if data.get("format", False) == obj.DATE:
             form.update( {
                 "minDate": "2000-01-01",
-                "maxDate": time.strftime("%d-%m-%Y"),
-                "format": "dd-mm-yyyy"
-
+                "maxDate": maxdate,
+                "format": "yyyy-mm-dd"
             })
 
         else:
