@@ -436,22 +436,21 @@ class CBHCompoundBatchResource(ModelResource):
                 custom_fields = {}
                 uncurated_fields = {}
                 for hdr in headers:
-                    if hdr in mappings["ignored_fields"]:
+                    if hdr in [field["name"] for field in mappings["ignored_fields"]]:
                         #ignored fields are removed
                         b.uncurated_fields.pop(hdr, False)
-                    elif hdr in mappings["new_fields"]:
+                    elif hdr in [field["name"] for field in mappings["new_fields"]]:
                         #New fields are left as uncurated for now
                         continue
                     else:
-                        for key, mapping in mappings["remapped_fields"].iteritems():
+                        for mapping in mappings["remapped_fields"]:
                             #Remapped fields are added to the curated fields as only curated data will be present
-                            if hdr in mapping:
-                                custom_fields[key] = b.uncurated_fields.pop(hdr, "")
+                            if hdr in [field["name"] for field in mapping["list"]]:
+                                custom_fields[mapping["name"]] = b.uncurated_fields.pop(hdr, "")
                 b.custom_fields = custom_fields
             else:
                 #Only curated fields can be added via the standard UI
                 b.custom_fields = bundle.data["custom_fields"]
-
         mb.save()
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
