@@ -70,15 +70,25 @@ class ProjectResource(ModelResource):
                                 },
                                 {
                                   "key": "dateStart",
+                                  'type': 'datepicker', 
                                   "minDate": "2004-01-01",
                                   "htmlClass": "col-sm-6",
                                   "disableSuccessState": True,
+                                  'pickadate': {
+                                    'selectYears': True, 
+                                    'selectMonths': True,
+                                  },
                                 },
                                 {
                                   "key": "dateEnd",
+                                  'type': 'datepicker',
                                   "minDate": "2004-01-01",
                                   "htmlClass": "col-sm-6",
                                   "disableSuccessState": True,
+                                  'pickadate': {
+                                    'selectYears': True, 
+                                    'selectMonths': True,
+                                  },
                                 },
                                 {
                                     "type": "fieldset",
