@@ -420,11 +420,12 @@ class CBHCompoundBatchResource(ModelResource):
                 
                 curated_value = dateutil.parser.parse(uncurated_value).strftime("%Y-%m-%d")
 
-        elif field_schema.get("field_type" == PinnedCustomField.UISELECTTAGS):
+        elif (field_schema.get("field_type", "") == PinnedCustomField.UISELECTTAGS):
+            
             curated_value = json.dumps(uncurated_value.split(","))
-        elif field_schema.get("field_type" == PinnedCustomField.INTEGER):
+        elif (field_schema.get("field_type", "") == PinnedCustomField.INTEGER):
             curated_value = int(uncurated_value)     
-        elif field_schema.get("field_type" == PinnedCustomField.NUMBER):
+        elif (field_schema.get("field_type", "") in [ PinnedCustomField.NUMBER, PinnedCustomField.PERCENTAGE]):
             curated_value = float(uncurated_value)    
         return curated_value
 
@@ -802,6 +803,7 @@ class CBHCompoundBatchResource(ModelResource):
                 "custom_fields" : [cf["name"] for cf in deduplicated_cfs] ,
                 "uncurated_fields" : sorted(list(uncurated_field_names))
             }
+            print data["headers"]
             
 
         return data
