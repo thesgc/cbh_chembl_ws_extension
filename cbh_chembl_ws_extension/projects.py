@@ -1500,7 +1500,12 @@ class ProjectResource(ModelResource):
             form.update( {
                 "minDate": "2000-01-01",
                 "maxDate": maxdate,
-                "format": "yyyy-mm-dd"
+                'type': 'datepicker',
+                "format": "yyyy-mm-dd",
+                'pickadate': {
+                  'selectYears': True, 
+                  'selectMonths': True,
+                },
             })
 
         else:
