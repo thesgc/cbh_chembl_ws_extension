@@ -70,15 +70,25 @@ class ProjectResource(ModelResource):
                                 },
                                 {
                                   "key": "dateStart",
+                                  'type': 'datepicker', 
                                   "minDate": "2004-01-01",
                                   "htmlClass": "col-sm-6",
                                   "disableSuccessState": True,
+                                  'pickadate': {
+                                    'selectYears': True, 
+                                    'selectMonths': True,
+                                  },
                                 },
                                 {
                                   "key": "dateEnd",
+                                  'type': 'datepicker',
                                   "minDate": "2004-01-01",
                                   "htmlClass": "col-sm-6",
                                   "disableSuccessState": True,
+                                  'pickadate': {
+                                    'selectYears': True, 
+                                    'selectMonths': True,
+                                  },
                                 },
                                 {
                                     "type": "fieldset",
@@ -1490,7 +1500,12 @@ class ProjectResource(ModelResource):
             form.update( {
                 "minDate": "2000-01-01",
                 "maxDate": maxdate,
-                "format": "yyyy-mm-dd"
+                'type': 'datepicker',
+                "format": "yyyy-mm-dd",
+                'pickadate': {
+                  'selectYears': True, 
+                  'selectMonths': True,
+                },
             })
 
         else:
