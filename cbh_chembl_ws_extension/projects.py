@@ -37,12 +37,10 @@ class ProjectResource(ModelResource):
     def get_searchform(self, bundle,searchfield_items ):
         '''Note that the form here is expected to have the UOx id as the first item'''
         return { "form": [     
-                                {
-                                    "type": "fieldset",
-                                    "htmlClass": "col-sm-12",
-                                    "items": [
-                                    {"key": "related_molregno__chembl__chembl_id__in",
+                                
+                                {"key": "related_molregno__chembl__chembl_id__in",
                                     "title" : "%s ID" % settings.ID_PREFIX,
+                                    "htmlClass": "col-xs-12",
                                     "placeholder" : "Search multiple IDs",
                                     "description": "Add your ids and click on them as they appear in the drop-down.",
                                     "options": {
@@ -53,8 +51,6 @@ class ProjectResource(ModelResource):
                                                       "api_name" : settings.WEBSERVICES_NAME}) ,
                                             }
                                     }},
-                                    ]
-                                },
                                 {
                                   "key": "project__project_key__in",
                                   "type": "checkboxes",
@@ -91,27 +87,18 @@ class ProjectResource(ModelResource):
                                   },
                                 },
                                 {
-                                    "type": "fieldset",
-                                    "htmlClass": "col-sm-12",
-                                    "items": [
-                                      {
-                                          "type": "fieldset",
-                                          "htmlClass": "col-sm-4",
-                                          "items": [
-                                           "functional_group",
-                                          ]
-                                      },
-                                      {
-                                        "key": "smiles",
-                                        "placeholder": "Search SMILES or SMARTS string",
-                                        "append": "today",
-                                        "feedback": False,
-                                        "htmlClass": "col-sm-7",
-                                        "disableSuccessState": True,
-                                      },
-                                    ]
+                                    "htmlClass": "col-sm-6",
+                                    "key": "functional_group",
+
                                 },
-                               
+                                {
+                                  "key": "smiles",
+                                  "placeholder": "Search SMILES or SMARTS string",
+                                  "append": "today",
+                                  "feedback": False,
+                                  "htmlClass": "col-sm-6",
+                                  "disableSuccessState": True,
+                                },                               
                                 {
                                   "key": "substruc",
                                   "style": {
@@ -134,17 +121,15 @@ class ProjectResource(ModelResource):
                                 },
                                 {
                                   "key": "multiple_batch_id",
-                                  "htmlClass": "col-xs-3",
+                                  "htmlClass": "col-xs-6",
                                   "disableSuccessState": True,
 
                                 },
                                 {
-                                    "type": "fieldset",
                                     "htmlClass": "col-sm-12",
-                                    "items": [
-                                     "search_custom_fields__kv_any",
-                                ]
-                                }
+                                    "key": "search_custom_fields__kv_any",
+
+                                },
                             ],
                             "schema": {
                                 "required": [
