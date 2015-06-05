@@ -88,6 +88,7 @@ class ProjectResource(ModelResource):
                                 },
                                 {
                                     "htmlClass": "col-sm-6",
+                                    "disableSuccessState": True,
                                     "key": "functional_group",
 
                                 },
@@ -1363,7 +1364,7 @@ class ProjectResource(ModelResource):
                                                 },
 
                                                 "dateStart": {
-                                                  "title": "From",
+                                                  "title": "Added From",
                                                   "type": "string",
                                                   "format": "date",
                                                   "style": {
@@ -1372,7 +1373,7 @@ class ProjectResource(ModelResource):
                                                 }, 
 
                                                 "dateEnd": {
-                                                  "title": "To",
+                                                  "title": "Added Until",
                                                   "type": "string",
                                                   "format": "date",
                                                 },
