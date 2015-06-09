@@ -143,7 +143,6 @@ class ProjectResource(ModelResource):
                                                 "placeholder": "Look for ids",
                                                 "title": "",
                                                 "items" :[],
-                                                # "default": ["DEVEU76PVJ"],
                                                 "options": {
                                                   "http_get": {
                                                     "url": reverse("api_get_chembl_ids", 

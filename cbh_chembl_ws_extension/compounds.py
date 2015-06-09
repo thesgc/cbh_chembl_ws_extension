@@ -396,7 +396,8 @@ class CBHCompoundBatchResource(ModelResource):
             self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
         id = bundle.data["current_batch"]
         mb = CBHCompoundMultipleBatch.objects.get(pk=id)
-        batches = mb.uploaded_data
+        batches = self.get_cached_temporary_batches( mb.id, request)
+        
         mb.saved=True
         mb.created_by = request.user.username
         mb.save()
@@ -405,9 +406,7 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["errors"] = []
 
 
-        for batch in batches:
-                print batch.uncurated_fields
-                
+        for batch in batches:                
                 batch.generate_structure_and_dictionary()
                 #batch.save(validate=False)
                 bundle.data["saved"] += 1
@@ -447,7 +446,8 @@ class CBHCompoundBatchResource(ModelResource):
 
         mb = CBHCompoundMultipleBatch.objects.get(pk=id)
         headers = None
-        for b in mb.uploaded_data:
+        uploaded_data = self.get_cached_temporary_batches( mb.id, request)
+        for b in uploaded_data:
             if mappings:
                 #If there is a mappings object this data has come from the SD upload
                 if not headers:
@@ -479,14 +479,14 @@ class CBHCompoundBatchResource(ModelResource):
             else:
                 #Only curated fields can be added via the standard UI
                 b.custom_fields = bundle.data["custom_fields"]
-        mb.save()
+        self.set_cached_temporary_batches(uploaded_data, mb.id, request)
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
 
-    def validate_multi_batch(self,multi_batch, bundle, request):
-        batches_with_structures = [batch for batch in multi_batch.uploaded_data if not batch.blinded_batch_id]
-        blinded_data =  [batch for batch in multi_batch.uploaded_data if batch.blinded_batch_id]
+    def validate_multi_batch(self,multi_batch, bundle, request, batches):
+        batches_with_structures = [batch for batch in batches if not batch.blinded_batch_id]
+        blinded_data =  [batch for batch in batches if batch.blinded_batch_id]
         sdfstrings = [batch.ctab for batch in batches_with_structures]
         sdf = "\n".join(sdfstrings)
         
@@ -504,7 +504,6 @@ class CBHCompoundBatchResource(ModelResource):
         inchiparts = a[0].split("\nStructure:")
         
         for i, inch in enumerate(inchiparts):
-
             parts = inch.split("\n")
             if len(parts) == 1:
                 continue
@@ -512,7 +511,7 @@ class CBHCompoundBatchResource(ModelResource):
             part = "".join(ints)
             inchis[part] = parts[1]
 
-        total = len(multi_batch.uploaded_data)
+        total = len(batches)
         bundle.data["objects"] = []
         bundle.data["new"] = 0
         bundle.data["linkedpublic"] = 0
@@ -530,13 +529,13 @@ class CBHCompoundBatchResource(ModelResource):
                 bundle.data["errors"] += 1
                 bundle.data["fileerrors"].append({"index" : i+1, "error": "Inchi Parse Error"})
             else:
-                batch_key = batch.get_uk()
-                if batch_key in already_found:
+                
+                if batch.standard_inchi in already_found:
                     #setting this in case we change it later
                     batch.properties["dupe"] = True
                     bundle.data["dupes"] += 1
                 else:
-                    already_found.add(batch_key)
+                    already_found.add(batch.standard_inchi)
                     # self.match_list_to_moleculedictionaries(batch,bundle.data["project"] )
                     # for key in ["new", "linkedproject", "linkedpublic"]:
                     #     bundle.data[key] += int(batch.warnings[key])
@@ -544,14 +543,17 @@ class CBHCompoundBatchResource(ModelResource):
 
         total_already_in_db = MoleculeDictionary.objects.filter(structure_type="MOL", structure_key__in=already_found).count()
         bundle.data["linkedproject"] = total_already_in_db
-        bundle.data["new"] = len(multi_batch.uploaded_data) - total_already_in_db - bundle.data["dupes"]
+        bundle.data["new"] = total - total_already_in_db - bundle.data["dupes"]
         
-        multi_batch.uploaded_data = new_uploaded_data + blinded_data
+        self.set_cached_temporary_batches( new_uploaded_data + blinded_data, multi_batch.id, request)
+
+        
+
         bundle.data["blinded"] = len(blinded_data)
         multi_batch.save()
         bundle.data["total"] = total
 
-        bundle.data["current_batch"] = multi_batch.pk
+        bundle.data["multiple_batch"] = multi_batch.pk
 
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
@@ -590,9 +592,8 @@ class CBHCompoundBatchResource(ModelResource):
             b.multiple_batch_id = multiple_batch.pk
             b.created_by = bundle.request.user.username
 
-        multiple_batch.uploaded_data=batches
         bundle.data["current_batch"] = multiple_batch.pk
-        return self.validate_multi_batch(multiple_batch, bundle, request)
+        return self.validate_multi_batch(multiple_batch, bundle, request, batches)
 
 
 
@@ -663,7 +664,6 @@ class CBHCompoundBatchResource(ModelResource):
                 data = correct_file.file.read()
                 data = data.replace("\r\n","\n").replace("\r","\n")
                 ctabs = data.split("$$$$")
-                t = time.time()
                 for index, mol in enumerate(mols):
                     if mol is None: 
                         errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
@@ -675,7 +675,8 @@ class CBHCompoundBatchResource(ModelResource):
                         except Exception, e:
                             errors.append({"index" : index+1,  "message" : str(e)})
                             b =None
-                        if b:
+                        if b and dict(b.uncurated_fields) == {}:
+                            #Only rebuild the uncurated fields if this has not been done before
                             custom_fields = {}
                             for hdr in headers:
                                 try:
@@ -687,7 +688,6 @@ class CBHCompoundBatchResource(ModelResource):
                             batches.append(b)
                
 
-                print t -time.time()
             elif(correct_file.extension in (".xls", ".xlsx")):
                 #we need to know which column contains structural info - this needs to be defined on the mapping page and passed here
                 #read in the specified structural column
@@ -711,7 +711,8 @@ class CBHCompoundBatchResource(ModelResource):
                     else:
                         b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])                    
 
-                    if b:
+                    if b and dict(b.uncurated_fields) == {}:
+                        #Only rebuild the uncurated fields if this has not been done before
                         custom_fields = {}
                         for hdr in headers:
                             if unicode(row[hdr]) == u"nan":
@@ -733,12 +734,9 @@ class CBHCompoundBatchResource(ModelResource):
             b.created_by = bundle.request.user.username
            
         bundle.data["fileerrors"] = errors
+        bundle.data["headers"] = headers
 
-        multiple_batch.uploaded_data=batches
-        # multiple_batch.save()
-
-
-        return self.validate_multi_batch(multiple_batch, bundle, request)
+        return self.validate_multi_batch(multiple_batch, bundle, request, batches)
 
 
     def alter_list_data_to_serialize(self, request, data):
@@ -749,14 +747,11 @@ class CBHCompoundBatchResource(ModelResource):
             for index, b in enumerate(data["objects"]):
                 ctab = b.data["properties"]["substructureMatch"] = self.substructure_smarts
 
-        print "testing1"
         if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or request.GET.get("format") == "sdf" or self.determine_format(request) == 'chemical/x-mdl-sdfile' ):
             
             ordered_cust_fields = PinnedCustomField.objects.filter(custom_field_config__project__project_key__in = request.GET.get("project__project_key__in","").split(",")).order_by("custom_field_config__project__id","position").values("name", "field_type")
-            print ordered_cust_fields
             seen = set()
             deduplicated_cfs = [x for x in ordered_cust_fields if x["name"] not in seen and not seen.add(x["name"])]
-            print deduplicated_cfs
             df_data = []
             ordered_cust_fields = []
             projects = set([]) 
@@ -803,7 +798,6 @@ class CBHCompoundBatchResource(ModelResource):
                 "custom_fields" : [cf["name"] for cf in deduplicated_cfs] ,
                 "uncurated_fields" : sorted(list(uncurated_field_names))
             }
-            print data["headers"]
             
 
         return data
@@ -906,6 +900,28 @@ class CBHCompoundBatchResource(ModelResource):
     #     t5 = time.time()
     #     print t5-t4
     #     return self.create_response(request, to_be_serialized)
+
+
+    def set_cached_temporary_batches(self, batches, multi_batch_id, request):
+        batch_dicts = []
+        for batch in batches:
+            batch.id =-1
+            bun = self.build_bundle(obj=batch, request=request)
+            bun = self.full_dehydrate(bun)
+            serialized = self.serialize(request, bun.data, "application/json")
+            batch_dicts.append(serialized)
+        request.session["multi_batches_%d" % multi_batch_id] = batch_dicts
+
+
+    def get_cached_temporary_batches(self, multi_batch_id, request):
+        batches = request.session["multi_batches_%d" % multi_batch_id]
+        batch_objects = []
+        for batch in batches:
+            data = self.deserialize( request, batch)
+            bundle = self.build_bundle(data=data, request=request)
+            bundle = self.full_hydrate(bundle)
+            batch_objects.append(bundle.obj)
+        return batch_objects
 
 
 
