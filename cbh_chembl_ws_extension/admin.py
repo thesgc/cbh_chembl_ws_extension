@@ -65,7 +65,7 @@ class CustomFieldConfigAdmin(ModelAdmin):
                 PinnedCustomField.objects.create(allowed_values=field["allowed_values"],
                                                 custom_field_config=obj,
                                                 field_type=field["field_type"],
-                                                position=field["positon"],
+                                                position=field["position"],
                                                 name=field["key"],
                                                 description=field["placeholder"])
         

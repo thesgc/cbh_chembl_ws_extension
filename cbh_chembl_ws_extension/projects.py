@@ -1466,7 +1466,7 @@ class ProjectResource(ModelResource):
 
         form = {}
         form["field_type"] = obj.field_type
-        form["positon"] = obj.position
+        form["position"] = obj.position
         form["key"] = obj.name
         form["title"] = obj.name
         form["placeholder"] = obj.description
@@ -1477,9 +1477,19 @@ class ProjectResource(ModelResource):
             allowed_items = obj.get_allowed_items(projectKey) 
             data["items"] = allowed_items[0]
             searchitems = allowed_items[1]
+            #if we have a uiselect field with no description, make the placeholder say "Choose..."
+            #if obj.description == None:
+            form["placeholder"] = "Choose..."
+            form["help"] = obj.description
+            # form["helpdirectivename"] = "info-box"
+            # form["helpdirectiveparams"] = "freetext='%s'" % (obj.description)
+            # form["helpDirectiveClasses"] = "pull-right info-box"
+            # #form["title"] = "%s<info-box freetext='%s'></info-box>" % (obj.name, obj.description)
         else:
             allowed_items = obj.get_allowed_items(projectKey)
             searchitems = allowed_items[1]
+        
+
 
         maxdate = time.strftime("%Y-%m-%d")
         if data.get("format", False) == obj.DATE:
