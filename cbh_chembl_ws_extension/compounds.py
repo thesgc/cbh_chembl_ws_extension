@@ -15,6 +15,7 @@ import re
 import shortuuid
 from dateutil.parser import parse
 
+import elasticsearch_client
 try:
     from rdkit import Chem
     from rdkit.Chem import AllChem
@@ -32,7 +33,9 @@ except ImportError:
 
 from tastypie.exceptions import BadRequest
 from chembl_core_db.chemicalValidators import validateSmiles, validateChemblId, validateStandardInchiKey
-from tastypie.utils.mime import build_content_type
+
+
+
 from tastypie.exceptions import ImmediateHttpResponse
 from django.db.utils import DatabaseError
 from django.db import transaction
@@ -54,7 +57,7 @@ except AttributeError:
 
 from cbh_chembl_ws_extension.authorization import ProjectAuthorization
 from cbh_chembl_ws_extension.projects import ProjectResource
-from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer
+from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer, CBHCompoundBatchElasticSearchSerializer
 from chembl_business_model.models import CompoundStructures
 #from cbh_chembl_ws_extension.base import NBResource
 from tastypie.utils import dict_strip_unicode_keys
@@ -89,6 +92,18 @@ from django.db.models import Prefetch
 import dateutil.parser
 
             
+from cbh_chembl_ws_extension.parser import parse_pandas_record, parse_sdf_record
+
+# from tastypie.utils.mime import build_content_type
+def build_content_type(format, encoding='utf-8'):
+    """
+    Appends character encoding to the provided format if not already present.
+    """
+    if 'charset' in format:
+        return format
+
+    return "%s; charset=%s" % (format, encoding)
+
 
 
 
@@ -485,8 +500,10 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def validate_multi_batch(self,multi_batch, bundle, request, batches):
-        batches_with_structures = [batch for batch in batches if not batch.blinded_batch_id]
-        blinded_data =  [batch for batch in batches if batch.blinded_batch_id]
+
+        batches_not_errors = [batch for batch in batches if batch]
+        batches_with_structures = [batch for batch in batches_not_errors if not batch.blinded_batch_id]
+        blinded_data =  [batch for batch in batches_not_errors if batch.blinded_batch_id]
         sdfstrings = [batch.ctab for batch in batches_with_structures]
         sdf = "\n".join(sdfstrings)
         
@@ -511,51 +528,98 @@ class CBHCompoundBatchResource(ModelResource):
             part = "".join(ints)
             inchis[part] = parts[1]
 
-        total = len(batches)
-        bundle.data["objects"] = []
-        bundle.data["new"] = 0
-        bundle.data["linkedpublic"] = 0
-        bundle.data["linkedproject"] = 0
+
+
         if not bundle.data.get("fileerrors"):
             bundle.data["fileerrors"] = []
-        bundle.data["errors"] = len(bundle.data.get("fileerrors", []))
-        bundle.data["dupes"] = 0
+
         new_uploaded_data = []
         already_found = set([])
+        duplicates = set([])
+
+
         for i, batch in enumerate(batches_with_structures):
             batch.standard_inchi = inchis[str(i+1)]
-            batch.validate(temp_props=False)
-            if batch.__dict__["errors"] != {}:
-                bundle.data["errors"] += 1
-                bundle.data["fileerrors"].append({"index" : i+1, "error": "Inchi Parse Error"})
+            batch.validate(temp_props=False)  
+            if batch.standard_inchi_key in already_found:
+                #setting this in case we change it later
+                duplicates.add(batch.standard_inchi_key)
             else:
+                already_found.add(batch.standard_inchi_key)
                 
-                if batch.standard_inchi in already_found:
-                    #setting this in case we change it later
-                    batch.properties["dupe"] = True
-                    bundle.data["dupes"] += 1
-                else:
-                    already_found.add(batch.standard_inchi)
-                    # self.match_list_to_moleculedictionaries(batch,bundle.data["project"] )
-                    # for key in ["new", "linkedproject", "linkedpublic"]:
-                    #     bundle.data[key] += int(batch.warnings[key])
-                new_uploaded_data.append(batch)
+            new_uploaded_data.append(batch)
 
-        total_already_in_db = MoleculeDictionary.objects.filter(structure_type="MOL", structure_key__in=already_found).count()
-        bundle.data["linkedproject"] = total_already_in_db
-        bundle.data["new"] = total - total_already_in_db - bundle.data["dupes"]
-        
-        self.set_cached_temporary_batches( new_uploaded_data + blinded_data, multi_batch.id, request)
+        already_in_db = MoleculeDictionary.objects.filter(structure_type="MOL", structure_key__in=already_found).values_list("structure_key", flat=True)
+        already_in_db = set(already_in_db)
 
-        
+        bundle.data["new"] = 0
+        bundle.data["field_errors"] = 0
+        new_data = set([])
+        duplicate_overlaps = set([])
+        duplicate_new = set([])
 
-        bundle.data["blinded"] = len(blinded_data)
-        multi_batch.save()
-        bundle.data["total"] = total
+        for batch in batches_with_structures:
+            if batch.standard_inchi_key in already_in_db:
+                batch.warnings["overlap"] = True
+                if batch.standard_inchi_key in duplicates:
+                    batch.warnings["duplicate"] = True
+                    duplicate_overlaps.add(batch.standard_inchi_key)
+            else:
+                batch.warnings["new"] = True
+                new_data.add(batch.standard_inchi_key)
+                if batch.standard_inchi_key in duplicates:
+                    batch.warnings["duplicate"] = True
+                    duplicate_new.add(batch.standard_inchi_key)
+            
 
+        for batch in blinded_data:
+            batch.warnings["no_structure"] = True
+
+
+        bundle.data["batchStats"] = {}
+        bundle.data["batchStats"]["withStructure"] = len(batches_with_structures)
+        bundle.data["batchStats"]["parseErrors"] = len(batches) - len(batches_not_errors)
+        bundle.data["batchStats"]["withoutStructure"] = len(blinded_data)
+        bundle.data["batchStats"]["total"] = len(batches)
+
+        bundle.data["compoundStats"] = {}
+        bundle.data["compoundStats"]["total"] = len(already_in_db) + len(new_data)
+        bundle.data["compoundStats"]["overlaps"] = len(already_in_db)
+        bundle.data["compoundStats"]["new"] = len(new_data)
+        bundle.data["compoundStats"]["duplicateOverlaps"] = len(duplicate_overlaps)
+        bundle.data["compoundStats"]["duplicateNew"] = len(duplicate_new)
         bundle.data["multiple_batch"] = multi_batch.pk
 
+        fifty_batches_for_first_page = self.set_cached_temporary_batches(batches, multi_batch.id, request)
+
+        multi_batch.uploaded_data = bundle.data
+        multi_batch.save()
+        bundle.data["objects"] = fifty_batches_for_first_page
+
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
+
+
+    def get_part_processed_multiple_batch(self, request, **kwargs):
+        """
+        Get the part processed data from elasticsearch and the stats about the
+        multiple batch
+        """
+        # TODO: Uncached for now. Invalidation that works for everyone may be
+        #       impossible.
+        base_bundle = self.build_bundle(request=request)
+        
+        self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
+        id = bundle.data["current_batch"]
+        mb = CBHCompoundMultipleBatch.objects.get(pk=id)
+
+        es_data = self.get_cached_temporary_batch_data(self, id, request, )
+        to_be_serialized = mb.uploaded_data
+
+        to_be_serialized[self._meta.collection_name] = es_data
+        # to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
+        return self.create_response(request, to_be_serialized)
+ 
+
 
 
 
@@ -572,19 +636,19 @@ class CBHCompoundBatchResource(ModelResource):
         objects =  bundle.data.get("objects", [])
        
         batches = []
-        if type == "smiles":
-            allmols = [(obj, Chem.MolFromSmiles(str(obj))) for obj in objects]
+        #first assume smiles
+        allmols = [(obj, Chem.MolFromSmiles(str(obj))) for obj in objects]
+        #Next test for inchi
+        for m in allmols:
+            if m[1] is None:
+                inchimol = Chem.MolFromInchi(str(m[0].encode('ascii','ignore')))
+                if inchimol is not None:
+                    m = (Chem.MolToSmiles( inchimol), inchimol) 
 
-        elif type == "inchi":
-            allmols = [(Chem.MolToSmiles( Chem.MolFromInchi(str(obj.encode('ascii','ignore')))), Chem.MolFromInchi(obj.encode('ascii','ignore'))) for obj in objects]
-
-        errors = [{"index" : i+1, "error": "Parse Error"} for i, mol in enumerate(allmols) if not mol[1]]
-        bundle.data["fileerrors"] = errors
-
-        mols = [ mol1 for mol1 in allmols if mol1[1]]
         for m in mols:
-            Compute2DCoords(m[1])
-        batches = [CBHCompoundBatch.objects.from_rd_mol(mol2[1], smiles=mol2[0], project=bundle.data["project"], reDraw=True) for mol2 in mols]
+            if(m[1]):
+                Compute2DCoords(m[1])
+        batches = [CBHCompoundBatch.objects.from_rd_mol(mol2[1], smiles=mol2[0], project=bundle.data["project"], reDraw=True) if mol2[1] is not None else None for mol2 in mols  ]
     
 
         multiple_batch = CBHCompoundMultipleBatch.objects.create(project=bundle.data["project"])
@@ -666,6 +730,7 @@ class CBHCompoundBatchResource(ModelResource):
                 ctabs = data.split("$$$$")
                 for index, mol in enumerate(mols):
                     if mol is None: 
+                        b=None
                         errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
                     else:
                         orig_data = ctabs[index]
@@ -677,15 +742,9 @@ class CBHCompoundBatchResource(ModelResource):
                             b =None
                         if b and dict(b.uncurated_fields) == {}:
                             #Only rebuild the uncurated fields if this has not been done before
-                            custom_fields = {}
-                            for hdr in headers:
-                                try:
-                                    custom_fields[hdr] = str(mol.GetProp(hdr))
-                                except KeyError:
-                                    custom_fields[hdr]   = ""
+                            parse_sdf_record(headers, b, "uncurated_fields", mol)
                             
-                            b.uncurated_fields = custom_fields
-                            batches.append(b)
+                    batches.append(b)
                
 
             elif(correct_file.extension in (".xls", ".xlsx")):
@@ -713,25 +772,21 @@ class CBHCompoundBatchResource(ModelResource):
 
                     if b and dict(b.uncurated_fields) == {}:
                         #Only rebuild the uncurated fields if this has not been done before
-                        custom_fields = {}
-                        for hdr in headers:
-                            if unicode(row[hdr]) == u"nan":
-                                custom_fields[hdr] = ""
-                            else:
+                        parse_pandas_record(headers, b, "uncurated_fields")
 
-                                custom_fields[hdr] = unicode(row[hdr]) 
-                        #Set excel fields as uncurated
-                        b.uncurated_fields = custom_fields
-                        batches.append(b)
+                       
                     else:
                         errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this identifier",  "SMILES": smiles_str})
+                    batches.append(b)
+
             else:
                 raise BadRequest("Invalid File Format")
 
         multiple_batch = CBHCompoundMultipleBatch.objects.create(project = bundle.data["project"])
         for b in batches:
-            b.multiple_batch_id = multiple_batch.pk
-            b.created_by = bundle.request.user.username
+            if b:
+                b.multiple_batch_id = multiple_batch.pk
+                b.created_by = bundle.request.user.username
            
         bundle.data["fileerrors"] = errors
         bundle.data["headers"] = headers
@@ -904,17 +959,47 @@ class CBHCompoundBatchResource(ModelResource):
 
     def set_cached_temporary_batches(self, batches, multi_batch_id, request):
         batch_dicts = []
+        index = 1
+        es_serializer = CBHCompoundBatchElasticSearchSerializer()
         for batch in batches:
-            batch.id =-1
-            bun = self.build_bundle(obj=batch, request=request)
-            bun = self.full_dehydrate(bun)
-            serialized = self.serialize(request, bun.data, "application/json")
-            batch_dicts.append(serialized)
-        request.session["multi_batches_%d" % multi_batch_id] = batch_dicts
+            if batch:
+                batch.id = index
+                bun = self.build_bundle(obj=batch, request=request)
+                bun = self.full_dehydrate(bun)
+                ready = es_serializer.to_es_ready_data(bun.data, options={"underscorize": True})
+                batch_dicts.append(ready)
+            else:
+                #preserve the line number of the batch that could not be processed
+                batch_dicts.append(
+                    {"id": index, 
+                    "warnings" : {"parseError": True},
+                    "properties" : {},
+                    "project": str(self.project)
+                    }
+                    )
+            index += 1
+        elasticsearch_client.create_temporary_index(batch_dicts, multi_batch_id, request)
+        return batch_dicts[0:50]
+
+
+
+
+
+
+    def get_cached_temporary_batch_data(self, multi_batch_id, request):
+        es_request = {
+            "from" : request.GET.get("offset", 0),
+            "size" : request.GET.get("limit", 50),
+            "query" : request.GET.get("query", { "match_all" : {}})
+        }
+        index = elasticsearch_client.get_temp_index_name(request, multi_batch_id)
+        data = elasticsearch_client.get(index, es_request)
+        return data
+
 
 
     def get_cached_temporary_batches(self, multi_batch_id, request):
-        batches = request.session["multi_batches_%d" % multi_batch_id]
+        batches = self.get_cached_temporary_batch_data(multi_batch_id, request)
         batch_objects = []
         for batch in batches:
             data = self.deserialize( request, batch)

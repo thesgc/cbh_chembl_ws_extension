@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import codecs
 import csv
 import cStringIO
@@ -21,6 +23,18 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, PandasTools
 
 import pybel
+
+
+
+def get_field_name_from_key(key):
+    return key.replace(u"‗", u" ")
+
+def get_key_from_field_name(name):
+    return name.replace(u" ", u"‗")
+
+
+
+
 
 
 def flatten_dict(d, base=None):
@@ -377,3 +391,68 @@ class CamelCaseJSONSerializer(Serializer):
 
 class CBHCompoundBatchSerializer(CamelCaseJSONSerializer,CSVSerializer,XLSSerializer,SDFSerializer):
     pass
+
+
+
+class CBHCompoundBatchElasticSearchSerializer(Serializer):
+    formats = ['json']
+    content_types = {
+        'json': 'application/json',
+    }
+
+    def handle_data_from_django_hstore(self, value):
+        '''Hstore passes data in the wrong format'''
+        for k, v in value.iteritems():
+            if isinstance(v, basestring):
+                if  v.startswith("[") and v.endswith("]"):
+                    try:
+                        value[k] = json.loads(v)
+                        continue
+                    except:
+                        pass
+                elif "." in v:
+                    try:
+                        value[k] = float(v)
+                        continue
+                    except:
+                        pass
+                else:
+                    try:
+                        value[k] = int(v)
+                        continue
+                    except:
+                        pass
+                value[k] = v
+
+    def to_es_ready_data(self, data, options=None):
+        options = options or {}
+        data = self.to_simple(data, options)
+        for key, value in data.items():
+            if key in ["custom_fields", "uncurated_fields"]:
+                if options and options.get("underscorize", False):
+                    value = self.underscorize_fields(value)           
+                self.handle_data_from_django_hstore( value)
+        return data
+
+
+    def to_json(self, data, options=None):
+        self.to_es_ready_data( data, options=options) 
+        return json.dumps(data, sort_keys=True)
+
+    def underscorize_fields(self,dictionary):
+        return {
+                    get_key_from_field_name(key):value 
+                    for key, value in dictionary.items()
+                }
+
+
+
+
+
+
+
+
+
+
+
+

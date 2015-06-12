@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from django.contrib import admin
 from cbh_chembl_model_extension.models import Project, PinnedCustomField, CustomFieldConfig
 
@@ -6,7 +8,6 @@ from cbh_chembl_ws_extension.projects import ProjectResource
 
 from django.forms.widgets import HiddenInput, TextInput
 from django.db import models
-import json
 
 class GrappelliSortableHiddenMixin(object):
     """
