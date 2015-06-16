@@ -13,7 +13,8 @@ def parse_sdf_record(headers, obj, destination_field, mol):
         try:
             custom_fields[hdr] = unicode(mol.GetProp(hdr))
         except KeyError:
-            custom_fields[hdr]   = u""
+            pass
+            #custom_fields[hdr]   = u""
                             
     setattr(obj,destination_field, custom_fields)
 
@@ -23,7 +24,8 @@ def parse_pandas_record(headers, obj, destination_field):
     custom_fields = {}
     for hdr in headers:
         if unicode(row[hdr]) == u"nan":
-            custom_fields[hdr] = ""
+            pass
+            # custom_fields[hdr] = ""
         else:
             custom_fields[hdr] = unicode(row[hdr]) 
     #Set excel fields as uncurated

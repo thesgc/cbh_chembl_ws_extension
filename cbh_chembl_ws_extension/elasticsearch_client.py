@@ -9,16 +9,18 @@ except AttributeError:
     ES_PREFIX = "dev"
 
 def get_temp_index_name(request, multi_batch_id):
-    return "%s__temp_multi_batch__%s_%d" % (ES_PREFIX, request.session.session_key, multi_batch_id)
+    return "%s__temp_multi_batch__%s__%s" % (ES_PREFIX, request.session.session_key, str(multi_batch_id))
 
 
 
-def get(index_name, es_request_body):
+def get(index_name, es_request_body, bundledata):
     es = elasticsearch.Elasticsearch()
-    result = es.get("%s/_search" % index_name, body=es_request_body)
-    print result
+    result = es.search(index_name, body=es_request_body)
     data = [res["_source"] for res in result["hits"]["hits"]]
-    return data
+    
+    bundledata["meta"] = {"totalCount" : result["hits"]["total"]}
+    bundledata["objects"] = data
+    return bundledata
 
 
 
@@ -37,7 +39,7 @@ def create_temporary_index(batches, multi_batch_id, request):
                "_all" : {"enabled" : False},
                "dynamic_templates" : [ {
                  "string_fields" : {
-                   "match" : "ctab|std_ctab|canonical_smiles|original_smiles|standard_inchi",
+                   "match" : "ctab|std_ctab|canonical_smiles|original_smiles",
                    "match_mapping_type" : "string",
                    "mapping" : {
                         "type" : "string", "store" : "no", "include_in_all" : False        

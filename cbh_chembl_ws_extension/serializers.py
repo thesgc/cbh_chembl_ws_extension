@@ -27,10 +27,10 @@ import pybel
 
 
 def get_field_name_from_key(key):
-    return key.replace(u"‗", u" ")
+    return key.replace(u"__space__", u" ")
 
 def get_key_from_field_name(name):
-    return name.replace(u" ", u"‗")
+    return name.replace(u" ", u"__space__")
 
 
 
@@ -392,13 +392,51 @@ class CamelCaseJSONSerializer(Serializer):
 class CBHCompoundBatchSerializer(CamelCaseJSONSerializer,CSVSerializer,XLSSerializer,SDFSerializer):
     pass
 
+def convert_query(data):
+    if isinstance(data, dict):
+        new_dict = {}
+        for key, value in data.items():
+            new_key = get_key_from_field_name(key)
+            new_key = new_key.replace("uncuratedFields","uncurated_fields")
+            new_key = new_key.replace("customFields","custom_fields")
 
+            new_dict[new_key] = convert_query(value)
+        return new_dict
+    if isinstance(data, (list, tuple)):
+        for i in range(len(data)):
+            data[i] = convert_query(data[i])
+        return data
+    return data
 
 class CBHCompoundBatchElasticSearchSerializer(Serializer):
     formats = ['json']
     content_types = {
         'json': 'application/json',
     }
+
+    def convert_query(self, es_request):
+
+        def camelToUnderscore(match):
+            return match.group()[0] + "_" + match.group()[1].lower()
+
+        es_request["query"] = convert_query(es_request["query"])
+        es_request["sort"] = convert_query(es_request["sort"])
+        newsort = []
+        for item in es_request["sort"]:
+            newItem = {}
+            for sort, direction in item.items():
+                if ("." in sort):
+                    newItem[sort + ".raw"] = direction
+                else:
+                    new_key = re.sub(r"[a-z][A-Z]", camelToUnderscore, sort)
+                    if new_key != "id":
+                        new_key += ".raw"
+                    newItem[new_key] = direction
+            newsort.append(newItem)
+        print newsort
+        es_request["sort"] = newsort
+
+
 
     def handle_data_from_django_hstore(self, value):
         '''Hstore passes data in the wrong format'''
@@ -426,12 +464,24 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
 
     def to_es_ready_data(self, data, options=None):
         options = options or {}
+
         data = self.to_simple(data, options)
         for key, value in data.items():
             if key in ["custom_fields", "uncurated_fields"]:
                 if options and options.get("underscorize", False):
-                    value = self.underscorize_fields(value)           
+                    data[key] = self.underscorize_fields(value)           
                 self.handle_data_from_django_hstore( value)
+        return data
+
+    
+
+
+    def to_python_ready_data(self, data, options=None):
+        options = options or {}
+        data = self.to_simple(data, options)
+        for key, value in data.items():
+            if key in ["custom_fields", "uncurated_fields"]:
+                data[key] = self.deunderscorize_fields(value)           
         return data
 
 
@@ -447,6 +497,11 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
 
 
 
+    def deunderscorize_fields(self,dictionary):
+        return {
+                    get_field_name_from_key(key):value 
+                    for key, value in dictionary.items()
+                }
 
 
 

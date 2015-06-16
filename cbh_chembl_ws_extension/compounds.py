@@ -384,6 +384,8 @@ class CBHCompoundBatchResource(ModelResource):
 
     def prepend_urls(self):
         return [
+        url(r"^(?P<resource_name>%s)/get_part_processed_multiple_batch/$" % self._meta.resource_name,
+            self.wrap_view('get_part_processed_multiple_batch'), name="api_get_part_processed_multiple_batch"),
         url(r"^(?P<resource_name>%s)/get_chembl_ids/$" % self._meta.resource_name,
             self.wrap_view('get_chembl_ids'), name="api_get_chembl_ids"),
         url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,
@@ -500,8 +502,20 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def validate_multi_batch(self,multi_batch, bundle, request, batches):
-
+        excluded_columns = set(["new","duplicate","noStructure", "overlap","parseError"])
         batches_not_errors = [batch for batch in batches if batch]
+        if len(batches_not_errors) < len(batches):
+            excluded_columns.remove("parseError")
+        for b in batches_not_errors:
+            b.properties["action"] = "New batch"
+            b.warnings["new"] = False
+            b.warnings["duplicate"] = False
+            b.warnings["noStructure"] = False
+            b.warnings["overlap"] = False
+            b.warnings["parseError"] = False
+
+
+
         batches_with_structures = [batch for batch in batches_not_errors if not batch.blinded_batch_id]
         blinded_data =  [batch for batch in batches_not_errors if batch.blinded_batch_id]
         sdfstrings = [batch.ctab for batch in batches_with_structures]
@@ -551,6 +565,15 @@ class CBHCompoundBatchResource(ModelResource):
 
         already_in_db = MoleculeDictionary.objects.filter(structure_type="MOL", structure_key__in=already_found).values_list("structure_key", flat=True)
         already_in_db = set(already_in_db)
+        if(len(already_in_db)> 0):
+            excluded_columns.remove("overlap")
+        else:
+            excluded_columns.remove("new")
+
+        if(len(duplicates )> 0):
+            excluded_columns.remove("duplicate")
+        if(len(blinded_data) > 0):
+            excluded_columns.remove("noStructure")
 
         bundle.data["new"] = 0
         bundle.data["field_errors"] = 0
@@ -573,7 +596,7 @@ class CBHCompoundBatchResource(ModelResource):
             
 
         for batch in blinded_data:
-            batch.warnings["no_structure"] = True
+            batch.warnings["noStructure"] = True
 
 
         bundle.data["batchStats"] = {}
@@ -590,12 +613,13 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["compoundStats"]["duplicateNew"] = len(duplicate_new)
         bundle.data["multiple_batch"] = multi_batch.pk
 
+
         fifty_batches_for_first_page = self.set_cached_temporary_batches(batches, multi_batch.id, request)
+        bundle.data["excluded"] = ["warnings.%s" % field for field in excluded_columns]
 
         multi_batch.uploaded_data = bundle.data
         multi_batch.save()
         bundle.data["objects"] = fifty_batches_for_first_page
-
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
@@ -606,16 +630,14 @@ class CBHCompoundBatchResource(ModelResource):
         """
         # TODO: Uncached for now. Invalidation that works for everyone may be
         #       impossible.
-        base_bundle = self.build_bundle(request=request)
+        bundle = self.build_bundle(request=request)
         
-        self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
-        id = bundle.data["current_batch"]
+        # self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
+        id = request.GET.get("current_batch")
         mb = CBHCompoundMultipleBatch.objects.get(pk=id)
-
-        es_data = self.get_cached_temporary_batch_data(self, id, request, )
         to_be_serialized = mb.uploaded_data
 
-        to_be_serialized[self._meta.collection_name] = es_data
+        to_be_serialized = self.get_cached_temporary_batch_data( id, request,to_be_serialized)        
         # to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
         return self.create_response(request, to_be_serialized)
  
@@ -789,7 +811,7 @@ class CBHCompoundBatchResource(ModelResource):
                 b.created_by = bundle.request.user.username
            
         bundle.data["fileerrors"] = errors
-        bundle.data["headers"] = headers
+        bundle.data["headers"] = [{"name": header, "copyTo": ""} for header in headers]
 
         return self.validate_multi_batch(multiple_batch, bundle, request, batches)
 
@@ -917,45 +939,6 @@ class CBHCompoundBatchResource(ModelResource):
     
         return bundle
 
-    # def get_list(self, request, **kwargs):
-    #     """
-    #     Returns a serialized list of resources.
-    #     Calls ``obj_get_list`` to provide the data, then handles that result
-    #     set and serializes it.
-    #     Should return a HttpResponse (200 OK).
-    #     """
-    #     # TODO: Uncached for now. Invalidation that works for everyone may be
-    #     #       impossible.
-    #     base_bundle = self.build_bundle(request=request)
-
-    #     ########
-    #     #TODO - convert your molfile into smiles or smarts for substructure
-    #     #you should interject here, pull the molfile out of the kwargs and do your rdkit conversion etc
-    #     #then put back into the request
-    #     t1 = time.time()
-    #     objects = self.obj_get_list(bundle=base_bundle, **self.remove_api_resource_names(kwargs))
-    #     sorted_objects = self.apply_sorting(objects, options=request.GET)
-    #     t2 = time.time()
-    #     print t2-t1
-    #     paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
-    #     to_be_serialized = paginator.page()
-    #     t3 = time.time()
-    #     # Dehydrate the bundles in preparation for serialization.
-    #     bundles = []
-
-    #     print t3-t2
-    #     for obj in to_be_serialized[self._meta.collection_name]:
-    #         bundle = self.build_bundle(obj=obj, request=request)
-    #         bundles.append(self.full_dehydrate(bundle, for_list=True))
-    #     t4 = time.time()
-
-    #     print t4-t3
-    #     to_be_serialized[self._meta.collection_name] = bundles
-    #     to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
-    #     t5 = time.time()
-    #     print t5-t4
-    #     return self.create_response(request, to_be_serialized)
-
 
     def set_cached_temporary_batches(self, batches, multi_batch_id, request):
         batch_dicts = []
@@ -972,41 +955,42 @@ class CBHCompoundBatchResource(ModelResource):
                 #preserve the line number of the batch that could not be processed
                 batch_dicts.append(
                     {"id": index, 
-                    "warnings" : {"parseError": True},
-                    "properties" : {},
+                    "warnings" : {"parseError": True,
+                                    "new": False,
+                                    "duplicate": False,
+                                    "noStructure": False,
+                                    "overlap": False},
+                    "properties" : {"action": "Ignore"},
                     "project": str(self.project)
                     }
                     )
             index += 1
         elasticsearch_client.create_temporary_index(batch_dicts, multi_batch_id, request)
-        return batch_dicts[0:50]
+        #Now get rid of my ES preparation again
+        return [es_serializer.to_python_ready_data(d) for d in batch_dicts[0:50]]
 
 
 
 
 
 
-    def get_cached_temporary_batch_data(self, multi_batch_id, request):
+    def get_cached_temporary_batch_data(self, multi_batch_id, request, bundledata):
         es_request = {
             "from" : request.GET.get("offset", 0),
             "size" : request.GET.get("limit", 50),
-            "query" : request.GET.get("query", { "match_all" : {}})
+            "query" : json.loads(request.GET.get("query", '{ "match_all" : {}}')),
+            "sort" : json.loads(request.GET.get("sorts",'[{"id": {"order": "asc"}}]'))
         }
         index = elasticsearch_client.get_temp_index_name(request, multi_batch_id)
-        data = elasticsearch_client.get(index, es_request)
-        return data
+        es_serializer = CBHCompoundBatchElasticSearchSerializer()
+        es_serializer.convert_query(es_request)
+        bundledata = elasticsearch_client.get(index, es_request, bundledata)
+        bundledata["objects"] = [es_serializer.to_python_ready_data(d) for d in bundledata["objects"]]
+        return bundledata
 
 
 
-    def get_cached_temporary_batches(self, multi_batch_id, request):
-        batches = self.get_cached_temporary_batch_data(multi_batch_id, request)
-        batch_objects = []
-        for batch in batches:
-            data = self.deserialize( request, batch)
-            bundle = self.build_bundle(data=data, request=request)
-            bundle = self.full_hydrate(bundle)
-            batch_objects.append(bundle.obj)
-        return batch_objects
+    
 
 
 
