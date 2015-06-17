@@ -308,7 +308,6 @@ class CBHCompoundBatchResource(ModelResource):
             new += 1
         batch.warnings["linkedpublic"] = linkedpublic
         batch.warnings["linkedproject"] = linkedproject
-        batch.warnings["new"] = new
         if len(all_items) > 0:
             all_items[0]["tobelinked"] = True
         batch.warnings["linkable_molecules"] = all_items
@@ -448,8 +447,8 @@ class CBHCompoundBatchResource(ModelResource):
 
     
 
-    def multi_batch_custom_fields(self, request, **kwargs):
-        '''Save custom fields from the mapping section when adding ID/SMILES list'''
+    def multi_batch_structure_column(self, request, **kwargs):
+        '''change the structure column for an excel file'''
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
@@ -459,44 +458,35 @@ class CBHCompoundBatchResource(ModelResource):
         else:
             self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
         id = bundle.data["current_batch"]
-        mappings = bundle.data.get('mapping', [])
+        headers = bundle.data["headers"]
+        structure_col = bundle.data.get("structure_col", None)
 
         mb = CBHCompoundMultipleBatch.objects.get(pk=id)
-        headers = None
-        uploaded_data = self.get_cached_temporary_batches( mb.id, request)
-        for b in uploaded_data:
-            if mappings:
-                #If there is a mappings object this data has come from the SD upload
-                if not headers:
-                    headers = b.uncurated_fields.keys()
-                custom_fields = {}
-                uncurated_fields = {}
-                for hdr in headers:
-                    if hdr in [field["name"] for field in mappings["ignored_fields"]]:
-                        #ignored fields are removed
-                        b.uncurated_fields.pop(hdr, False)
-                    elif hdr in [field["name"] for field in mappings["new_fields"]]:
-                        #New fields are left as uncurated for now
-                        continue
-                    else:
-                        for mapping in mappings["remapped_fields"]:
-                            #Remapped fields are added to the curated fields as only curated data will be present
-                            if hdr in [field["name"] for field in mapping["list"]]:
-                                #expect only 1 value in this list per mapping as UI is set up that way
-                                value_to_be_mapped_as_custom_field = b.uncurated_fields.pop(hdr, "")
-                                try:
-                                    converted = self.convert_custom_field(value_to_be_mapped_as_custom_field, mapping)
-                                    custom_fields[mapping["name"]] = converted
-                                except:
-                                    #The value cannot be converted properly
-                                    b.uncurated_fields["Failed Mapping: %s" % mapping["name"] ] = value_to_be_mapped_as_custom_field
+        processSmiles = False
+        if structure_col and structure_col != mb.uploaded_data.get("structure_col", ""):
+            processSmiles =  True
+        mb.uploaded_data = bundle.data
+        mb.save()
+        # if processSmiles:
+        #     uploaded_data = self.get_cached_temporary_batches( mb.id, request, mb.uploaded_data)
 
-                                
-                b.custom_fields = custom_fields
-            else:
-                #Only curated fields can be added via the standard UI
-                b.custom_fields = bundle.data["custom_fields"]
-        self.set_cached_temporary_batches(uploaded_data, mb.id, request)
+        #     for batch in uploaded_data:
+        #         b = None
+        #         smiles_str = batch.uncurated_fields.get(structure_col, "")
+        #         struc = Chem.MolFromSmiles(smiles_str)
+        #         if struc:
+        #             Compute2DCoords(struc)
+        #             try:
+        #                 b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
+        #                 batch.ctab = b.ctab
+        #                 batch.ctab.original_smiles = smiles_str
+
+        #             except Exception, e:
+        #                 batch = None
+        #         else:
+        #             batch = None
+        #     return self.validate_multi_batch(mb, bundle, request, uploaded_data)
+        
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
@@ -508,11 +498,11 @@ class CBHCompoundBatchResource(ModelResource):
             excluded_columns.remove("parseError")
         for b in batches_not_errors:
             b.properties["action"] = "New batch"
-            b.warnings["new"] = False
-            b.warnings["duplicate"] = False
-            b.warnings["noStructure"] = False
-            b.warnings["overlap"] = False
-            b.warnings["parseError"] = False
+            # b.warnings["new"] = False
+            # b.warnings["duplicate"] = False
+            # b.warnings["noStructure"] = False
+            # b.warnings["overlap"] = False
+            # b.warnings["parseError"] = False
 
 
 
@@ -567,8 +557,7 @@ class CBHCompoundBatchResource(ModelResource):
         already_in_db = set(already_in_db)
         if(len(already_in_db)> 0):
             excluded_columns.remove("overlap")
-        else:
-            excluded_columns.remove("new")
+        
 
         if(len(duplicates )> 0):
             excluded_columns.remove("duplicate")
@@ -576,12 +565,13 @@ class CBHCompoundBatchResource(ModelResource):
             excluded_columns.remove("noStructure")
 
         bundle.data["new"] = 0
-        bundle.data["field_errors"] = 0
         new_data = set([])
         duplicate_overlaps = set([])
         duplicate_new = set([])
 
         for batch in batches_with_structures:
+            if batch.standard_inchi_key in duplicates:
+                batch.warnings["duplicate"] = True
             if batch.standard_inchi_key in already_in_db:
                 batch.warnings["overlap"] = True
                 if batch.standard_inchi_key in duplicates:
@@ -589,6 +579,10 @@ class CBHCompoundBatchResource(ModelResource):
                     duplicate_overlaps.add(batch.standard_inchi_key)
             else:
                 batch.warnings["new"] = True
+                try:
+                    excluded_columns.remove("new")
+                except:
+                    pass
                 new_data.add(batch.standard_inchi_key)
                 if batch.standard_inchi_key in duplicates:
                     batch.warnings["duplicate"] = True
@@ -694,10 +688,14 @@ class CBHCompoundBatchResource(ModelResource):
         file_name = bundle.data['file_name']
         session_key = request.COOKIES[settings.SESSION_COOKIE_NAME]
         correct_file = FlowFile.objects.get(identifier="%s-%s" % (session_key, file_name))
-
         batches = []
         headers = []
         errors = []
+        fielderrors = {}
+        fielderrors["stringdate"] = set([])
+        fielderrors["number"] = set([])
+        fielderrors["integer"] = set([])
+        structure_col = bundle.data.get("struc_col","")
         
         if (".cdx" in correct_file.extension ):
             mols = [mol for mol in readfile( str(correct_file.extension[1:]), str(correct_file.file.name), )]
@@ -764,7 +762,7 @@ class CBHCompoundBatchResource(ModelResource):
                             b =None
                         if b and dict(b.uncurated_fields) == {}:
                             #Only rebuild the uncurated fields if this has not been done before
-                            parse_sdf_record(headers, b, "uncurated_fields", mol)
+                            parse_sdf_record(headers, b, "uncurated_fields", mol, fielderrors)
                             
                     batches.append(b)
                
@@ -772,12 +770,18 @@ class CBHCompoundBatchResource(ModelResource):
             elif(correct_file.extension in (".xls", ".xlsx")):
                 #we need to know which column contains structural info - this needs to be defined on the mapping page and passed here
                 #read in the specified structural column
-                structure_col = bundle.data["struc_col"]
+                
+                headerswithdata = set([])
+                
 
                 df = pd.read_excel(correct_file.file)
+
                 #read the smiles string value out of here, when we know which column it is.
                 row_iterator = df.iterrows()
                 headers = list(df)
+                headers = [h.replace(".","__") for h in headers]
+                df.columns = headers
+
                 for index, row in row_iterator:
                     if structure_col:
                         smiles_str = row[structure_col]
@@ -794,13 +798,13 @@ class CBHCompoundBatchResource(ModelResource):
 
                     if b and dict(b.uncurated_fields) == {}:
                         #Only rebuild the uncurated fields if this has not been done before
-                        parse_pandas_record(headers, b, "uncurated_fields")
+                        parse_pandas_record(headers, b, "uncurated_fields", row, fielderrors, headerswithdata)
 
                        
                     else:
                         errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this identifier",  "SMILES": smiles_str})
                     batches.append(b)
-
+                headers = [hdr for hdr in headers if hdr in headerswithdata]
             else:
                 raise BadRequest("Invalid File Format")
 
@@ -811,7 +815,17 @@ class CBHCompoundBatchResource(ModelResource):
                 b.created_by = bundle.request.user.username
            
         bundle.data["fileerrors"] = errors
-        bundle.data["headers"] = [{"name": header, "copyTo": ""} for header in headers]
+        bundle.data["headers"] = [{"name": header, 
+                                    "copyTo": "SMILES for chemical structures" if header == structure_col  else "",
+                                    "fieldErrors" : { 
+                                        "stringdate": header in fielderrors["stringdate"],
+                                        "integer": header in fielderrors["integer"],
+                                        "number": header in fielderrors["number"]
+                                    }
+                                    }
+                                    for header in headers]
+
+        # bundle.data["fieldErrors"] = {key: list(value) for key, value in fielderrors.items()}
 
         return self.validate_multi_batch(multiple_batch, bundle, request, batches)
 
@@ -955,11 +969,8 @@ class CBHCompoundBatchResource(ModelResource):
                 #preserve the line number of the batch that could not be processed
                 batch_dicts.append(
                     {"id": index, 
-                    "warnings" : {"parseError": True,
-                                    "new": False,
-                                    "duplicate": False,
-                                    "noStructure": False,
-                                    "overlap": False},
+                    "warnings" : {"parseError": "true"
+                                    },
                     "properties" : {"action": "Ignore"},
                     "project": str(self.project)
                     }
@@ -967,10 +978,16 @@ class CBHCompoundBatchResource(ModelResource):
             index += 1
         elasticsearch_client.create_temporary_index(batch_dicts, multi_batch_id, request)
         #Now get rid of my ES preparation again
-        return [es_serializer.to_python_ready_data(d) for d in batch_dicts[0:50]]
+        return [es_serializer.to_python_ready_data(d) for d in batch_dicts[0:10]]
 
 
-
+    def get_cached_temporary_batches(self, multi_batch_id, request, bundledata={}):
+        bundles = self.get_cached_temporary_batch_data(multi_batch_id, request, bundledata["objects"])
+        for datum in bundles:
+            datum = self.build_bundle(data=datum)
+            datum = self.full_hydrate(datum)
+        bundledata["objects"] = bundles
+        return bundledata
 
 
 
@@ -981,6 +998,7 @@ class CBHCompoundBatchResource(ModelResource):
             "query" : json.loads(request.GET.get("query", '{ "match_all" : {}}')),
             "sort" : json.loads(request.GET.get("sorts",'[{"id": {"order": "asc"}}]'))
         }
+        print es_request
         index = elasticsearch_client.get_temp_index_name(request, multi_batch_id)
         es_serializer = CBHCompoundBatchElasticSearchSerializer()
         es_serializer.convert_query(es_request)

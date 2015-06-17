@@ -1461,6 +1461,7 @@ class ProjectResource(ModelResource):
 
         data["title"] = obj.name
         data["placeholder"] = obj.description
+        data["friendly_field_type"] = obj.FIELD_TYPE_CHOICES[obj.field_type]["name"]
 
 
         form = {}

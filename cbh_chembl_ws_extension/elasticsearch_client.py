@@ -37,6 +37,8 @@ def create_temporary_index(batches, multi_batch_id, request):
          "mappings" : {
             "_default_" : {
                "_all" : {"enabled" : False},
+               
+
                "dynamic_templates" : [ {
                  "string_fields" : {
                    "match" : "ctab|std_ctab|canonical_smiles|original_smiles",
