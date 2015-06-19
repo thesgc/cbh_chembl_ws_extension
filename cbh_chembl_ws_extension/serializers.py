@@ -433,7 +433,6 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                         new_key += ".raw"
                     newItem[new_key] = direction
             newsort.append(newItem)
-        print newsort
         es_request["sort"] = newsort
 
 
@@ -481,7 +480,7 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
         data = self.to_simple(data, options)
         for key, value in data.items():
             if key in ["custom_fields", "uncurated_fields"]:
-                data[key] = self.deunderscorize_fields(value)           
+                data[key] = self.deunderscorize_fields(value)
         return data
 
 

@@ -17,7 +17,6 @@ def get(index_name, es_request_body, bundledata):
     es = elasticsearch.Elasticsearch()
     result = es.search(index_name, body=es_request_body)
     data = [res["_source"] for res in result["hits"]["hits"]]
-    
     bundledata["meta"] = {"totalCount" : result["hits"]["total"]}
     bundledata["objects"] = data
     return bundledata
