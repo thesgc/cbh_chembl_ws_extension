@@ -11,6 +11,9 @@ except AttributeError:
 def get_temp_index_name(request, multi_batch_id):
     return "%s__temp_multi_batch__%s__%s" % (ES_PREFIX, request.session.session_key, str(multi_batch_id))
 
+def delete_index(index_name):
+    es = elasticsearch.Elasticsearch()
+    return es.indices.delete(index_name)
 
 
 def get(index_name, es_request_body, bundledata):

@@ -383,6 +383,8 @@ class CBHCompoundBatchResource(ModelResource):
 
     def prepend_urls(self):
         return [
+        url(r"^(?P<resource_name>%s)/delete_index/$" % self._meta.resource_name,
+            self.wrap_view('delete_index'), name="delete_index"),
         url(r"^(?P<resource_name>%s)/update_temp_batches/$" % self._meta.resource_name,
             self.wrap_view('update_temp_batches'), name="update_temp_batches"),
         url(r"^(?P<resource_name>%s)/get_part_processed_multiple_batch/$" % self._meta.resource_name,
@@ -423,7 +425,6 @@ class CBHCompoundBatchResource(ModelResource):
             set_of_batches = self.get_cached_temporary_batches( mb.id, {"limit":limit, "offset": offset},request, bundledata=bundle.data)
             batches.extend(set_of_batches["objects"])
             offset += limit
-            print len(set_of_batches["objects"])
             #if len(set_of_batches["objects"]) == 0:
             hasMoreData = None
 
@@ -440,7 +441,26 @@ class CBHCompoundBatchResource(ModelResource):
                 batch.obj.generate_structure_and_dictionary()
                 batch.multi_batch_id = id
                 bundle.data["saved"] += 1
+
+        elasticsearch_client.delete_index(elasticsearch_client.get_temp_index_name(request, mb.id))
         return self.create_response(request, bundle, response_class=http.HttpCreated)
+
+
+    def delete_index(self, request, **kwargs):
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        if bundle.obj.pk:
+            self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
+        else:
+            self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
+        id = bundle.data["multiple_batch"]
+        mb = CBHCompoundMultipleBatch.objects.get(pk=id)
+        elasticsearch_client.delete_index(elasticsearch_client.get_temp_index_name(request, mb.id))
+        return self.create_response(request, bundle, response_class=http.HttpAccepted)
+
+
 
     def convert_custom_field(self, uncurated_value, field_schema):
         curated_value = uncurated_value
@@ -532,6 +552,8 @@ class CBHCompoundBatchResource(ModelResource):
         batches_not_errors = [batch for batch in batches if batch]
         if len(batches_not_errors) < len(batches):
             excluded_columns.remove("parseError")
+        if (len(batches_not_errors) ==0):
+            raise BadRequest("No data to process")
         for b in batches_not_errors:
             b.properties["action"] = "New Batch"
             # b.warnings["new"] = False
@@ -685,9 +707,11 @@ class CBHCompoundBatchResource(ModelResource):
             self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
         else:
             self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
-        type = bundle.data.get("type",None).lower()
-        objects =  bundle.data.get("objects", [])
-       
+
+        smilesdata =  bundle.data.get("smilesdata", "")
+        objects = smilesdata.splitlines(True)
+        print bundle.data
+        print objects
         batches = []
         #first assume smiles
         allmols = [(obj, Chem.MolFromSmiles(str(obj))) for obj in objects]
@@ -698,18 +722,20 @@ class CBHCompoundBatchResource(ModelResource):
                 if inchimol is not None:
                     m = (Chem.MolToSmiles( inchimol), inchimol) 
 
-        for m in mols:
+        for m in allmols:
             if(m[1]):
                 Compute2DCoords(m[1])
-        batches = [CBHCompoundBatch.objects.from_rd_mol(mol2[1], smiles=mol2[0], project=bundle.data["project"], reDraw=True) if mol2[1] is not None else None for mol2 in mols  ]
+        batches = [CBHCompoundBatch.objects.from_rd_mol(mol2[1], smiles=mol2[0], project=bundle.data["project"], reDraw=True) if mol2[1] is not None else None for mol2 in allmols  ]
     
 
         multiple_batch = CBHCompoundMultipleBatch.objects.create(project=bundle.data["project"])
         for b in batches:
-            b.multiple_batch_id = multiple_batch.pk
-            b.created_by = bundle.request.user.username
+            if b:
+                b.multiple_batch_id = multiple_batch.pk
+                b.created_by = bundle.request.user.username
 
         bundle.data["current_batch"] = multiple_batch.pk
+        bundle.data["headers"] = []
         return self.validate_multi_batch(multiple_batch, bundle, request, batches)
 
 
