@@ -92,7 +92,7 @@ from django.db.models import Prefetch
 import dateutil.parser
 
             
-from cbh_chembl_ws_extension.parser import parse_pandas_record, parse_sdf_record
+from cbh_chembl_ws_extension.parser import parse_pandas_record, parse_sdf_record, apply_json_patch
 
 # from tastypie.utils.mime import build_content_type
 def build_content_type(format, encoding='utf-8'):
@@ -405,6 +405,16 @@ class CBHCompoundBatchResource(ModelResource):
                 self.wrap_view('export_file'), name="api_compound_export_file"),]
        
 
+
+
+    def patch_dict(self, dictdata, headers):
+        for header in headers:
+            json_patches = header.get("operations", False)
+            if json_patches:
+                apply_json_patch(dictdata, json_patches)
+
+
+
     def multi_batch_save(self, request, **kwargs):
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         
@@ -422,7 +432,12 @@ class CBHCompoundBatchResource(ModelResource):
         batches = []
         hasMoreData = True
         while hasMoreData :
-            set_of_batches = self.get_cached_temporary_batches( mb.id, {"limit":limit, "offset": offset},request, bundledata=bundle.data)
+            
+            bundles = self.get_cached_temporary_batch_data(mb.id,  {"limit":limit, "offset": offset}, request)
+
+            d = [self.patch_dict(d, bundle.data["headers"]) for d in bundles["objects"]]
+
+            set_of_batches = self.get_cached_temporary_batches( bundles ,request,  bundledata=bundle.data)
             batches.extend(set_of_batches["objects"])
             offset += limit
             #if len(set_of_batches["objects"]) == 0:
@@ -436,7 +451,7 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["ignored"] = 0
         
         for batch in batches: 
-            if(batch.obj.properties["action"] == "New Batch"):   
+            if(batch.obj.properties.get("action", "") == "New Batch"):   
                 batch.obj.id = None    
                 batch.obj.generate_structure_and_dictionary()
                 batch.multi_batch_id = id
@@ -523,26 +538,7 @@ class CBHCompoundBatchResource(ModelResource):
         #     processSmiles =  True
         mb.uploaded_data = bundle.data
         mb.save()
-        # if processSmiles:
-        #     uploaded_data = self.get_cached_temporary_batches( mb.id, request, mb.uploaded_data)
-
-        #     for batch in uploaded_data:
-        #         b = None
-        #         smiles_str = batch.uncurated_fields.get(structure_col, "")
-        #         struc = Chem.MolFromSmiles(smiles_str)
-        #         if struc:
-        #             Compute2DCoords(struc)
-        #             try:
-        #                 b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
-        #                 batch.ctab = b.ctab
-        #                 batch.ctab.original_smiles = smiles_str
-
-        #             except Exception, e:
-        #                 batch = None
-        #         else:
-        #             batch = None
-        #     return self.validate_multi_batch(mb, bundle, request, uploaded_data)
-        
+      
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
@@ -556,13 +552,6 @@ class CBHCompoundBatchResource(ModelResource):
             raise BadRequest("No data to process")
         for b in batches_not_errors:
             b.properties["action"] = "New Batch"
-            # b.warnings["new"] = False
-            # b.warnings["duplicate"] = False
-            # b.warnings["noStructure"] = False
-            # b.warnings["overlap"] = False
-            # b.warnings["parseError"] = False
-
-
 
         batches_with_structures = [batch for batch in batches_not_errors if not batch.blinded_batch_id]
         blinded_data =  [batch for batch in batches_not_errors if batch.blinded_batch_id]
@@ -602,7 +591,6 @@ class CBHCompoundBatchResource(ModelResource):
 
         for i, batch in enumerate(batches_with_structures):
             batch.standard_inchi = inchis[str(i+1)]
-            print batch.standard_inchi
             batch.validate(temp_props=False)  
             if batch.standard_inchi_key in already_found:
                 #setting this in case we change it later
@@ -710,8 +698,6 @@ class CBHCompoundBatchResource(ModelResource):
 
         smilesdata =  bundle.data.get("smilesdata", "")
         objects = smilesdata.splitlines(True)
-        print bundle.data
-        print objects
         batches = []
         #first assume smiles
         allmols = [(obj, Chem.MolFromSmiles(str(obj))) for obj in objects]
@@ -1044,8 +1030,7 @@ class CBHCompoundBatchResource(ModelResource):
         return [es_serializer.to_python_ready_data(d) for d in batch_dicts[0:10]]
 
 
-    def get_cached_temporary_batches(self, multi_batch_id, get_data,request, bundledata={}):
-        bundles = self.get_cached_temporary_batch_data(multi_batch_id, get_data, request)
+    def get_cached_temporary_batches(self, bundles, request, bundledata={}):
         fakeobj = CBHCompoundBatch(project = bundledata["project"], id=10)
         bun = self.build_bundle(obj=fakeobj)
         bun = self.full_dehydrate(bun)
