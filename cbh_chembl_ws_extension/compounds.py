@@ -14,7 +14,7 @@ from pybel import readfile , readstring
 import re
 import shortuuid
 from dateutil.parser import parse
-
+import copy
 import elasticsearch_client
 try:
     from rdkit import Chem
@@ -409,7 +409,8 @@ class CBHCompoundBatchResource(ModelResource):
 
     def patch_dict(self, dictdata, headers):
         for header in headers:
-            json_patches = header.get("operations", False)
+            json_patches = copy.copy(header.get("operations", False))
+
             if json_patches:
                 apply_json_patch(dictdata, json_patches)
 
@@ -434,9 +435,8 @@ class CBHCompoundBatchResource(ModelResource):
         while hasMoreData :
             
             bundles = self.get_cached_temporary_batch_data(mb.id,  {"limit":limit, "offset": offset}, request)
-
-            d = [self.patch_dict(d, bundle.data["headers"]) for d in bundles["objects"]]
-
+            for d in bundles["objects"]:
+                self.patch_dict(d, copy.deepcopy(bundle.data["headers"]))
             set_of_batches = self.get_cached_temporary_batches( bundles ,request,  bundledata=bundle.data)
             batches.extend(set_of_batches["objects"])
             offset += limit

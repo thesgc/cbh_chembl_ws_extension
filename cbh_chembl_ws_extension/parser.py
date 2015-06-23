@@ -55,9 +55,13 @@ class MyJsonPatch(jsonpatch.JsonPatch):
 def apply_json_patch(dictdata, patch):
     mjp = MyJsonPatch(patch)
     try:
-        mjp.apply(dictdata, in_place=True)
+        data = mjp.apply(dictdata, in_place=True)
+        return data
+
     except jsonpatch.JsonPatchConflict:
-        pass
+        return dictdata
+    except jsonpatch.JsonPointerException:
+        return dictdata
 
 
 
