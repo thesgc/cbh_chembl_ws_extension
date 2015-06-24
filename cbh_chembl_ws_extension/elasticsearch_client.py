@@ -9,7 +9,10 @@ except AttributeError:
     ES_PREFIX = "dev"
 
 def get_temp_index_name(request, multi_batch_id):
-    return "%s__temp_multi_batch__%s__%s" % (ES_PREFIX, request.session.session_key, str(multi_batch_id))
+    index_name = "%s__temp_multi_batch__%s__%s" % (ES_PREFIX, request.session.session_key, str(multi_batch_id))
+    print(index_name)
+    return index_name
+    #return "%s__temp_multi_batch__%s__%s" % (ES_PREFIX, request.session.session_key, str(multi_batch_id))
 
 def delete_index(index_name):
     es = elasticsearch.Elasticsearch()
@@ -26,7 +29,7 @@ def get(index_name, es_request_body, bundledata):
 
 
 
-def create_temporary_index(batches, multi_batch_id, request):
+def create_temporary_index(batches, multi_batch_id, request, index_name):
     es = elasticsearch.Elasticsearch()
     t = time.time()
     store_type = "memory"
@@ -68,7 +71,7 @@ def create_temporary_index(batches, multi_batch_id, request):
         }
         }
     }
-    index_name = get_temp_index_name(request, multi_batch_id)
+    #index_name = get_temp_index_name(request, multi_batch_id)
     
     es.indices.create(
             index_name,
@@ -88,3 +91,8 @@ def create_temporary_index(batches, multi_batch_id, request):
         bulk_items.append(item)
     #Data is not refreshed!
     es.bulk(body=bulk_items)
+
+def get_project_index_name(project):
+    index_name = "%s__project__%s" % (ES_PREFIX, str(project.id))
+    print(index_name)
+    return index_name

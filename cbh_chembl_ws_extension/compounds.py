@@ -94,6 +94,8 @@ import dateutil.parser
             
 from cbh_chembl_ws_extension.parser import parse_pandas_record, parse_sdf_record
 
+
+
 # from tastypie.utils.mime import build_content_type
 def build_content_type(format, encoding='utf-8'):
     """
@@ -443,6 +445,9 @@ class CBHCompoundBatchResource(ModelResource):
                 bundle.data["saved"] += 1
 
         elasticsearch_client.delete_index(elasticsearch_client.get_temp_index_name(request, mb.id))
+        batch_dicts = self.batches_to_es_ready(batches, request)
+        index_name=elasticsearch_client.get_project_index_name(mb.project)
+        elasticsearch_client.create_temporary_index(batch_dicts, multi_batch_id, request, index_name)
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
 
@@ -494,7 +499,8 @@ class CBHCompoundBatchResource(ModelResource):
 
         es_ready_updates = [es_serializer.to_es_ready_data(dictdata, 
             options={"underscorize": True}) for dictdata in bundle.data["objects"]]
-        elasticsearch_client.create_temporary_index(es_ready_updates, multi_batch_id, request)
+        index_name=elasticsearch_client.get_temp_index_name(request, multi_batch_id)
+        elasticsearch_client.create_temporary_index(es_ready_updates, multi_batch_id, request, index_name)
         
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
@@ -1016,8 +1022,7 @@ class CBHCompoundBatchResource(ModelResource):
     
         return bundle
 
-
-    def set_cached_temporary_batches(self, batches, multi_batch_id, request):
+    def batches_to_es_ready(self, batches, request):
         batch_dicts = []
         index = 1
         es_serializer = CBHCompoundBatchElasticSearchSerializer()
@@ -1039,7 +1044,13 @@ class CBHCompoundBatchResource(ModelResource):
                     }
                     )
             index += 1
-        elasticsearch_client.create_temporary_index(batch_dicts, multi_batch_id, request)
+        return batch_dicts
+
+    def set_cached_temporary_batches(self, batches, multi_batch_id, request):
+        es_serializer = CBHCompoundBatchElasticSearchSerializer()
+        batch_dicts = self.batches_to_es_ready(batches, request)
+        index_name=elasticsearch_client.get_temp_index_name(request, multi_batch_id)
+        elasticsearch_client.create_temporary_index(batch_dicts, multi_batch_id, request, index_name)
         #Now get rid of my ES preparation again
         return [es_serializer.to_python_ready_data(d) for d in batch_dicts[0:10]]
 
