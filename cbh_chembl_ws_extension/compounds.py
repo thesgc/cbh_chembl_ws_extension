@@ -264,6 +264,34 @@ class CBHCompoundBatchResource(ModelResource):
 
         return rc
 
+    def get_elasticsearch_autocomplete(self, request, **kwargs):
+        
+        bundle = self.build_bundle(request=request)
+        print(bundle)
+        pids = self._meta.authorization.project_ids(request)
+        print(pids)
+        #filters = {"project__id__in" : pids}
+        #prefix = request.GET.get("chembl_id__chembl_id__startswith", None).upper()
+        prefix = request.GET.get("search_custom_fields__kv_any", None)
+        print(prefix)
+        desired_format = self.determine_format(request)
+        #send these project ids to the elasticsearch query?
+
+        if(prefix):
+            print(prefix)
+            filters["search_custom_fields__kv_any"] = prefix
+            uox_ids = list(elasticsearch_client.get_custom_fields_autocomplete(pids, prefix))
+            bundle.data = [{"value" :uox, "label" : uox} for uox in uox_ids]
+            serialized = json.dumps(bundle.data)
+        else:
+            serialized = "[]"
+
+       
+        rc = HttpResponse(content=serialized, content_type=build_content_type(desired_format), )
+        
+        return rc
+
+
 
     def convert_mol_string(self, strn):
         #commit
@@ -393,6 +421,8 @@ class CBHCompoundBatchResource(ModelResource):
             self.wrap_view('get_part_processed_multiple_batch'), name="api_get_part_processed_multiple_batch"),
         url(r"^(?P<resource_name>%s)/get_chembl_ids/$" % self._meta.resource_name,
             self.wrap_view('get_chembl_ids'), name="api_get_chembl_ids"),
+        url(r"^(?P<resource_name>%s)/get_elasticsearch_autocomplete/$" % self._meta.resource_name,
+            self.wrap_view('get_elasticsearch_autocomplete'), name="api_get_elasticsearch_autocomplete"),
         url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,
                 self.wrap_view('post_validate'), name="api_validate_compound_batch"),
         url(r"^(?P<resource_name>%s)/validate_list/$" % self._meta.resource_name,
@@ -451,18 +481,19 @@ class CBHCompoundBatchResource(ModelResource):
 
         bundle.data["saved"] = 0
         bundle.data["ignored"] = 0
-        
+        to_be_saved = []
         for batch in batches: 
             if(batch.obj.properties.get("action", "") == "New Batch"):   
                 batch.obj.id = None    
                 batch.obj.generate_structure_and_dictionary()
                 batch.multi_batch_id = id
                 bundle.data["saved"] += 1
+                to_be_saved.append(batch.obj)
 
         elasticsearch_client.delete_index(elasticsearch_client.get_temp_index_name(request, mb.id))
-        batch_dicts = self.batches_to_es_ready(batches, request)
+        batch_dicts = self.batches_to_es_ready(to_be_saved, request)
         index_name=elasticsearch_client.get_project_index_name(mb.project)
-        elasticsearch_client.create_temporary_index(batch_dicts, multi_batch_id, request, index_name)
+        elasticsearch_client.create_temporary_index(batch_dicts, request, index_name)
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
 
@@ -515,7 +546,7 @@ class CBHCompoundBatchResource(ModelResource):
         es_ready_updates = [es_serializer.to_es_ready_data(dictdata, 
             options={"underscorize": True}) for dictdata in bundle.data["objects"]]
         index_name=elasticsearch_client.get_temp_index_name(request, multi_batch_id)
-        elasticsearch_client.create_temporary_index(es_ready_updates, multi_batch_id, request, index_name)
+        elasticsearch_client.create_temporary_index(es_ready_updates, request, index_name)
         
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
@@ -1014,7 +1045,8 @@ class CBHCompoundBatchResource(ModelResource):
         es_serializer = CBHCompoundBatchElasticSearchSerializer()
         for batch in batches:
             if batch:
-                batch.id = index
+                if(not batch.id):
+                    batch.id = index
                 bun = self.build_bundle(obj=batch, request=request)
                 bun = self.full_dehydrate(bun)
                 ready = es_serializer.to_es_ready_data(bun.data, options={"underscorize": True})
@@ -1036,7 +1068,7 @@ class CBHCompoundBatchResource(ModelResource):
         es_serializer = CBHCompoundBatchElasticSearchSerializer()
         batch_dicts = self.batches_to_es_ready(batches, request)
         index_name=elasticsearch_client.get_temp_index_name(request, multi_batch_id)
-        elasticsearch_client.create_temporary_index(batch_dicts, multi_batch_id, request, index_name)
+        elasticsearch_client.create_temporary_index(batch_dicts, request, index_name)
         #Now get rid of my ES preparation again
         return [es_serializer.to_python_ready_data(d) for d in batch_dicts[0:10]]
 
