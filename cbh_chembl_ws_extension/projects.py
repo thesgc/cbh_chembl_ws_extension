@@ -129,7 +129,13 @@ class ProjectResource(ModelResource):
                                 {
                                     "htmlClass": "col-sm-12",
                                     "key": "search_custom_fields__kv_any",
-
+                                    "options": {
+                                      "async": {
+                                          "url": reverse("api_get_elasticsearch_autocomplete", 
+                                            kwargs={"resource_name": "cbh_compound_batches",
+                                            "api_name" : settings.WEBSERVICES_NAME}) ,
+                                        }
+                                    }
                                 },
                             ],
                             "schema": {
@@ -143,13 +149,6 @@ class ProjectResource(ModelResource):
                                                 "placeholder": "Look for ids",
                                                 "title": "",
                                                 "items" :[],
-                                                "options": {
-                                                  "http_get": {
-                                                    "url": reverse("api_get_chembl_ids", 
-                                                      kwargs={"resource_name": "cbh_compound_batches",
-                                                      "api_name" : settings.WEBSERVICES_NAME})
-                                                  }
-                                                }
                                                 },
                                                 "project__project_key__in": {
                                                   "title": "Project",
@@ -1392,12 +1391,11 @@ class ProjectResource(ModelResource):
                                                   "default": "with_substructure",
                                                 },
                                                 "search_custom_fields__kv_any": { 
-                                                        "type": "array", 
-                                                        "format" : "uiselect", 
-                                                        "items" : sorted(searchfield_items),
-                                                         "placeholder": "Tagged fields",
-                                                         "title": "Any of the following custom field values:",
-                                                   
+                                                  "type": "array", 
+                                                  "format" : "uiselect",
+                                                  "items" :[],
+                                                  "placeholder": "Tagged fields",
+                                                  "title": "Any of the following custom field values:",
                                                 }
 
                                     

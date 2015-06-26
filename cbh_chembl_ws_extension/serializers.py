@@ -465,6 +465,12 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
         options = options or {}
 
         data = self.to_simple(data, options)
+        data['custom_field_list'] = [{'name':key, 'value':value, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, value) } for key, value in data["custom_fields"].items()]
+        data['custom_field_list'].append({'name': "Project", 'value':data['project'], 'searchable_name': 'project', 'aggregation': '%s|%s' % ('Project', data['project']) })
+        data['custom_field_list'].append({'name': "Upload Id", 'value':data['multiple_batch_id'], 'searchable_name': 'upload', 'aggregation': '%s|%d' % ('Upload', data['multiple_batch_id']) })
+        #data['custom_field_list'].append({'name': "UOX Id", 'value':data['chembl_id'], 'searchable_name': 'uox', 'aggregation': '[%s] %s' % ('UOX', data['chembl_id'])  })
+
+
         for key, value in data.items():
             if key in ["custom_fields", "uncurated_fields"]:
                 if options and options.get("underscorize", False):
@@ -478,6 +484,7 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
     def to_python_ready_data(self, data, options=None):
         options = options or {}
         data = self.to_simple(data, options)
+        data.pop("custom_field_list", False)
         for key, value in data.items():
             if key in ["custom_fields", "uncurated_fields"]:
                 data[key] = self.deunderscorize_fields(value)

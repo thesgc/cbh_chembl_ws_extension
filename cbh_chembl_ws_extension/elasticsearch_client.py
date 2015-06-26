@@ -9,7 +9,10 @@ except AttributeError:
     ES_PREFIX = "dev"
 
 def get_temp_index_name(request, multi_batch_id):
-    return "%s__temp_multi_batch__%s__%s" % (ES_PREFIX, request.session.session_key, str(multi_batch_id))
+    index_name = "%s__temp_multi_batch__%s__%s" % (ES_PREFIX, request.session.session_key, str(multi_batch_id))
+    print(index_name)
+    return index_name
+    #return "%s__temp_multi_batch__%s__%s" % (ES_PREFIX, request.session.session_key, str(multi_batch_id))
 
 def delete_index(index_name):
     es = elasticsearch.Elasticsearch()
@@ -24,9 +27,41 @@ def get(index_name, es_request_body, bundledata):
     bundledata["objects"] = data
     return bundledata
 
+def get_custom_fields_autocomplete(projects, search_term):
+    es = elasticsearch.Elasticsearch()
+    project_terms = []
+    search_regex = '.*%s.*' % (search_term)
+    for proj in projects:
+      project_name = '/%s/cbh_projects/%d' % (settings.WEBSERVICES_NAME, proj)
+      project_terms.append( {'term': { 'project.raw': project_name } } )
+
+    body = {
+      'query':{
+          'bool': {
+              'should': project_terms
+          } 
+      },
+      'aggs': {
+        'autocomplete': {
+          'terms': { 'field': 'custom_field_list.aggregation.raw', 'size':1000, 'include': search_regex }
+        }
+      },
+      'size': 0,
+    }
+
+    result = es.search(body=body)
+    #return the results in the right format
+    data = [res["key"] for res in result["aggregations"]["autocomplete"]["buckets"]]
+    return data
 
 
-def create_temporary_index(batches, multi_batch_id, request):
+
+
+
+
+
+
+def create_temporary_index(batches, request, index_name):
     es = elasticsearch.Elasticsearch()
     t = time.time()
     store_type = "memory"
@@ -68,7 +103,7 @@ def create_temporary_index(batches, multi_batch_id, request):
         }
         }
     }
-    index_name = get_temp_index_name(request, multi_batch_id)
+    #index_name = get_temp_index_name(request, multi_batch_id)
     
     es.indices.create(
             index_name,
@@ -82,9 +117,14 @@ def create_temporary_index(batches, multi_batch_id, request):
                                 {
                                     "_id": str(item["id"]), 
                                     "_index": index_name,
-                                    "_type": "%d" % multi_batch_id
+                                    "_type": "batches"
                                 }
                             })
         bulk_items.append(item)
     #Data is not refreshed!
     es.bulk(body=bulk_items)
+
+def get_project_index_name(project):
+    index_name = "%s__project__%s" % (ES_PREFIX, str(project.id))
+    print(index_name)
+    return index_name
