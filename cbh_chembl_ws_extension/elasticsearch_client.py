@@ -27,10 +27,11 @@ def get(index_name, es_request_body, bundledata):
     bundledata["objects"] = data
     return bundledata
 
-def get_custom_fields_autocomplete(projects, search_term):
+def get_autocomplete(projects, search_term, field):
     es = elasticsearch.Elasticsearch()
     project_terms = []
     search_regex = '.*%s.*' % (search_term)
+    field_to_search = '%s.raw' % (field)
     for proj in projects:
       project_name = '/%s/cbh_projects/%d' % (settings.WEBSERVICES_NAME, proj)
       project_terms.append( {'term': { 'project.raw': project_name } } )
@@ -43,7 +44,7 @@ def get_custom_fields_autocomplete(projects, search_term):
       },
       'aggs': {
         'autocomplete': {
-          'terms': { 'field': 'custom_field_list.aggregation.raw', 'size':1000, 'include': search_regex }
+          'terms': { 'field': field_to_search, 'size':1000, 'include': search_regex }
         }
       },
       'size': 0,
@@ -53,12 +54,6 @@ def get_custom_fields_autocomplete(projects, search_term):
     #return the results in the right format
     data = [res["key"] for res in result["aggregations"]["autocomplete"]["buckets"]]
     return data
-
-
-
-
-
-
 
 
 def create_temporary_index(batches, request, index_name):

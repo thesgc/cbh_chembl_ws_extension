@@ -248,7 +248,6 @@ class CBHCompoundBatchResource(ModelResource):
         pids = self._meta.authorization.project_ids(request)
         filters = {"project__id__in" : pids}
         prefix = request.GET.get("chembl_id__chembl_id__startswith", None).upper()
-        print(request.GET)
         desired_format = self.determine_format(request)
 
         if(prefix):
@@ -264,23 +263,40 @@ class CBHCompoundBatchResource(ModelResource):
 
         return rc
 
+    def get_elasticsearch_ids(self, request, **kwargs):
+        bundle = self.build_bundle(request=request)
+        pids = self._meta.authorization.project_ids(request)
+        filters = {"project__id__in" : pids}
+        prefix = request.GET.get("chembl_id__chembl_id__startswith", None).upper()
+        desired_format = self.determine_format(request)
+
+        if(prefix):
+            #filters["chembl_id__chembl_id__startswith"] = prefix
+            #uox_ids = list(MoleculeDictionary.objects.filter(**filters).values_list("chembl_id", flat=True)[0:20])
+            uox_ids = list(elasticsearch_client.get_autocomplete(pids, prefix, 'chemblId'))
+            bundle.data = [{"value" :uox, "label" : uox} for uox in uox_ids]
+            serialized = json.dumps(bundle.data)
+        else:
+            serialized = "[]"
+
+       
+        rc = HttpResponse(content=serialized, content_type=build_content_type(desired_format), )
+
+        return rc
+
+
     def get_elasticsearch_autocomplete(self, request, **kwargs):
         
         bundle = self.build_bundle(request=request)
         print(bundle)
         pids = self._meta.authorization.project_ids(request)
-        print(pids)
-        #filters = {"project__id__in" : pids}
-        #prefix = request.GET.get("chembl_id__chembl_id__startswith", None).upper()
         prefix = request.GET.get("custom__field__startswith", None)
-        print(prefix)
         desired_format = self.determine_format(request)
         #send these project ids to the elasticsearch query?
 
         if(prefix):
-            print(prefix)
             #filters["search_custom_fields__kv_any"] = prefix
-            uox_ids = list(elasticsearch_client.get_custom_fields_autocomplete(pids, prefix))
+            uox_ids = list(elasticsearch_client.get_autocomplete(pids, prefix, 'custom_field_list.aggregation'))
             #bundle.data = ["%s|%s" % (uox, uox) for uox in uox_ids]
             bundle.data = [{"value" :uox, "label" : self.labelify_aggregate(uox)} for uox in uox_ids]
             serialized = json.dumps(bundle.data)
@@ -429,6 +445,8 @@ class CBHCompoundBatchResource(ModelResource):
             self.wrap_view('get_part_processed_multiple_batch'), name="api_get_part_processed_multiple_batch"),
         url(r"^(?P<resource_name>%s)/get_chembl_ids/$" % self._meta.resource_name,
             self.wrap_view('get_chembl_ids'), name="api_get_chembl_ids"),
+        url(r"^(?P<resource_name>%s)/get_elasticsearch_ids/$" % self._meta.resource_name,
+            self.wrap_view('get_elasticsearch_ids'), name="api_get_elasticsearch_ids"),
         url(r"^(?P<resource_name>%s)/get_elasticsearch_autocomplete/$" % self._meta.resource_name,
             self.wrap_view('get_elasticsearch_autocomplete'), name="api_get_elasticsearch_autocomplete"),
         url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,

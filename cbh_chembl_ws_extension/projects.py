@@ -46,7 +46,7 @@ class ProjectResource(ModelResource):
                                     "options": {
                                       "async": {
 
-                                                    "url": reverse("api_get_chembl_ids", 
+                                                    "url": reverse("api_get_elasticsearch_ids", 
                                                       kwargs={"resource_name": "cbh_compound_batches",
                                                       "api_name" : settings.WEBSERVICES_NAME}) ,
                                             }
