@@ -245,10 +245,10 @@ class CBHCompoundBatchResource(ModelResource):
     def get_chembl_ids(self, request, **kwargs):
         '''Get a single list of pinned fields for the project previously listed all custom fields in the DB but this was unwieldy'''
         bundle = self.build_bundle(request=request)
-
         pids = self._meta.authorization.project_ids(request)
         filters = {"project__id__in" : pids}
         prefix = request.GET.get("chembl_id__chembl_id__startswith", None).upper()
+        print(request.GET)
         desired_format = self.determine_format(request)
 
         if(prefix):
@@ -272,15 +272,16 @@ class CBHCompoundBatchResource(ModelResource):
         print(pids)
         #filters = {"project__id__in" : pids}
         #prefix = request.GET.get("chembl_id__chembl_id__startswith", None).upper()
-        prefix = request.GET.get("search_custom_fields__kv_any", None)
+        prefix = request.GET.get("custom__field__startswith", None)
         print(prefix)
         desired_format = self.determine_format(request)
         #send these project ids to the elasticsearch query?
 
         if(prefix):
             print(prefix)
-            filters["search_custom_fields__kv_any"] = prefix
+            #filters["search_custom_fields__kv_any"] = prefix
             uox_ids = list(elasticsearch_client.get_custom_fields_autocomplete(pids, prefix))
+            #bundle.data = ["%s|%s" % (uox, uox) for uox in uox_ids]
             bundle.data = [{"value" :uox, "label" : uox} for uox in uox_ids]
             serialized = json.dumps(bundle.data)
         else:

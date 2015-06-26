@@ -130,7 +130,7 @@ class ProjectResource(ModelResource):
                                     "htmlClass": "col-sm-12",
                                     "key": "search_custom_fields__kv_any",
                                     "options": {
-                                      "http_get": {
+                                      "async": {
                                           "url": reverse("api_get_elasticsearch_autocomplete", 
                                             kwargs={"resource_name": "cbh_compound_batches",
                                             "api_name" : settings.WEBSERVICES_NAME}) ,
