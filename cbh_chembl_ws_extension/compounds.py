@@ -607,11 +607,9 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def validate_multi_batch(self,multi_batch, bundle, request, batches):
-        excluded_columns = set(["new","duplicate","noStructure", "overlap","parseError"])
         batches_not_errors = [batch for batch in batches if batch]
-        if len(batches_not_errors) < len(batches):
-            excluded_columns.remove("parseError")
-        if (len(batches_not_errors) ==0):
+        
+        if (len(batches) ==0):
             raise BadRequest("No data to process")
         for b in batches_not_errors:
             b.properties["action"] = "New Batch"
@@ -665,14 +663,7 @@ class CBHCompoundBatchResource(ModelResource):
 
         already_in_db = MoleculeDictionary.objects.filter(structure_type="MOL", structure_key__in=already_found).values_list("structure_key", flat=True)
         already_in_db = set(already_in_db)
-        if(len(already_in_db)> 0):
-            excluded_columns.remove("overlap")
         
-
-        if(len(duplicates )> 0):
-            excluded_columns.remove("duplicate")
-        if(len(blinded_data) > 0):
-            excluded_columns.remove("noStructure")
 
         bundle.data["new"] = 0
         new_data = set([])
@@ -689,10 +680,7 @@ class CBHCompoundBatchResource(ModelResource):
                     duplicate_overlaps.add(batch.standard_inchi_key)
             else:
                 batch.warnings["new"] = True
-                try:
-                    excluded_columns.remove("new")
-                except:
-                    pass
+                
                 new_data.add(batch.standard_inchi_key)
                 if batch.standard_inchi_key in duplicates:
                     batch.warnings["duplicate"] = True
@@ -705,7 +693,7 @@ class CBHCompoundBatchResource(ModelResource):
 
         bundle.data["batchStats"] = {}
         bundle.data["batchStats"]["withStructure"] = len(batches_with_structures)
-        bundle.data["batchStats"]["parseErrors"] = len(batches) - len(batches_not_errors)
+        bundle.data["batchStats"]["parseErrors"] = len(batches) - len(batches_not_errors) + len([b for b in batches_not_errors if b.warnings.get("parseError", False) == "true"])
         bundle.data["batchStats"]["withoutStructure"] = len(blinded_data)
         bundle.data["batchStats"]["total"] = len(batches)
 
@@ -719,7 +707,6 @@ class CBHCompoundBatchResource(ModelResource):
 
 
         fifty_batches_for_first_page = self.set_cached_temporary_batches(batches, multi_batch.id, request)
-        bundle.data["excluded"] = ["warnings.%s" % field for field in excluded_columns]
 
         multi_batch.uploaded_data = bundle.data
         multi_batch.save()
@@ -897,14 +884,19 @@ class CBHCompoundBatchResource(ModelResource):
                 for index, row in row_iterator:
                     if structure_col:
                         smiles_str = row[structure_col]
-                        struc = Chem.MolFromSmiles(smiles_str)
-                        if struc:
-                            Compute2DCoords(struc)
-                            try:
-                                b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
-                            except Exception, e:
-                                errors.append({"index" : index+1,  "message" : str(e)})
-                                b =None
+                        try:
+                            struc = Chem.MolFromSmiles(smiles_str)
+                            if struc:
+                                Compute2DCoords(struc)
+                                try:
+                                    b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
+                                except Exception, e:
+                                    errors.append({"index" : index+1,  "message" : str(e)})
+                                    b =None
+                        except Exception, e:
+                            errors.append({"index" : index+1,  "message" : str(e)})
+                            b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])
+                            b.warnings["parseError"] = "true"
                     else:
                         b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])                    
 
