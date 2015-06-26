@@ -282,7 +282,7 @@ class CBHCompoundBatchResource(ModelResource):
             #filters["search_custom_fields__kv_any"] = prefix
             uox_ids = list(elasticsearch_client.get_custom_fields_autocomplete(pids, prefix))
             #bundle.data = ["%s|%s" % (uox, uox) for uox in uox_ids]
-            bundle.data = [{"value" :uox, "label" : uox} for uox in uox_ids]
+            bundle.data = [{"value" :uox, "label" : self.labelify_aggregate(uox)} for uox in uox_ids]
             serialized = json.dumps(bundle.data)
         else:
             serialized = "[]"
@@ -292,6 +292,13 @@ class CBHCompoundBatchResource(ModelResource):
         
         return rc
 
+    def labelify_aggregate(self, agg):
+        #remove the pipe and add square brackets to the custom field type
+        splits = agg.split("|")
+        label = agg
+        if(len(splits) > 1):
+            label = '[%s] %s' % (splits[0], splits[1])
+        return label
 
 
     def convert_mol_string(self, strn):
