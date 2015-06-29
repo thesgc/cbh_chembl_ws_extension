@@ -288,7 +288,6 @@ class CBHCompoundBatchResource(ModelResource):
     def get_elasticsearch_autocomplete(self, request, **kwargs):
         
         bundle = self.build_bundle(request=request)
-        print(bundle)
         pids = self._meta.authorization.project_ids(request)
         prefix = request.GET.get("custom__field__startswith", None)
         desired_format = self.determine_format(request)
@@ -315,6 +314,22 @@ class CBHCompoundBatchResource(ModelResource):
         if(len(splits) > 1):
             label = '[%s] %s' % (splits[0], splits[1])
         return label
+
+    def reindex_elasticsearch(self, request, **kwargs):
+        
+        #deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        
+        #deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        #bundle = self.build_bundle(data=dict_strip_unicode_keys(self._meta.queryset), request=request)
+        desired_format = self.determine_format(request)
+        batches = self.get_object_list(request)
+        batch_dicts = self.batches_to_es_ready(batches, request)
+        #reindex compound data
+
+        index_name='chemreg_chemical_index'
+        elasticsearch_client.create_temporary_index(batch_dicts, request, index_name)
+
+        return HttpResponse(content='[]', content_type=build_content_type(desired_format) )
 
 
     def convert_mol_string(self, strn):
@@ -447,6 +462,8 @@ class CBHCompoundBatchResource(ModelResource):
             self.wrap_view('get_chembl_ids'), name="api_get_chembl_ids"),
         url(r"^(?P<resource_name>%s)/get_elasticsearch_ids/$" % self._meta.resource_name,
             self.wrap_view('get_elasticsearch_ids'), name="api_get_elasticsearch_ids"),
+        url(r"^(?P<resource_name>%s)/reindex_elasticsearch/$" % self._meta.resource_name,
+            self.wrap_view('reindex_elasticsearch'), name="api_compounds_reindex_elasticsearch"),
         url(r"^(?P<resource_name>%s)/get_elasticsearch_autocomplete/$" % self._meta.resource_name,
             self.wrap_view('get_elasticsearch_autocomplete'), name="api_get_elasticsearch_autocomplete"),
         url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,
