@@ -7,12 +7,16 @@ try:
     ES_PREFIX = settings.ES_PREFIX
 except AttributeError:
     ES_PREFIX = "dev"
+ES_MAIN_INDEX_NAME = "chemreg_chemical_index"
 
 def get_temp_index_name(request, multi_batch_id):
     index_name = "%s__temp_multi_batch__%s__%s" % (ES_PREFIX, request.session.session_key, str(multi_batch_id))
     print(index_name)
     return index_name
     #return "%s__temp_multi_batch__%s__%s" % (ES_PREFIX, request.session.session_key, str(multi_batch_id))
+
+def get_main_index_name():
+    return "%s__%s" % (ES_PREFIX, ES_MAIN_INDEX_NAME)
 
 def delete_index(index_name):
     es = elasticsearch.Elasticsearch()
@@ -123,3 +127,13 @@ def get_project_index_name(project):
     index_name = "%s__project__%s" % (ES_PREFIX, str(project.id))
     print(index_name)
     return index_name
+
+def reindex_compound(dataset):
+    #reindex the specified compound in the specified index
+    index_name = self.get_main_index_name()
+    es = elasticsearch.Elasticsearch()
+    update_body = {
+      "doc" : dataset,
+      "detect_noop": true
+    }
+    return es.update(id=dataset['id'], index=index_name, body=update_body, refresh=True)

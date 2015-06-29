@@ -184,6 +184,9 @@ class CBHCompoundBatchResource(ModelResource):
         default_format = 'application/json'
         authentication = SessionAuthentication()
         paginator_class = Paginator
+        #elasticsearch config items
+        es_index_name = "chemreg_chemical_index"
+
     
 
     def apply_filters(self, request, applicable_filters):
@@ -326,10 +329,20 @@ class CBHCompoundBatchResource(ModelResource):
         batch_dicts = self.batches_to_es_ready(batches, request)
         #reindex compound data
 
-        index_name='chemreg_chemical_index'
+        index_name = elasticsearch_client.get_main_index_name()
         elasticsearch_client.create_temporary_index(batch_dicts, request, index_name)
 
         return HttpResponse(content='[]', content_type=build_content_type(desired_format) )
+
+    def reindex_compound(self, request, **kwargs):
+        #call this when we need to re-index a compound record which has had fields edited
+        desired_format = self.determine_format(request)
+        id = request.GET.get("current_batch", None)
+        dataset = self.get_object_list(request).filter(id=id)
+        batch_dicts = self.batches_to_es_ready(dataset, request)
+        es_reindex = elasticsearch_client.reindex_compound(dataset)
+
+        return HttpResponse(content=es_reindex, content_type=build_content_type(desired_format) )
 
 
     def convert_mol_string(self, strn):
@@ -465,6 +478,8 @@ class CBHCompoundBatchResource(ModelResource):
         url(r"^(?P<resource_name>%s)/reindex_elasticsearch/$" % self._meta.resource_name,
             self.wrap_view('reindex_elasticsearch'), name="api_compounds_reindex_elasticsearch"),
         url(r"^(?P<resource_name>%s)/get_elasticsearch_autocomplete/$" % self._meta.resource_name,
+            self.wrap_view('reindex_compound'), name="api_reindex_compound"),
+        url(r"^(?P<resource_name>%s)/reindex_compound/$" % self._meta.resource_name,
             self.wrap_view('get_elasticsearch_autocomplete'), name="api_get_elasticsearch_autocomplete"),
         url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,
                 self.wrap_view('post_validate'), name="api_validate_compound_batch"),
@@ -537,6 +552,9 @@ class CBHCompoundBatchResource(ModelResource):
         batch_dicts = self.batches_to_es_ready(to_be_saved, request)
         index_name=elasticsearch_client.get_project_index_name(mb.project)
         elasticsearch_client.create_temporary_index(batch_dicts, request, index_name)
+        #this needs to be the main elasticsearch compound index
+        #and should update any existing records in there? That might be in another method
+
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
 
@@ -618,7 +636,6 @@ class CBHCompoundBatchResource(ModelResource):
         #     processSmiles =  True
         mb.uploaded_data = bundle.data
         mb.save()
-      
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
