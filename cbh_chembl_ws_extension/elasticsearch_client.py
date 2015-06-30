@@ -31,24 +31,34 @@ def get(index_name, es_request_body, bundledata):
     bundledata["objects"] = data
     return bundledata
 
-def get_autocomplete(projects, search_term, field):
+def get_autocomplete(projects, search_term, field, custom_fields=None):
     es = elasticsearch.Elasticsearch()
     project_terms = []
-    search_regex = '.*%s.*' % (search_term)
+    search_regex = '.*%s.*|.*%s.*|.*%s.*|.*%s.*' % (search_term.title(), search_term, search_term.upper(), search_term.lower())
     field_to_search = '%s.raw' % (field)
     for proj in projects:
       project_name = '/%s/cbh_projects/%d' % (settings.WEBSERVICES_NAME, proj)
       project_terms.append( {'term': { 'project.raw': project_name } } )
 
+    must_list = [{'bool': {
+                    'should': project_terms,
+                },}]
+    if search_term and custom_fields:
+        must_list.append({'bool': {
+                    'should': [
+                         {'prefix': { 'custom_field_list.searchable_name.raw':  search_term.lower() } },
+                          {'prefix': { 'custom_field_list.value.raw':  search_term.lower() } }
+                    ],
+                },})
     body = {
       'query':{
-          'bool': {
-              'should': project_terms
-          } 
+          'bool':{
+              'must': must_list
+          }
       },
       'aggs': {
         'autocomplete': {
-          'terms': { 'field': field_to_search, 'size':1000, 'include': search_regex }
+          'terms': { 'field': field_to_search, 'size':100, 'include': search_regex }
         }
       },
       'size': 0,
@@ -64,7 +74,7 @@ def create_temporary_index(batches, request, index_name):
     es = elasticsearch.Elasticsearch()
     t = time.time()
     store_type = "memory"
-    if len(batches) > 100000:
+    if len(batches) > 100:
         store_type = "niofs"
     create_body = {
         "settings": {
@@ -128,12 +138,12 @@ def get_project_index_name(project):
     print(index_name)
     return index_name
 
-def reindex_compound(dataset):
+def reindex_compound(dataset, id):
     #reindex the specified compound in the specified index
-    index_name = self.get_main_index_name()
+    index_name = get_main_index_name()
     es = elasticsearch.Elasticsearch()
     update_body = {
       "doc" : dataset,
-      "detect_noop": true
+      "detect_noop": "true"
     }
-    return es.update(id=dataset['id'], index=index_name, body=update_body, refresh=True)
+    return es.index(id=id, doc_type="batches" ,index=index_name, body=update_body, refresh=True)

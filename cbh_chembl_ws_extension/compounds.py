@@ -298,7 +298,7 @@ class CBHCompoundBatchResource(ModelResource):
 
         if(prefix):
             #filters["search_custom_fields__kv_any"] = prefix
-            uox_ids = list(elasticsearch_client.get_autocomplete(pids, prefix, 'custom_field_list.aggregation'))
+            uox_ids = list(elasticsearch_client.get_autocomplete(pids, prefix, 'custom_field_list.aggregation', custom_fields=True))
             #bundle.data = ["%s|%s" % (uox, uox) for uox in uox_ids]
             bundle.data = [{"value" :uox, "label" : self.labelify_aggregate(uox)} for uox in uox_ids]
             serialized = json.dumps(bundle.data)
@@ -315,18 +315,15 @@ class CBHCompoundBatchResource(ModelResource):
         splits = agg.split("|")
         label = agg
         if(len(splits) > 1):
-            label = '[%s] %s' % (splits[0], splits[1])
+            label = '%s: %s' % (splits[0], splits[1])
         return label
 
     def reindex_elasticsearch(self, request, **kwargs):
         
-        #deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
-        
-        #deserialized = self.alter_deserialized_detail_data(request, deserialized)
-        #bundle = self.build_bundle(data=dict_strip_unicode_keys(self._meta.queryset), request=request)
         desired_format = self.determine_format(request)
         batches = self.get_object_list(request)
-        batch_dicts = self.batches_to_es_ready(batches, request)
+        #we only want to store certain fields in the search index
+        batch_dicts = self.batches_to_es_ready(batches, request, non_chem_data_only=True)
         #reindex compound data
 
         index_name = elasticsearch_client.get_main_index_name()
@@ -339,8 +336,8 @@ class CBHCompoundBatchResource(ModelResource):
         desired_format = self.determine_format(request)
         id = request.GET.get("current_batch", None)
         dataset = self.get_object_list(request).filter(id=id)
-        batch_dicts = self.batches_to_es_ready(dataset, request)
-        es_reindex = elasticsearch_client.reindex_compound(dataset)
+        batch_dicts = self.batches_to_es_ready(dataset, request, non_chem_data_only=True)
+        es_reindex = elasticsearch_client.reindex_compound(batch_dicts, id)
 
         return HttpResponse(content=es_reindex, content_type=build_content_type(desired_format) )
 
@@ -477,9 +474,9 @@ class CBHCompoundBatchResource(ModelResource):
             self.wrap_view('get_elasticsearch_ids'), name="api_get_elasticsearch_ids"),
         url(r"^(?P<resource_name>%s)/reindex_elasticsearch/$" % self._meta.resource_name,
             self.wrap_view('reindex_elasticsearch'), name="api_compounds_reindex_elasticsearch"),
-        url(r"^(?P<resource_name>%s)/get_elasticsearch_autocomplete/$" % self._meta.resource_name,
-            self.wrap_view('reindex_compound'), name="api_reindex_compound"),
         url(r"^(?P<resource_name>%s)/reindex_compound/$" % self._meta.resource_name,
+            self.wrap_view('reindex_compound'), name="api_reindex_compound"),
+        url(r"^(?P<resource_name>%s)/get_elasticsearch_autocomplete/$" % self._meta.resource_name,
             self.wrap_view('get_elasticsearch_autocomplete'), name="api_get_elasticsearch_autocomplete"),
         url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,
                 self.wrap_view('post_validate'), name="api_validate_compound_batch"),
@@ -1091,7 +1088,7 @@ class CBHCompoundBatchResource(ModelResource):
     
         return bundle
 
-    def batches_to_es_ready(self, batches, request):
+    def batches_to_es_ready(self, batches, request, non_chem_data_only=None):
         batch_dicts = []
         index = 1
         es_serializer = CBHCompoundBatchElasticSearchSerializer()
@@ -1101,7 +1098,10 @@ class CBHCompoundBatchResource(ModelResource):
                     batch.id = index
                 bun = self.build_bundle(obj=batch, request=request)
                 bun = self.full_dehydrate(bun)
-                ready = es_serializer.to_es_ready_data(bun.data, options={"underscorize": True})
+                if non_chem_data_only:
+                    ready = es_serializer.to_es_ready_non_chemical_data(bun.data, options={"underscorize": True})
+                else:
+                    ready = es_serializer.to_es_ready(bun.data)
                 batch_dicts.append(ready)
             else:
                 #preserve the line number of the batch that could not be processed

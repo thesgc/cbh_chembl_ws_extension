@@ -54,6 +54,7 @@ class ProjectResource(ModelResource):
                                     "placeholder" : "Search multiple IDs",
                                     "description": "Add your ids and click on them as they appear in the drop-down.",
                                     "options": {
+                                      "refreshDelay": 0,
                                       "async": {
 
                                                     "url": reverse("api_get_elasticsearch_ids", 
@@ -140,6 +141,7 @@ class ProjectResource(ModelResource):
                                     "htmlClass": "col-sm-12",
                                     "key": "search_custom_fields__kv_any",
                                     "options": {
+                                    "refreshDelay": 0,
                                       "async": {
                                           "url": reverse("api_get_elasticsearch_autocomplete", 
                                             kwargs={"resource_name": "cbh_compound_batches",
