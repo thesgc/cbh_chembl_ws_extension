@@ -1101,7 +1101,7 @@ class CBHCompoundBatchResource(ModelResource):
                 if non_chem_data_only:
                     ready = es_serializer.to_es_ready_non_chemical_data(bun.data, options={"underscorize": True})
                 else:
-                    ready = es_serializer.to_es_ready(bun.data)
+                    ready = es_serializer.to_es_ready_data(bun.data)
                 batch_dicts.append(ready)
             else:
                 #preserve the line number of the batch that could not be processed
