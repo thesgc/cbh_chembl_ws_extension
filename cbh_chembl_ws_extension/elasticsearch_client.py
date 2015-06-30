@@ -112,6 +112,8 @@ def create_temporary_index(batches, request, index_name):
         }
         }
     }
+    # if(index_name == get_main_index_name()):
+    #     create_body['mappings']['_source'] = { 'enabled':False }
     #index_name = get_temp_index_name(request, multi_batch_id)
     
     es.indices.create(

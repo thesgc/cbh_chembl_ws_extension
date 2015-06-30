@@ -5,6 +5,7 @@ from cbh_chembl_model_extension.models import Project, PinnedCustomField, Custom
 
 from django.contrib.admin import ModelAdmin
 from cbh_chembl_ws_extension.projects import ProjectResource
+from cbh_chembl_ws_extension.compounds import CBHCompoundBatchResource
 
 from django.forms.widgets import HiddenInput, TextInput
 from django.db import models
@@ -119,10 +120,19 @@ class ProjectAdmin(ModelAdmin):
     ordering = ('-created',)
     date_hierarchy = 'created'
     exclude= ["created_by"]
+    actions = ['reindex']
 
     def save_model(self, request, obj, form, change): 
         obj.created_by = request.user
         obj.save()
+
+    def reindex(self, request, queryset):
+        print('getting here')
+        cbr = CBHCompoundBatchResource()
+        cbr.reindex_elasticsearch(request)
+        self.message_user(request, "Successfully reindexed ChemReg compounds")
+    reindex.short_description = "Reindex all compounds"
+
 
 
 admin.site.register(CustomFieldConfig, CustomFieldConfigAdmin)
