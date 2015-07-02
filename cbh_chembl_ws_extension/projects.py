@@ -50,6 +50,8 @@ class ProjectResource(ModelResource):
                       {
                           "htmlClass": "col-sm-12",
                           "key": "search_custom_fields__kv_any",
+                          "disableSuccessState": True,
+                          "feedback": False,
                           "options": {
                           "refreshDelay": 0,
                             "async": {
@@ -81,6 +83,7 @@ class ProjectResource(ModelResource):
                                     "title" : "%s ID" % settings.ID_PREFIX,
                                     "htmlClass": "col-xs-12",
                                     "placeholder" : "Search multiple IDs",
+                                    "feedback": False,
                                     "description": "Add your ids and click on them as they appear in the drop-down.",
                                     "options": {
                                       "refreshDelay": 0,
@@ -110,6 +113,7 @@ class ProjectResource(ModelResource):
                                   "minDate": "2004-01-01",
                                   "htmlClass": "col-sm-6",
                                   "disableSuccessState": True,
+                                  "feedback": False,
                                   'pickadate': {
                                     'selectYears': True, 
                                     'selectMonths': True,
@@ -121,6 +125,7 @@ class ProjectResource(ModelResource):
                                   "minDate": "2004-01-01",
                                   "htmlClass": "col-sm-6",
                                   "disableSuccessState": True,
+                                  "feedback": False,
                                   'pickadate': {
                                     'selectYears': True, 
                                     'selectMonths': True,
@@ -129,6 +134,7 @@ class ProjectResource(ModelResource):
                                 {
                                     "htmlClass": "col-sm-6",
                                     "disableSuccessState": True,
+                                    "feedback": False,
                                     "key": "functional_group",
 
                                 },
@@ -149,6 +155,7 @@ class ProjectResource(ModelResource):
                                   "htmlClass": "col-sm-6",
                                   "type": "radiobuttons",
                                   "disableSuccessState": True,
+                                  "feedback": False,
                                   "titleMap": [
                                     {
                                       "value": "with_substructure",
@@ -164,11 +171,14 @@ class ProjectResource(ModelResource):
                                   "key": "multiple_batch_id",
                                   "htmlClass": "col-xs-6",
                                   "disableSuccessState": True,
+                                  "feedback": False,
 
                                 },
                                 {
                                     "htmlClass": "col-sm-12",
                                     "key": "search_custom_fields__kv_any",
+                                    "disableSuccessState": True,
+                                    "feedback": False,
                                     "options": {
                                     "refreshDelay": 0,
                                       "async": {
