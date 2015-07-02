@@ -46,7 +46,36 @@ class ProjectResource(ModelResource):
 
     def get_searchform(self, bundle,searchfield_items ):
         '''Note that the form here is expected to have the UOx id as the first item'''
-        return { "form": [     
+        return {  "cf_form": [
+                      {
+                          "htmlClass": "col-sm-12",
+                          "key": "search_custom_fields__kv_any",
+                          "options": {
+                          "refreshDelay": 0,
+                            "async": {
+                                "url": reverse("api_get_elasticsearch_autocomplete", 
+                                  kwargs={"resource_name": "cbh_compound_batches",
+                                  "api_name" : settings.WEBSERVICES_NAME}) ,
+                              }
+                          }
+                      },
+                  ],
+                  "cf_schema": {
+                    "required": [
+                                ],
+                                "type": "object",
+                                "properties": {
+                                               "search_custom_fields__kv_any": { 
+                                                  "type": "array", 
+                                                  "format" : "uiselect",
+                                                  "items" :[],
+                                                  "placeholder": "Tagged fields",
+                                                  "title": "Any of the following custom field values:",
+                                                }
+                                }
+                  },
+
+                  "form": [     
                                 
                                 {"key": "related_molregno__chembl__chembl_id__in",
                                     "title" : "%s ID" % settings.ID_PREFIX,

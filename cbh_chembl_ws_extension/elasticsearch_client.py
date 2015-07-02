@@ -31,9 +31,10 @@ def get(index_name, es_request_body, bundledata):
     bundledata["objects"] = data
     return bundledata
 
-def get_autocomplete(projects, search_term, field, custom_fields=None):
+def get_autocomplete(projects, search_term, field, custom_fields=None, single_field=None):
     es = elasticsearch.Elasticsearch()
     project_terms = []
+    print(single_field)
     search_regex = '.*%s.*|.*%s.*|.*%s.*|.*%s.*' % (search_term.title(), search_term, search_term.upper(), search_term.lower())
     field_to_search = '%s.raw' % (field)
     for proj in projects:
@@ -50,6 +51,14 @@ def get_autocomplete(projects, search_term, field, custom_fields=None):
                           {'prefix': { 'custom_field_list.value.raw':  search_term.lower() } }
                     ],
                 },})
+    if (custom_fields and single_field):
+        #create a bool must term which is the custom field identifier
+        #cust_str = 'custom_fields.value.raw' % (single_field)
+        must_list.append({
+                              'bool': {
+                                  'must': {'prefix': { 'custom_field_list.name.raw':  single_field } }
+                              }
+                            })
     body = {
       'query':{
           'bool':{

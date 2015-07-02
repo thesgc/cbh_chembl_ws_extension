@@ -293,12 +293,16 @@ class CBHCompoundBatchResource(ModelResource):
         bundle = self.build_bundle(request=request)
         pids = self._meta.authorization.project_ids(request)
         prefix = request.GET.get("custom__field__startswith", None)
+        custom_field = request.GET.get("custom_field", None)
         desired_format = self.determine_format(request)
         #send these project ids to the elasticsearch query?
-
         if(prefix):
             #filters["search_custom_fields__kv_any"] = prefix
-            uox_ids = list(elasticsearch_client.get_autocomplete(pids, prefix, 'custom_field_list.aggregation', custom_fields=True))
+            uox_ids = list(elasticsearch_client.get_autocomplete(pids, 
+                                                                 prefix, 
+                                                                 'custom_field_list.aggregation', 
+                                                                 custom_fields=True, 
+                                                                 single_field=custom_field))
             #bundle.data = ["%s|%s" % (uox, uox) for uox in uox_ids]
             bundle.data = [{"value" :uox, "label" : self.labelify_aggregate(uox)} for uox in uox_ids]
             serialized = json.dumps(bundle.data)
