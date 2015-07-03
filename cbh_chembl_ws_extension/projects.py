@@ -1414,6 +1414,9 @@ class ProjectResource(ModelResource):
         userbundle = userres.build_bundle(obj=request.user, request=request)
         userbundle = userres.full_dehydrate(userbundle)
         bundle['user'] = userbundle.data
+        editor_projects = self._meta.authorization.editor_projects(request)
+        for bun in bundle["objects"]:
+            bun.data["editor"] = bun.obj.id in editor_projects
 
         if request.GET.get("schemaform", None):
             searchfields = set([])
@@ -1425,6 +1428,7 @@ class ProjectResource(ModelResource):
                     searchfield_items=searchfield_items, 
                     searchfields=searchfields,)
                 bun.data["schemaform"] = schemaform
+                bun.data["editor"] = bun.obj.id in editor_projects
 
             bundle["searchform"] = self.get_searchform(bundle,searchfield_items)
         return bundle
