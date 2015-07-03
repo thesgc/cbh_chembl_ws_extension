@@ -184,6 +184,9 @@ class CBHCompoundBatchResource(ModelResource):
         default_format = 'application/json'
         authentication = SessionAuthentication()
         paginator_class = Paginator
+        #elasticsearch config items
+        es_index_name = "chemreg_chemical_index"
+
     
 
     def apply_filters(self, request, applicable_filters):
@@ -248,7 +251,6 @@ class CBHCompoundBatchResource(ModelResource):
         pids = self._meta.authorization.project_ids(request)
         filters = {"project__id__in" : pids}
         prefix = request.GET.get("chembl_id__chembl_id__startswith", None).upper()
-        print(request.GET)
         desired_format = self.determine_format(request)
 
         if(prefix):
@@ -264,23 +266,43 @@ class CBHCompoundBatchResource(ModelResource):
 
         return rc
 
+    def get_elasticsearch_ids(self, request, **kwargs):
+        bundle = self.build_bundle(request=request)
+        pids = self._meta.authorization.project_ids(request)
+        filters = {"project__id__in" : pids}
+        prefix = request.GET.get("chembl_id__chembl_id__startswith", None).upper()
+        desired_format = self.determine_format(request)
+
+        if(prefix):
+            #filters["chembl_id__chembl_id__startswith"] = prefix
+            #uox_ids = list(MoleculeDictionary.objects.filter(**filters).values_list("chembl_id", flat=True)[0:20])
+            uox_ids = list(elasticsearch_client.get_autocomplete(pids, prefix, 'chemblId'))
+            bundle.data = [{"value" :uox, "label" : uox} for uox in uox_ids]
+            serialized = json.dumps(bundle.data)
+        else:
+            serialized = "[]"
+
+       
+        rc = HttpResponse(content=serialized, content_type=build_content_type(desired_format), )
+
+        return rc
+
+
     def get_elasticsearch_autocomplete(self, request, **kwargs):
         
         bundle = self.build_bundle(request=request)
-        print(bundle)
         pids = self._meta.authorization.project_ids(request)
-        print(pids)
-        #filters = {"project__id__in" : pids}
-        #prefix = request.GET.get("chembl_id__chembl_id__startswith", None).upper()
         prefix = request.GET.get("custom__field__startswith", None)
-        print(prefix)
+        custom_field = request.GET.get("custom_field", None)
         desired_format = self.determine_format(request)
         #send these project ids to the elasticsearch query?
-
         if(prefix):
-            print(prefix)
             #filters["search_custom_fields__kv_any"] = prefix
-            uox_ids = list(elasticsearch_client.get_custom_fields_autocomplete(pids, prefix))
+            uox_ids = list(elasticsearch_client.get_autocomplete(pids, 
+                                                                 prefix, 
+                                                                 'custom_field_list.aggregation', 
+                                                                 custom_fields=True, 
+                                                                 single_field=custom_field))
             #bundle.data = ["%s|%s" % (uox, uox) for uox in uox_ids]
             bundle.data = [{"value" :uox, "label" : self.labelify_aggregate(uox)} for uox in uox_ids]
             serialized = json.dumps(bundle.data)
@@ -297,8 +319,31 @@ class CBHCompoundBatchResource(ModelResource):
         splits = agg.split("|")
         label = agg
         if(len(splits) > 1):
-            label = '[%s] %s' % (splits[0], splits[1])
+            label = '%s: %s' % (splits[0], splits[1])
         return label
+
+    def reindex_elasticsearch(self, request, **kwargs):
+        
+        desired_format = self.determine_format(request)
+        batches = self.get_object_list(request)
+        #we only want to store certain fields in the search index
+        batch_dicts = self.batches_to_es_ready(batches, request, non_chem_data_only=True)
+        #reindex compound data
+        print(desired_format)
+        index_name = elasticsearch_client.get_main_index_name()
+        es_reindex = elasticsearch_client.create_temporary_index(batch_dicts, request, index_name)
+
+        return HttpResponse(content=es_reindex, content_type=build_content_type(desired_format) )
+
+    def reindex_compound(self, request, **kwargs):
+        #call this when we need to re-index a compound record which has had fields edited
+        desired_format = self.determine_format(request)
+        id = request.GET.get("current_batch", None)
+        dataset = self.get_object_list(request).filter(id=id)
+        batch_dicts = self.batches_to_es_ready(dataset, request, non_chem_data_only=True)
+        es_reindex = elasticsearch_client.reindex_compound(batch_dicts, id)
+
+        return HttpResponse(content=es_reindex, content_type=build_content_type(desired_format) )
 
 
     def convert_mol_string(self, strn):
@@ -429,6 +474,12 @@ class CBHCompoundBatchResource(ModelResource):
             self.wrap_view('get_part_processed_multiple_batch'), name="api_get_part_processed_multiple_batch"),
         url(r"^(?P<resource_name>%s)/get_chembl_ids/$" % self._meta.resource_name,
             self.wrap_view('get_chembl_ids'), name="api_get_chembl_ids"),
+        url(r"^(?P<resource_name>%s)/get_elasticsearch_ids/$" % self._meta.resource_name,
+            self.wrap_view('get_elasticsearch_ids'), name="api_get_elasticsearch_ids"),
+        # url(r"^(?P<resource_name>%s)/reindex_elasticsearch/$" % self._meta.resource_name,
+        #     self.wrap_view('reindex_elasticsearch'), name="api_compounds_reindex_elasticsearch"),
+        url(r"^(?P<resource_name>%s)/reindex_compound/$" % self._meta.resource_name,
+            self.wrap_view('reindex_compound'), name="api_reindex_compound"),
         url(r"^(?P<resource_name>%s)/get_elasticsearch_autocomplete/$" % self._meta.resource_name,
             self.wrap_view('get_elasticsearch_autocomplete'), name="api_get_elasticsearch_autocomplete"),
         url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,
@@ -502,6 +553,9 @@ class CBHCompoundBatchResource(ModelResource):
         batch_dicts = self.batches_to_es_ready(to_be_saved, request)
         index_name=elasticsearch_client.get_project_index_name(mb.project)
         elasticsearch_client.create_temporary_index(batch_dicts, request, index_name)
+        #this needs to be the main elasticsearch compound index
+        #and should update any existing records in there? That might be in another method
+
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
 
@@ -583,7 +637,6 @@ class CBHCompoundBatchResource(ModelResource):
         #     processSmiles =  True
         mb.uploaded_data = bundle.data
         mb.save()
-      
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
@@ -1039,7 +1092,7 @@ class CBHCompoundBatchResource(ModelResource):
     
         return bundle
 
-    def batches_to_es_ready(self, batches, request):
+    def batches_to_es_ready(self, batches, request, non_chem_data_only=None):
         batch_dicts = []
         index = 1
         es_serializer = CBHCompoundBatchElasticSearchSerializer()
@@ -1049,7 +1102,10 @@ class CBHCompoundBatchResource(ModelResource):
                     batch.id = index
                 bun = self.build_bundle(obj=batch, request=request)
                 bun = self.full_dehydrate(bun)
-                ready = es_serializer.to_es_ready_data(bun.data, options={"underscorize": True})
+                if non_chem_data_only:
+                    ready = es_serializer.to_es_ready_non_chemical_data(bun.data, options={"underscorize": True})
+                else:
+                    ready = es_serializer.to_es_ready_data(bun.data)
                 batch_dicts.append(ready)
             else:
                 #preserve the line number of the batch that could not be processed

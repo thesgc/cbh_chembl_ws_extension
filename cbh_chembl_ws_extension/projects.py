@@ -1,5 +1,6 @@
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from django.conf import settings
+from django.conf.urls import *
 from django.http import HttpResponse
 
 from tastypie.resources import ModelResource, Resource
@@ -15,7 +16,10 @@ from tastypie.paginator import Paginator
 import json
 import copy
 import time
+import urllib
 from django.core.urlresolvers import reverse
+
+import elasticsearch_client
 
 class ProjectResource(ModelResource):
 
@@ -34,19 +38,58 @@ class ProjectResource(ModelResource):
             "project_key": ALL_WITH_RELATIONS,
         }
 
+    def prepend_urls(self):
+        return [
+        url(r"^(?P<resource_name>%s)/reindex_elasticsearch/$" % self._meta.resource_name,
+                self.wrap_view('reindex_elasticsearch'), name="api_projects_reindex_elasticsearch"),
+        ]
+
     def get_searchform(self, bundle,searchfield_items ):
         '''Note that the form here is expected to have the UOx id as the first item'''
-        return { "form": [     
+        return {  "cf_form": [
+                      {
+                          "htmlClass": "col-sm-12",
+                          "key": "search_custom_fields__kv_any",
+                          "disableSuccessState": True,
+                          "feedback": False,
+                          "options": {
+                          "refreshDelay": 0,
+                            "async": {
+                                "url": reverse("api_get_elasticsearch_autocomplete", 
+                                  kwargs={"resource_name": "cbh_compound_batches",
+                                  "api_name" : settings.WEBSERVICES_NAME}) ,
+                              }
+                          }
+                      },
+                  ],
+                  "cf_schema": {
+                    "required": [
+                                ],
+                                "type": "object",
+                                "properties": {
+                                               "search_custom_fields__kv_any": { 
+                                                  "type": "array", 
+                                                  "format" : "uiselect",
+                                                  "items" :[],
+                                                  "placeholder": "Tagged fields",
+                                                  "title": "Any of the following custom field values:",
+                                                }
+                                }
+                  },
+
+                  "form": [     
                                 
                                 {"key": "related_molregno__chembl__chembl_id__in",
                                     "title" : "%s ID" % settings.ID_PREFIX,
                                     "htmlClass": "col-xs-12",
                                     "placeholder" : "Search multiple IDs",
+                                    "feedback": False,
                                     "description": "Add your ids and click on them as they appear in the drop-down.",
                                     "options": {
+                                      "refreshDelay": 0,
                                       "async": {
 
-                                                    "url": reverse("api_get_chembl_ids", 
+                                                    "url": reverse("api_get_elasticsearch_ids", 
                                                       kwargs={"resource_name": "cbh_compound_batches",
                                                       "api_name" : settings.WEBSERVICES_NAME}) ,
                                             }
@@ -70,6 +113,7 @@ class ProjectResource(ModelResource):
                                   "minDate": "2004-01-01",
                                   "htmlClass": "col-sm-6",
                                   "disableSuccessState": True,
+                                  "feedback": False,
                                   'pickadate': {
                                     'selectYears': True, 
                                     'selectMonths': True,
@@ -81,6 +125,7 @@ class ProjectResource(ModelResource):
                                   "minDate": "2004-01-01",
                                   "htmlClass": "col-sm-6",
                                   "disableSuccessState": True,
+                                  "feedback": False,
                                   'pickadate': {
                                     'selectYears': True, 
                                     'selectMonths': True,
@@ -89,6 +134,7 @@ class ProjectResource(ModelResource):
                                 {
                                     "htmlClass": "col-sm-6",
                                     "disableSuccessState": True,
+                                    "feedback": False,
                                     "key": "functional_group",
 
                                 },
@@ -109,6 +155,7 @@ class ProjectResource(ModelResource):
                                   "htmlClass": "col-sm-6",
                                   "type": "radiobuttons",
                                   "disableSuccessState": True,
+                                  "feedback": False,
                                   "titleMap": [
                                     {
                                       "value": "with_substructure",
@@ -124,12 +171,16 @@ class ProjectResource(ModelResource):
                                   "key": "multiple_batch_id",
                                   "htmlClass": "col-xs-6",
                                   "disableSuccessState": True,
+                                  "feedback": False,
 
                                 },
                                 {
                                     "htmlClass": "col-sm-12",
                                     "key": "search_custom_fields__kv_any",
+                                    "disableSuccessState": True,
+                                    "feedback": False,
                                     "options": {
+                                    "refreshDelay": 0,
                                       "async": {
                                           "url": reverse("api_get_elasticsearch_autocomplete", 
                                             kwargs={"resource_name": "cbh_compound_batches",
@@ -1512,6 +1563,18 @@ class ProjectResource(ModelResource):
                 if stuff:
                     form[item] = stuff
         return (obj.name, data, obj.required, form, searchitems)
+
+    def reindex_elasticsearch(self, request, **kwargs):
+        bundle = self.build_bundle(request=request)
+        #reindex compound data
+        #batches = CBHCompoundBatch.objects.all()
+        es_serializer = CBHCompoundBatchElasticSearchSerializer()
+        es_ready_updates = [es_serializer.to_es_ready_data(proj, 
+            options={"underscorize": True}) for proj in self._meta.queryset]
+        index_name='chemreg_projects_index'
+        elasticsearch_client.create_temporary_index(es_ready_updates, request, index_name)
+
+        return HttpResponse(content='[]', content_type=build_content_type(desired_format) )
 
 
 
