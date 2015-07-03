@@ -48,7 +48,7 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
         must_list.append({'bool': {
                     'should': [
                          {'prefix': { 'custom_field_list.searchable_name.raw':  search_term.lower() } },
-                          {'prefix': { 'custom_field_list.value.raw':  search_term.lower() } }
+                          {'prefix': { 'custom_field_list.value':  search_term.lower() } }
                     ],
                 },})
     if (custom_fields and single_field):

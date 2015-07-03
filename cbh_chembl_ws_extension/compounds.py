@@ -304,7 +304,7 @@ class CBHCompoundBatchResource(ModelResource):
                                                                  custom_fields=True, 
                                                                  single_field=custom_field))
             #bundle.data = ["%s|%s" % (uox, uox) for uox in uox_ids]
-            bundle.data = [{"value" :uox, "label" : self.labelify_aggregate(uox)} for uox in uox_ids]
+            bundle.data = [{"value" :uox, "label" : self.labelify_aggregate(uox, single_field=custom_field)} for uox in uox_ids]
             serialized = json.dumps(bundle.data)
         else:
             serialized = "[]"
@@ -314,12 +314,15 @@ class CBHCompoundBatchResource(ModelResource):
         
         return rc
 
-    def labelify_aggregate(self, agg):
+    def labelify_aggregate(self, agg, single_field=None):
         #remove the pipe and add square brackets to the custom field type
         splits = agg.split("|")
         label = agg
-        if(len(splits) > 1):
+        #if this is for a single field or custom field, we don't need to show the facet name
+        if(len(splits) > 1 and single_field==None):
             label = '%s: %s' % (splits[0], splits[1])
+        elif(len(splits) > 1):
+            label = splits[1]
         return label
 
     def reindex_elasticsearch(self, request, **kwargs):
