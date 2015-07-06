@@ -202,9 +202,10 @@ class XLSSerializer(Serializer):
         df = df.ix[:, cols]
         widths = []
         for col in df.columns.tolist():
+            col = str(col)
             titlewidth = len(col)
             try:
-                w = df[item].astype(str).str.len().max()
+                w = df[col].astype(str).str.len().max()
                 if w > titlewidth:
                     widths.append(w + 4)
                 else:
