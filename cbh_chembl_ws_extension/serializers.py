@@ -192,8 +192,11 @@ class XLSSerializer(Serializer):
         cols = df.columns.tolist()
         #now for the list we have in the order we have it, move the columns by name
         #this way you end up with your core fields at the start and custom fields at the end.
+        widths = []
         for idx, item in enumerate(ordered_fields):
             cols.insert(idx, cols.pop(cols.index(item)))
+            widths.append(df[item].str.len().max())
+
         #reindex the dataframe
         df = df.ix[:, cols]
 
@@ -207,8 +210,12 @@ class XLSSerializer(Serializer):
         #make the UOx ID and SMILES columns bigger
         #BUG - can't set column format until pandas 0.16
         #https://github.com/pydata/pandas/issues/9167
-        worksheet.set_column(0,0, 20)
-        worksheet.set_column(1,1, 40)
+        for index, width in enumerate(widths):
+            if width > 100:
+                width = 100
+            elif width < 30:
+                width = 30
+            worksheet.set_column(index,index, width + 1)
         writer.save()
         
         return output.getvalue()
