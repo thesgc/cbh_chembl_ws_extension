@@ -721,7 +721,9 @@ class CBHCompoundBatchResource(ModelResource):
                     batch.warnings["duplicate"] = True
                     duplicate_new.add(batch.standard_inchi_key)
             
-
+        for batch in batches_with_structures:
+            if batch.warnings.get("noStructure") == True:
+                del batch.warnings["noStructure"]
         for batch in blinded_data:
             batch.warnings["noStructure"] = True
 
@@ -838,6 +840,7 @@ class CBHCompoundBatchResource(ModelResource):
             if correct_file.extension == '.cdxml':
                 #Look for a stoichiometry table in the reaction file
                 rxn = chemdraw_reaction.parse( str(correct_file.file.name))
+                print rxn
                 headers = ["%Completion", 
                             "%Yield", 
                             "Expected Moles", 
@@ -874,8 +877,7 @@ class CBHCompoundBatchResource(ModelResource):
                             if b:
                                 if rxn:
                                     #Here we set the uncurated fields equal to the reaction data extracted from Chemdraw
-                                    b.uncurated_fields = rxn[index]
-                                    print b.uncurated_fields
+                                    b.uncurated_fields = rxn.get(pybelmol.title, {})
                                 batches.append(b)
                             else:
                                 errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Unable to produce inchi from this molecule"})
@@ -939,6 +941,7 @@ class CBHCompoundBatchResource(ModelResource):
                                 Compute2DCoords(struc)
                                 try:
                                     b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
+                                    b.blinded_batch_id = None
                                 except Exception, e:
                                     errors.append({"index" : index+1,  "message" : str(e)})
                                     b =None
@@ -968,15 +971,16 @@ class CBHCompoundBatchResource(ModelResource):
                 b.created_by = bundle.request.user.username
            
         bundle.data["fileerrors"] = errors
-        bundle.data["headers"] = [{"name": header, 
-                                    "copyTo": "SMILES for chemical structures" if header == structure_col  else "",
-                                    "fieldErrors" : { 
-                                        "stringdate": header in fielderrors["stringdate"],
-                                        "integer": header in fielderrors["integer"],
-                                        "number": header in fielderrors["number"]
-                                    }
-                                    }
-                                    for header in headers]
+        if not bundle.data.get("headers", None):
+            bundle.data["headers"] = [{"name": header, 
+                                        "copyTo": "SMILES for chemical structures" if header == structure_col  else "",
+                                        "fieldErrors" : { 
+                                            "stringdate": header in fielderrors["stringdate"],
+                                            "integer": header in fielderrors["integer"],
+                                            "number": header in fielderrors["number"]
+                                        }
+                                        }
+                                        for header in headers]
 
         # bundle.data["fieldErrors"] = {key: list(value) for key, value in fielderrors.items()}
 

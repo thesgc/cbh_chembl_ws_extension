@@ -30,6 +30,10 @@ def compounds(x, dataKeys,  product_ids, reagent_ids, reactant_ids):
 					dicttoyield[k] = str(float(v.strip()) *100)
 			yield dicttoyield
 
+ # ReactionStepReactants="5"
+ # ReactionStepProducts="23"
+ # ReactionStepArrows="14"
+ # ReactionStepObjectsAboveArrow="17"
 
 def parse(xml_path):
 	with open(xml_path) as xfile:
@@ -49,9 +53,11 @@ def parse(xml_path):
 		if products:
 			product_ids =products.split(' ')
 		keys = get_keys(x)
+		
 		data =  [p for p in compounds(x,keys,  product_ids, reagent_ids, reactant_ids)]
-		print data
-		return data
+		order_of_data = reactant_ids + reagent_ids + product_ids
+
+		return {str(atomid) : data[index] for  index, atomid  in enumerate(order_of_data)}
 	print('not a reaction')
 	return []
 
