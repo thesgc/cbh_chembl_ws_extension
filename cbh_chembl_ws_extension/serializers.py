@@ -218,7 +218,7 @@ class XLSSerializer(Serializer):
         #make the UOx ID and SMILES columns bigger
         #BUG - can't set column format until pandas 0.16
         #https://github.com/pydata/pandas/issues/9167
-        for index, width in enumerate(widths[1:]):
+        for index, width in enumerate(widths):
             if width > 100:
                 width = 100
             elif width < 20:
