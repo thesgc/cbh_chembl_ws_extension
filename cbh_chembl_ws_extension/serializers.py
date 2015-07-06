@@ -180,7 +180,7 @@ class XLSSerializer(Serializer):
         #then export as xls or to xlsxwriter
         data = self.to_simple(data, {})
         exp_json = json.loads(data.get('export',[]))
-        ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'Added By', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
+        ordered_fields = [ 'UOx ID', 'SMILES', 'Added By',  'Std InChi', 'Mol Weight', 'alogp'  ]
         headers = data.get('headers', {})
         ordered_fields += headers["custom_fields"]
         ordered_fields += headers["uncurated_fields"]
@@ -192,10 +192,17 @@ class XLSSerializer(Serializer):
         cols = df.columns.tolist()
         #now for the list we have in the order we have it, move the columns by name
         #this way you end up with your core fields at the start and custom fields at the end.
-        widths = []
+        
         for idx, item in enumerate(ordered_fields):
             cols.insert(idx, cols.pop(cols.index(item)))
-            titlewidth = len(item)
+            
+
+
+        #reindex the dataframe
+        df = df.ix[:, cols]
+        widths = []
+        for col in df.columns.tolist():
+            titlewidth = len(col)
             try:
                 w = df[item].astype(str).str.len().max()
                 if w > titlewidth:
@@ -205,8 +212,6 @@ class XLSSerializer(Serializer):
             except:
                 widths.append(titlewidth + 4)
 
-        #reindex the dataframe
-        df = df.ix[:, cols]
 
         writer = pd.ExcelWriter('temp.xlsx', engine='xlsxwriter')
         writer.book.filename = output
