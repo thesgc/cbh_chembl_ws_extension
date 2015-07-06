@@ -205,7 +205,7 @@ class XLSSerializer(Serializer):
             col = str(col)
             titlewidth = len(col)
             try:
-                w = df[col].astype(str).str.len().max()
+                w = df[col].astype(unicode).str.len().max()
                 if w > titlewidth:
                     widths.append(int(w*1.2))
                 else:
