@@ -195,11 +195,15 @@ class XLSSerializer(Serializer):
         widths = []
         for idx, item in enumerate(ordered_fields):
             cols.insert(idx, cols.pop(cols.index(item)))
-
+            titlewidth = len(item)
             try:
-                widths.append(df[item].astype(str).str.len().max())
+                w = df[item].astype(str).str.len().max()
+                if w > titlewidth:
+                    widths.append(w + 4)
+                else:
+                    widths.append(titlewidth + 4)
             except:
-                widths.append(30)
+                widths.append(titlewidth + 4)
 
         #reindex the dataframe
         df = df.ix[:, cols]
