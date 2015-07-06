@@ -9,6 +9,7 @@ from cbh_chembl_ws_extension.compounds import CBHCompoundBatchResource
 
 from django.forms.widgets import HiddenInput, TextInput
 from django.db import models
+import json
 
 class GrappelliSortableHiddenMixin(object):
     """
@@ -96,23 +97,6 @@ class CustomFieldConfigAdmin(ModelAdmin):
 
 
 
-
-     # get_template('templates/email.html').render(
-     #        Context()
-     #    ),
-
-     
-        # javascript = """var schema = 
-        # if data["format"] == UISELECT:
-        #     data["options"] =  {
-        #           "tagging": "tagFunction" ,
-        #           "taggingLabel": "(adding new)",
-        #           "taggingTokens": "",
-        #        },
-
-
-
-
 class ProjectAdmin(ModelAdmin):
     prepopulated_fields = {"project_key": ("name",)}
     list_display = ('name', 'project_key', 'created')
@@ -127,7 +111,6 @@ class ProjectAdmin(ModelAdmin):
         obj.save()
 
     def reindex(self, request, queryset):
-        print('getting here')
         cbr = CBHCompoundBatchResource()
         cbr.reindex_elasticsearch(request)
         self.message_user(request, "Successfully reindexed ChemReg compounds")

@@ -9,6 +9,29 @@ from cbh_chembl_model_extension.models import Project
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+def get_all_project_ids_for_user_perms( perms, possible_perm_levels ):
+    pids = []
+    for perm in perms:
+        prms= str(perm).split(".")
+        pid = prms[0]
+        if pid[0].isdigit()  and prms[1] in possible_perm_levels:
+           pids.append(int(pid))
+    return pids
+
+
+
 class ProjectListAuthorization(Authorization):
     """
     Uses permission checking from ``django.contrib.auth`` to map
@@ -18,7 +41,10 @@ class ProjectListAuthorization(Authorization):
     Both the list & detail variants simply check the model they're based
     on, as that's all the more granular Django's permission setup gets.
     """
-
+    def editor_projects(self, request, ):
+        pids = get_all_project_ids_for_user_perms( request.user.get_all_permissions(), ["editor"] )
+        return pids
+        
     def login_checks(self, request, model_klass):
 
         # If it doesn't look like a model, we can't check permissions.
@@ -58,29 +84,6 @@ class ProjectListAuthorization(Authorization):
         return self.list_checks(bundle.request, bundle.obj.__class__, bundle.data, ["editor","viewer",], object_list)
 
         
-
-
-
-
-
-
-
-
-
-
-
-def get_all_project_ids_for_user_perms( perms, possible_perm_levels ):
-    pids = []
-    for perm in perms:
-        prms= str(perm).split(".")
-        pid = prms[0]
-        if pid[0].isdigit()  and prms[1] in possible_perm_levels:
-           pids.append(int(pid))
-    return pids
-
-
-
-
 
 
 
