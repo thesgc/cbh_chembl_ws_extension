@@ -218,7 +218,7 @@ class XLSSerializer(Serializer):
                 width = 100
             elif width < 30:
                 width = 30
-            worksheet.set_column(index,index, width + 1)
+            worksheet.set_column(index + 1,index +1, width + 1)
         writer.save()
         
         return output.getvalue()
