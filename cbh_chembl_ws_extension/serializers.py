@@ -207,11 +207,11 @@ class XLSSerializer(Serializer):
             try:
                 w = df[col].astype(str).str.len().max()
                 if w > titlewidth:
-                    widths.append(w + 4)
+                    widths.append(int(w*1.2))
                 else:
-                    widths.append(titlewidth + 4)
+                    widths.append(int(titlewidth* 1.2))
             except:
-                widths.append(titlewidth + 4)
+                widths.append(int(titlewidth* 1.2))
 
 
         writer = pd.ExcelWriter('temp.xlsx', engine='xlsxwriter')
@@ -225,11 +225,11 @@ class XLSSerializer(Serializer):
         #BUG - can't set column format until pandas 0.16
         #https://github.com/pydata/pandas/issues/9167
         for index, width in enumerate(widths):
-            if width > 100:
-                width = 100
-            elif width < 20:
-                width = 20
-            worksheet.set_column(index ,index , width + 1)
+            if width > 150:
+                width = 150
+            elif width < 15:
+                width = 15
+            worksheet.set_column(index ,index , width)
         writer.save()
         
         return output.getvalue()
