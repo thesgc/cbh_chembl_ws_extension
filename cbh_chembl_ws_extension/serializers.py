@@ -195,7 +195,10 @@ class XLSSerializer(Serializer):
         widths = []
         for idx, item in enumerate(ordered_fields):
             cols.insert(idx, cols.pop(cols.index(item)))
-            widths.append(df[item].astype(str).str.len().max())
+            try:
+                widths.append(df[item].astype(str).str.len().max())
+            except:
+                widths.append(30)
 
         #reindex the dataframe
         df = df.ix[:, cols]
