@@ -195,6 +195,7 @@ class XLSSerializer(Serializer):
         widths = []
         for idx, item in enumerate(ordered_fields):
             cols.insert(idx, cols.pop(cols.index(item)))
+
             try:
                 widths.append(df[item].astype(str).str.len().max())
             except:
@@ -213,12 +214,12 @@ class XLSSerializer(Serializer):
         #make the UOx ID and SMILES columns bigger
         #BUG - can't set column format until pandas 0.16
         #https://github.com/pydata/pandas/issues/9167
-        for index, width in enumerate(widths):
+        for index, width in enumerate(widths[1:]):
             if width > 100:
                 width = 100
-            elif width < 30:
-                width = 30
-            worksheet.set_column(index + 1,index +1, width + 1)
+            elif width < 20:
+                width = 20
+            worksheet.set_column(index ,index , width + 1)
         writer.save()
         
         return output.getvalue()
