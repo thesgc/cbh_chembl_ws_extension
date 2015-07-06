@@ -838,6 +838,19 @@ class CBHCompoundBatchResource(ModelResource):
             if correct_file.extension == '.cdxml':
                 #Look for a stoichiometry table in the reaction file
                 rxn = chemdraw_reaction.parse( str(correct_file.file.name))
+                headers = ["%Completion", 
+                            "%Yield", 
+                            "Expected Moles", 
+                            "Product Moles", 
+                            "Expected Mass", 
+                            "Product Mass", 
+                            "MW", 
+                            "role",
+                            "Purity", 
+                            "Limit Moles", 
+                            # "Formula", 
+                            "Equivalents", 
+                            "Measured Mass"]
             
             for pybelmol in mols:
                 molfile = pybelmol.write("mdl")
@@ -862,6 +875,7 @@ class CBHCompoundBatchResource(ModelResource):
                                 if rxn:
                                     #Here we set the uncurated fields equal to the reaction data extracted from Chemdraw
                                     b.uncurated_fields = rxn[index]
+                                    print b.uncurated_fields
                                 batches.append(b)
                             else:
                                 errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Unable to produce inchi from this molecule"})
@@ -1101,7 +1115,7 @@ class CBHCompoundBatchResource(ModelResource):
                 if(not batch.id):
                     batch.id = index
                 bun = self.build_bundle(obj=batch, request=request)
-                bun = self.full_dehydrate(bun)
+                bun = self.full_dehydrate(bun, for_list=True)
                 if non_chem_data_only:
                     ready = es_serializer.to_es_ready_non_chemical_data(bun.data, options={"underscorize": True})
                 else:

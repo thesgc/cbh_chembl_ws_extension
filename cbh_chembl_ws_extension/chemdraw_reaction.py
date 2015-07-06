@@ -14,11 +14,11 @@ def compounds(x, dataKeys,  product_ids, reagent_ids, reactant_ids):
 	for component in x['CDXML']['page']['stoichiometrygrid']['sgcomponent']:
 		if not component.get('@ComponentIsHeader', False):
 			role = None
-			if component['@ComponentReferenceID'] in product_ids:
+			if component.get('@ComponentReferenceID', "") in product_ids:
 				role = 'product'
-			elif component['@ComponentReferenceID'] in reagent_ids:
+			elif component.get('@ComponentReferenceID', "") in reagent_ids:
 				role = 'reagent'
-			elif component['@ComponentReferenceID'] in reagent_ids:
+			elif component.get('@ComponentReferenceID', "") in reagent_ids:
 				role = 'reagent'
 			dicttoyield = {	
 				dataKeys[datum['@SGPropertyType']]: 
@@ -36,11 +36,22 @@ def parse(xml_path):
 		xml = xfile.read()
 	x = xmltodict.parse(xml)
 	if x['CDXML']['page'].get('scheme'):
-		reactant_ids = x['CDXML']['page']['scheme']['step']['@ReactionStepReactants'].split(' ')
-		reagent_ids = x['CDXML']['page']['scheme']['step']['@ReactionStepObjectsAboveArrow'].split(' ')
-		product_ids = x['CDXML']['page']['scheme']['step']['@ReactionStepProducts'].split(' ')
+		reactants = x['CDXML']['page']['scheme']['step'].get('@ReactionStepReactants', None)
+		reactant_ids = []
+		if reactants:
+			reactant_ids = reactants.split(' ')
+		reagents = x['CDXML']['page']['scheme']['step'].get('@ReactionStepObjectsAboveArrow', None)
+		reagent_ids = []
+		if reagents:
+			reagent_ids = reagents.split(' ')
+		products =  x['CDXML']['page']['scheme']['step'].get('@ReactionStepProducts', None)
+		product_ids = []
+		if products:
+			product_ids =products.split(' ')
 		keys = get_keys(x)
-		return  [p for p in compounds(x,keys,  product_ids, reagent_ids, reactant_ids)]
+		data =  [p for p in compounds(x,keys,  product_ids, reagent_ids, reactant_ids)]
+		print data
+		return data
 	print('not a reaction')
 	return []
 
