@@ -48,8 +48,9 @@ class ProjectResource(ModelResource):
         '''Note that the form here is expected to have the UOx id as the first item'''
         return {  "cf_form": [
                       {
-                          "htmlClass": "col-sm-12",
+                          "htmlClass": "col-sm-10",
                           "key": "search_custom_fields__kv_any",
+                          #"ngModelOptions": { "updateOn": 'blur' },
                           "disableSuccessState": True,
                           "feedback": False,
                           "options": {
