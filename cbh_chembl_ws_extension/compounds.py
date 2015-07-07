@@ -700,7 +700,7 @@ class CBHCompoundBatchResource(ModelResource):
                 
             new_uploaded_data.append(batch)
 
-        already_in_db = MoleculeDictionary.objects.filter(structure_type="MOL", structure_key__in=already_found).values_list("structure_key", flat=True)
+        already_in_db = MoleculeDictionary.objects.filter(project=bundle.data["project"] , structure_type="MOL", structure_key__in=already_found).values_list("structure_key", flat=True)
         already_in_db = set(already_in_db)
         
 
@@ -819,7 +819,6 @@ class CBHCompoundBatchResource(ModelResource):
             b.created_by = bundle.request.user.username
             batches.append(b)
   
-
 
                 
         bundle.data["current_batch"] = multiple_batch.pk
