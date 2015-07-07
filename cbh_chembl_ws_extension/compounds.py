@@ -645,7 +645,7 @@ class CBHCompoundBatchResource(ModelResource):
 
 
     def validate_multi_batch(self,multi_batch, bundle, request, batches):
-        batches_not_errors = [batch for batch in batches if batch]
+        batches_not_errors = [batch for batch in batches if batch and not batch.warnings.get("parseError", None) and not batch.warnings.get("smilesParseError", None)]
         
         if (len(batches) ==0):
             raise BadRequest("No data to process")
@@ -791,6 +791,7 @@ class CBHCompoundBatchResource(ModelResource):
         objects = smilesdata.splitlines(True)
         batches = []
         #first assume smiles
+
         allmols = [(obj, Chem.MolFromSmiles(str(obj))) for obj in objects]
         #Next test for inchi
         for m in allmols:
@@ -799,18 +800,28 @@ class CBHCompoundBatchResource(ModelResource):
                 if inchimol is not None:
                     m = (Chem.MolToSmiles( inchimol), inchimol) 
 
+
         for m in allmols:
             if(m[1]):
                 Compute2DCoords(m[1])
-        batches = [CBHCompoundBatch.objects.from_rd_mol(mol2[1], smiles=mol2[0], project=bundle.data["project"], reDraw=True) if mol2[1] is not None else None for mol2 in allmols  ]
-    
-
+        batches = []
         multiple_batch = CBHCompoundMultipleBatch.objects.create(project=bundle.data["project"])
-        for b in batches:
-            if b:
-                b.multiple_batch_id = multiple_batch.pk
-                b.created_by = bundle.request.user.username
 
+        for mol2 in allmols:
+            if mol2[1]:
+                b = CBHCompoundBatch.objects.from_rd_mol(mol2[1], smiles=mol2[0], project=bundle.data["project"], reDraw=True)
+            else:
+                b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])
+                b.warnings["smilesParseError"] = "true"
+                b.properties["action"] = "Ignore"
+                b.original_smiles = mol2[0]
+            b.multiple_batch_id = multiple_batch.pk
+            b.created_by = bundle.request.user.username
+            batches.append(b)
+  
+
+
+                
         bundle.data["current_batch"] = multiple_batch.pk
         bundle.data["headers"] = []
         return self.validate_multi_batch(multiple_batch, bundle, request, batches)
@@ -939,6 +950,7 @@ class CBHCompoundBatchResource(ModelResource):
                     if structure_col:
                         smiles_str = row[structure_col]
                         try:
+                            
                             struc = Chem.MolFromSmiles(smiles_str)
                             if struc:
                                 Compute2DCoords(struc)
@@ -946,12 +958,14 @@ class CBHCompoundBatchResource(ModelResource):
                                     b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
                                     b.blinded_batch_id = None
                                 except Exception, e:
-                                    errors.append({"index" : index+1,  "message" : str(e)})
-                                    b =None
+                                    b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])
+                                    b.original_smiles = smiles_str
+                                    b.warnings["smilesParseError"] = "true"
+                                    b.properties["action"] = "Ignore"
                         except Exception, e:
                             errors.append({"index" : index+1,  "message" : str(e)})
                             b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])
-                            b.warnings["parseError"] = "true"
+                            b.warnings["smilesParseError"] = "true"
                     else:
                         b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])                    
 
