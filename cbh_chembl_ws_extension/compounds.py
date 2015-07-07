@@ -516,7 +516,7 @@ class CBHCompoundBatchResource(ModelResource):
             self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
         else:
             self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
-        id = bundle.data["multiple_batch"]
+        id = bundle.data["multiplebatch"]
         mb = CBHCompoundMultipleBatch.objects.get(pk=id)
         project = Serializer().serialize(mb)
         limit = 500
@@ -568,7 +568,7 @@ class CBHCompoundBatchResource(ModelResource):
             self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
         else:
             self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
-        id = bundle.data["multiple_batch"]
+        id = bundle.data["multiplebatch"]
         mb = CBHCompoundMultipleBatch.objects.get(pk=id)
         elasticsearch_client.delete_index(elasticsearch_client.get_temp_index_name(request, mb.id))
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
@@ -602,7 +602,7 @@ class CBHCompoundBatchResource(ModelResource):
             self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
         else:
             self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
-        multi_batch_id = bundle.data["multiple_batch"]    
+        multi_batch_id = bundle.data["multiplebatch"]    
         es_serializer = CBHCompoundBatchElasticSearchSerializer()
 
         es_ready_updates = [es_serializer.to_es_ready_data(dictdata, 
@@ -627,7 +627,7 @@ class CBHCompoundBatchResource(ModelResource):
             self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
         else:
             self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
-        id = bundle.data["multiple_batch"]
+        id = bundle.data["multiplebatch"]
         headers = bundle.data["headers"]
         # structure_col = bundle.data.get("structure_col", None)
 
@@ -741,7 +741,7 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["compoundstats"]["new"] = len(new_data)
         bundle.data["compoundstats"]["duplicateoverlaps"] = len(duplicate_overlaps)
         bundle.data["compoundstats"]["duplicatenew"] = len(duplicate_new)
-        bundle.data["multiple_batch"] = multi_batch.pk
+        bundle.data["multiplebatch"] = multi_batch.pk
 
 
         fifty_batches_for_first_page = self.set_cached_temporary_batches(batches, multi_batch.id, request)
@@ -832,7 +832,7 @@ class CBHCompoundBatchResource(ModelResource):
         fielderrors["stringdate"] = set([])
         fielderrors["number"] = set([])
         fielderrors["integer"] = set([])
-        structure_col = bundle.data.get("struc_col","")
+        structure_col = bundle.data.get("struccol","")
         
         if (".cdx" in correct_file.extension ):
             mols = [mol for mol in readfile( str(correct_file.extension[1:]), str(correct_file.file.name), )]
