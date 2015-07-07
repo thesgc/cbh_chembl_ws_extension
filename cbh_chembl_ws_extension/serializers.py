@@ -393,7 +393,7 @@ class CamelCaseJSONSerializer(Serializer):
                 new_dict = {}
                 for key, value in data.items():
                     new_key = re.sub(r"[a-z][A-Z]", camelToUnderscore, key)
-                    if new_key in ["custom_fields", "uncurated_fields"]:
+                    if new_key in ["custom_fields", "uncurated_fields", "compoundstats", "batchstats", "warnings", "properties"]:
                         new_dict[new_key] = value
 
                     else:
@@ -477,7 +477,7 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                 else:
                     try:
                         value[k] = int(v)
-                        continue
+                        continuecompound_stats
                     except:
                         pass
                 value[k] = v

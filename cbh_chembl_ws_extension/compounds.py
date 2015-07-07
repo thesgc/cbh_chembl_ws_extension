@@ -651,6 +651,7 @@ class CBHCompoundBatchResource(ModelResource):
 
         batches_with_structures = [batch for batch in batches_not_errors if not batch.blinded_batch_id]
         blinded_data =  [batch for batch in batches_not_errors if batch.blinded_batch_id]
+        print len(blinded_data)
         sdfstrings = [batch.ctab for batch in batches_with_structures]
         sdf = "\n".join(sdfstrings)
         
@@ -728,18 +729,18 @@ class CBHCompoundBatchResource(ModelResource):
             batch.warnings["noStructure"] = True
 
 
-        bundle.data["batchStats"] = {}
-        bundle.data["batchStats"]["withStructure"] = len(batches_with_structures)
-        bundle.data["batchStats"]["parseErrors"] = len(batches) - len(batches_not_errors) + len([b for b in batches_not_errors if b.warnings.get("parseError", False) == "true"])
-        bundle.data["batchStats"]["withoutStructure"] = len(blinded_data)
-        bundle.data["batchStats"]["total"] = len(batches)
+        bundle.data["batchstats"] = {}
+        bundle.data["batchstats"]["withstructure"] = len(batches_with_structures)
+        bundle.data["batchstats"]["parseErrors"] = len(batches) - len(batches_not_errors) + len([b for b in batches_not_errors if b.warnings.get("parseError", False) == "true"])
+        bundle.data["batchstats"]["withoutstructure"] = len(blinded_data)
+        bundle.data["batchstats"]["total"] = len(batches)
 
-        bundle.data["compoundStats"] = {}
-        bundle.data["compoundStats"]["total"] = len(already_in_db) + len(new_data)
-        bundle.data["compoundStats"]["overlaps"] = len(already_in_db)
-        bundle.data["compoundStats"]["new"] = len(new_data)
-        bundle.data["compoundStats"]["duplicateOverlaps"] = len(duplicate_overlaps)
-        bundle.data["compoundStats"]["duplicateNew"] = len(duplicate_new)
+        bundle.data["compoundstats"] = {}
+        bundle.data["compoundstats"]["total"] = len(already_in_db) + len(new_data)
+        bundle.data["compoundstats"]["overlaps"] = len(already_in_db)
+        bundle.data["compoundstats"]["new"] = len(new_data)
+        bundle.data["compoundstats"]["duplicateoverlaps"] = len(duplicate_overlaps)
+        bundle.data["compoundstats"]["duplicatenew"] = len(duplicate_new)
         bundle.data["multiple_batch"] = multi_batch.pk
 
 
@@ -840,7 +841,6 @@ class CBHCompoundBatchResource(ModelResource):
             if correct_file.extension == '.cdxml':
                 #Look for a stoichiometry table in the reaction file
                 rxn = chemdraw_reaction.parse( str(correct_file.file.name))
-                print rxn
                 headers = ["%Completion", 
                             "%Yield", 
                             "Expected Moles", 
@@ -952,11 +952,11 @@ class CBHCompoundBatchResource(ModelResource):
                     else:
                         b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])                    
 
-                    if b and dict(b.uncurated_fields) == {}:
+                    if b: 
+                        print b.blinded_batch_id
+                        if dict(b.uncurated_fields) == {}:
                         #Only rebuild the uncurated fields if this has not been done before
-                        parse_pandas_record(headers, b, "uncurated_fields", row, fielderrors, headerswithdata)
-
-                       
+                            parse_pandas_record(headers, b, "uncurated_fields", row, fielderrors, headerswithdata)
                     else:
                         errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this identifier",  "SMILES": smiles_str})
                     batches.append(b)
