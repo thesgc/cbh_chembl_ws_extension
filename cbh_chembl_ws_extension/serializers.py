@@ -180,7 +180,7 @@ class XLSSerializer(Serializer):
         #then export as xls or to xlsxwriter
         data = self.to_simple(data, {})
         exp_json = json.loads(data.get('export',[]))
-        ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'Added By', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
+        ordered_fields = [ 'UOx ID', 'SMILES', 'Added By',  'Std InChi', 'Mol Weight', 'alogp'  ]
         headers = data.get('headers', {})
         ordered_fields += headers["custom_fields"]
         ordered_fields += headers["uncurated_fields"]
@@ -192,10 +192,27 @@ class XLSSerializer(Serializer):
         cols = df.columns.tolist()
         #now for the list we have in the order we have it, move the columns by name
         #this way you end up with your core fields at the start and custom fields at the end.
+        
         for idx, item in enumerate(ordered_fields):
             cols.insert(idx, cols.pop(cols.index(item)))
+            
+
+
         #reindex the dataframe
         df = df.ix[:, cols]
+        widths = []
+        for col in df.columns.tolist():
+            col = str(col)
+            titlewidth = len(col)
+            try:
+                w = df[col].astype(unicode).str.len().max()
+                if w > titlewidth:
+                    widths.append(int(w*1.2))
+                else:
+                    widths.append(int(titlewidth* 1.2))
+            except:
+                widths.append(int(titlewidth* 1.2))
+
 
         writer = pd.ExcelWriter('temp.xlsx', engine='xlsxwriter')
         writer.book.filename = output
@@ -207,8 +224,12 @@ class XLSSerializer(Serializer):
         #make the UOx ID and SMILES columns bigger
         #BUG - can't set column format until pandas 0.16
         #https://github.com/pydata/pandas/issues/9167
-        worksheet.set_column(0,0, 20)
-        worksheet.set_column(1,1, 40)
+        for index, width in enumerate(widths):
+            if width > 150:
+                width = 150
+            elif width < 15:
+                width = 15
+            worksheet.set_column(index ,index , width)
         writer.save()
         
         return output.getvalue()
@@ -372,7 +393,7 @@ class CamelCaseJSONSerializer(Serializer):
                 new_dict = {}
                 for key, value in data.items():
                     new_key = re.sub(r"[a-z][A-Z]", camelToUnderscore, key)
-                    if new_key in ["custom_fields", "uncurated_fields"]:
+                    if new_key in ["custom_fields", "uncurated_fields", "compoundstats", "batchstats", "warnings", "properties"]:
                         new_dict[new_key] = value
 
                     else:
@@ -456,7 +477,7 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                 else:
                     try:
                         value[k] = int(v)
-                        continue
+                        continuecompound_stats
                     except:
                         pass
                 value[k] = v

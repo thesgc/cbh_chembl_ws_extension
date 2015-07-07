@@ -654,6 +654,7 @@ class CBHCompoundBatchResource(ModelResource):
 
         batches_with_structures = [batch for batch in batches_not_errors if not batch.blinded_batch_id]
         blinded_data =  [batch for batch in batches_not_errors if batch.blinded_batch_id]
+        print len(blinded_data)
         sdfstrings = [batch.ctab for batch in batches_with_structures]
         sdf = "\n".join(sdfstrings)
         
@@ -724,23 +725,25 @@ class CBHCompoundBatchResource(ModelResource):
                     batch.warnings["duplicate"] = True
                     duplicate_new.add(batch.standard_inchi_key)
             
-
+        for batch in batches_with_structures:
+            if batch.warnings.get("noStructure") == True:
+                del batch.warnings["noStructure"]
         for batch in blinded_data:
             batch.warnings["noStructure"] = True
 
 
-        bundle.data["batchStats"] = {}
-        bundle.data["batchStats"]["withStructure"] = len(batches_with_structures)
-        bundle.data["batchStats"]["parseErrors"] = len(batches) - len(batches_not_errors) + len([b for b in batches_not_errors if b.warnings.get("parseError", False) == "true"])
-        bundle.data["batchStats"]["withoutStructure"] = len(blinded_data)
-        bundle.data["batchStats"]["total"] = len(batches)
+        bundle.data["batchstats"] = {}
+        bundle.data["batchstats"]["withstructure"] = len(batches_with_structures)
+        bundle.data["batchstats"]["parseErrors"] = len(batches) - len(batches_not_errors) + len([b for b in batches_not_errors if b.warnings.get("parseError", False) == "true"])
+        bundle.data["batchstats"]["withoutstructure"] = len(blinded_data)
+        bundle.data["batchstats"]["total"] = len(batches)
 
-        bundle.data["compoundStats"] = {}
-        bundle.data["compoundStats"]["total"] = len(already_in_db) + len(new_data)
-        bundle.data["compoundStats"]["overlaps"] = len(already_in_db)
-        bundle.data["compoundStats"]["new"] = len(new_data)
-        bundle.data["compoundStats"]["duplicateOverlaps"] = len(duplicate_overlaps)
-        bundle.data["compoundStats"]["duplicateNew"] = len(duplicate_new)
+        bundle.data["compoundstats"] = {}
+        bundle.data["compoundstats"]["total"] = len(already_in_db) + len(new_data)
+        bundle.data["compoundstats"]["overlaps"] = len(already_in_db)
+        bundle.data["compoundstats"]["new"] = len(new_data)
+        bundle.data["compoundstats"]["duplicateoverlaps"] = len(duplicate_overlaps)
+        bundle.data["compoundstats"]["duplicatenew"] = len(duplicate_new)
         bundle.data["multiple_batch"] = multi_batch.pk
 
 
@@ -841,6 +844,19 @@ class CBHCompoundBatchResource(ModelResource):
             if correct_file.extension == '.cdxml':
                 #Look for a stoichiometry table in the reaction file
                 rxn = chemdraw_reaction.parse( str(correct_file.file.name))
+                headers = ["%Completion", 
+                            "%Yield", 
+                            "Expected Moles", 
+                            "Product Moles", 
+                            "Expected Mass", 
+                            "Product Mass", 
+                            "MW", 
+                            "role",
+                            "Purity", 
+                            "Limit Moles", 
+                            # "Formula", 
+                            "Equivalents", 
+                            "Measured Mass"]
             
             for pybelmol in mols:
                 molfile = pybelmol.write("mdl")
@@ -864,7 +880,7 @@ class CBHCompoundBatchResource(ModelResource):
                             if b:
                                 if rxn:
                                     #Here we set the uncurated fields equal to the reaction data extracted from Chemdraw
-                                    b.uncurated_fields = rxn[index]
+                                    b.uncurated_fields = rxn.get(pybelmol.title, {})
                                 batches.append(b)
                             else:
                                 errors.append({"index" : index+1, "image" : pybelmol.write("svg"), "message" : "Unable to produce inchi from this molecule"})
@@ -928,6 +944,7 @@ class CBHCompoundBatchResource(ModelResource):
                                 Compute2DCoords(struc)
                                 try:
                                     b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
+                                    b.blinded_batch_id = None
                                 except Exception, e:
                                     errors.append({"index" : index+1,  "message" : str(e)})
                                     b =None
@@ -938,11 +955,11 @@ class CBHCompoundBatchResource(ModelResource):
                     else:
                         b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])                    
 
-                    if b and dict(b.uncurated_fields) == {}:
+                    if b: 
+                        print b.blinded_batch_id
+                        if dict(b.uncurated_fields) == {}:
                         #Only rebuild the uncurated fields if this has not been done before
-                        parse_pandas_record(headers, b, "uncurated_fields", row, fielderrors, headerswithdata)
-
-                       
+                            parse_pandas_record(headers, b, "uncurated_fields", row, fielderrors, headerswithdata)
                     else:
                         errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this identifier",  "SMILES": smiles_str})
                     batches.append(b)
@@ -957,15 +974,16 @@ class CBHCompoundBatchResource(ModelResource):
                 b.created_by = bundle.request.user.username
            
         bundle.data["fileerrors"] = errors
-        bundle.data["headers"] = [{"name": header, 
-                                    "copyTo": "SMILES for chemical structures" if header == structure_col  else "",
-                                    "fieldErrors" : { 
-                                        "stringdate": header in fielderrors["stringdate"],
-                                        "integer": header in fielderrors["integer"],
-                                        "number": header in fielderrors["number"]
-                                    }
-                                    }
-                                    for header in headers]
+        if not bundle.data.get("headers", None):
+            bundle.data["headers"] = [{"name": header, 
+                                        "copyTo": "SMILES for chemical structures" if header == structure_col  else "",
+                                        "fieldErrors" : { 
+                                            "stringdate": header in fielderrors["stringdate"],
+                                            "integer": header in fielderrors["integer"],
+                                            "number": header in fielderrors["number"]
+                                        }
+                                        }
+                                        for header in headers]
 
         # bundle.data["fieldErrors"] = {key: list(value) for key, value in fielderrors.items()}
 
@@ -1104,7 +1122,7 @@ class CBHCompoundBatchResource(ModelResource):
                 if(not batch.id):
                     batch.id = index
                 bun = self.build_bundle(obj=batch, request=request)
-                bun = self.full_dehydrate(bun)
+                bun = self.full_dehydrate(bun, for_list=True)
                 if non_chem_data_only:
                     ready = es_serializer.to_es_ready_non_chemical_data(bun.data, options={"underscorize": True})
                 else:

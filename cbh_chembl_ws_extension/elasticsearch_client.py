@@ -11,7 +11,6 @@ ES_MAIN_INDEX_NAME = "chemreg_chemical_index"
 
 def get_temp_index_name(request, multi_batch_id):
     index_name = "%s__temp_multi_batch__%s__%s" % (ES_PREFIX, request.session.session_key, str(multi_batch_id))
-    print(index_name)
     return index_name
     #return "%s__temp_multi_batch__%s__%s" % (ES_PREFIX, request.session.session_key, str(multi_batch_id))
 
@@ -34,7 +33,6 @@ def get(index_name, es_request_body, bundledata):
 def get_autocomplete(projects, search_term, field, custom_fields=None, single_field=None):
     es = elasticsearch.Elasticsearch()
     project_terms = []
-    print(single_field)
     search_regex = '.*%s.*|.*%s.*|.*%s.*|.*%s.*' % (search_term.title(), search_term, search_term.upper(), search_term.lower())
     field_to_search = '%s.raw' % (field)
     for proj in projects:
@@ -146,7 +144,6 @@ def create_temporary_index(batches, request, index_name):
 
 def get_project_index_name(project):
     index_name = "%s__project__%s" % (ES_PREFIX, str(project.id))
-    print(index_name)
     return index_name
 
 def reindex_compound(dataset, id):
