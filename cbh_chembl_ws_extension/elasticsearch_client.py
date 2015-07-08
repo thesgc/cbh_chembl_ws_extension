@@ -89,14 +89,7 @@ def create_temporary_index(batches, request, index_name):
         "settings": {
             "index.store.type": store_type
         },
-        "analysis" : {
-              "analyzer" : {
-                  "default" : {
-                      "tokenizer" : "whitespace",
-                      "filter" : ["lowercase"] 
-                  }
-              }
-          },
+        
          "mappings" : {
             "_default_" : {
                "_all" : {"enabled" : False},
