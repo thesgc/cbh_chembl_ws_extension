@@ -46,7 +46,7 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
         must_list.append({'bool': {
                     'should': [
                          {'prefix': { 'custom_field_list.searchable_name.raw':  search_term.lower() } },
-                          {'prefix': { 'custom_field_list.value':  search_term.lower() } }
+                          {'regexp': { 'custom_field_list.value.raw':  search_regex } }
                     ],
                 },})
     if (custom_fields and single_field):
@@ -65,12 +65,14 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
       },
       'aggs': {
         'autocomplete': {
-          'terms': { 'field': field_to_search, 'size':100, 'include': search_regex }
+          'terms': { 'field': field_to_search, 
+          'size':100,  #'include': str(search_regex) Include not working
+          }
         }
       },
       'size': 0,
     }
-
+    print body
     result = es.search(body=body)
     #return the results in the right format
     data = [res["key"] for res in result["aggregations"]["autocomplete"]["buckets"]]
@@ -87,6 +89,14 @@ def create_temporary_index(batches, request, index_name):
         "settings": {
             "index.store.type": store_type
         },
+        "analysis" : {
+              "analyzer" : {
+                  "default" : {
+                      "tokenizer" : "whitespace",
+                      "filter" : ["lowercase"] 
+                  }
+              }
+          },
          "mappings" : {
             "_default_" : {
                "_all" : {"enabled" : False},
@@ -140,7 +150,7 @@ def create_temporary_index(batches, request, index_name):
                             })
         bulk_items.append(item)
     #Data is not refreshed!
-    es.bulk(body=bulk_items)
+    print es.bulk(body=bulk_items)
 
 def get_project_index_name(project):
     index_name = "%s__project__%s" % (ES_PREFIX, str(project.id))

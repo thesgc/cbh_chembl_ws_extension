@@ -491,8 +491,10 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
         for key, value in data["custom_fields"].items():
             if type(value) == list:
                 for val in value:
+                    val = val.replace(u"\n|\r", " ")
                     data['custom_field_list'].append({'name':key, 'value':val, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, val) })
             else:
+                value = val.replace(u"\n|\r", " ")
                 data['custom_field_list'].append({'name':key, 'value':value, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, value) })
                 
         data['custom_field_list'].append({'name': "Project", 'value':data['project'], 'searchable_name': 'project', 'aggregation': '%s|%s' % ('Project', data['project']) })

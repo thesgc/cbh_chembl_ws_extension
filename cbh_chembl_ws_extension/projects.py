@@ -18,7 +18,7 @@ import copy
 import time
 import urllib
 from django.core.urlresolvers import reverse
-
+from cbh_chembl_ws_extension.serializers import CBHCompoundBatchElasticSearchSerializer
 import elasticsearch_client
 
 class ProjectResource(ModelResource):
@@ -38,11 +38,7 @@ class ProjectResource(ModelResource):
             "project_key": ALL_WITH_RELATIONS,
         }
 
-    def prepend_urls(self):
-        return [
-        url(r"^(?P<resource_name>%s)/reindex_elasticsearch/$" % self._meta.resource_name,
-                self.wrap_view('reindex_elasticsearch'), name="api_projects_reindex_elasticsearch"),
-        ]
+
 
     def get_searchform(self, bundle,searchfield_items ):
         '''Note that the form here is expected to have the UOx id as the first item'''
@@ -1564,18 +1560,6 @@ class ProjectResource(ModelResource):
                 if stuff:
                     form[item] = stuff
         return (obj.name, data, obj.required, form, searchitems)
-
-    def reindex_elasticsearch(self, request, **kwargs):
-        bundle = self.build_bundle(request=request)
-        #reindex compound data
-        #batches = CBHCompoundBatch.objects.all()
-        es_serializer = CBHCompoundBatchElasticSearchSerializer()
-        es_ready_updates = [es_serializer.to_es_ready_data(proj, 
-            options={"underscorize": True}) for proj in self._meta.queryset]
-        index_name='chemreg_projects_index'
-        elasticsearch_client.create_temporary_index(es_ready_updates, request, index_name)
-
-        return HttpResponse(content='[]', content_type=build_content_type(desired_format) )
 
 
 

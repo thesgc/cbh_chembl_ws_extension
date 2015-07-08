@@ -479,8 +479,8 @@ class CBHCompoundBatchResource(ModelResource):
             self.wrap_view('get_chembl_ids'), name="api_get_chembl_ids"),
         url(r"^(?P<resource_name>%s)/get_elasticsearch_ids/$" % self._meta.resource_name,
             self.wrap_view('get_elasticsearch_ids'), name="api_get_elasticsearch_ids"),
-        # url(r"^(?P<resource_name>%s)/reindex_elasticsearch/$" % self._meta.resource_name,
-        #     self.wrap_view('reindex_elasticsearch'), name="api_compounds_reindex_elasticsearch"),
+        url(r"^(?P<resource_name>%s)/reindex_elasticsearch/$" % self._meta.resource_name,
+            self.wrap_view('reindex_elasticsearch'), name="api_compounds_reindex_elasticsearch"),
         url(r"^(?P<resource_name>%s)/reindex_compound/$" % self._meta.resource_name,
             self.wrap_view('reindex_compound'), name="api_reindex_compound"),
         url(r"^(?P<resource_name>%s)/get_elasticsearch_autocomplete/$" % self._meta.resource_name,
@@ -987,6 +987,7 @@ class CBHCompoundBatchResource(ModelResource):
                 b.created_by = bundle.request.user.username
            
         bundle.data["fileerrors"] = errors
+        #custom_fields_schema = bundle.data["project"].
         if not bundle.data.get("headers", None):
             bundle.data["headers"] = [{"name": header, 
                                         "copyTo": "SMILES for chemical structures" if header == structure_col  else "",
