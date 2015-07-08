@@ -24,7 +24,7 @@ from rdkit.Chem import AllChem, PandasTools
 
 import pybel
 
-
+import copy
 
 def get_field_name_from_key(key):
     return key.replace(u"__space__", u" ")
@@ -491,11 +491,13 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
         for key, value in data["custom_fields"].items():
             if type(value) == list:
                 for val in value:
-                    val = val.replace(u"\n|\r", " ")
-                    data['custom_field_list'].append({'name':key, 'value':val, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, val) })
+                    v = val.replace('\n', ' ').replace('\r', '')
+                    agg = '%s|%s' % (key, v)
+                    newdata['custom_field_list'].append({'name':key, 'value':v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg})
             else:
-                value = val.replace(u"\n|\r", " ")
-                data['custom_field_list'].append({'name':key, 'value':value, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, value) })
+                v = value.replace('\n', ' ').replace('\r', '')
+                agg = '%s|%s' % (key, v)
+                newdata['custom_field_list'].append({'name':key, 'value':v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg })
                 
         data['custom_field_list'].append({'name': "Project", 'value':data['project'], 'searchable_name': 'project', 'aggregation': '%s|%s' % ('Project', data['project']) })
         data['custom_field_list'].append({'name': "Upload Id", 'value':data['multiple_batch_id'], 'searchable_name': 'upload', 'aggregation': '%s|%d' % ('Upload', data['multiple_batch_id']) })
@@ -523,23 +525,29 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                             'multiple_batch_id',
                             'project',
                             'timestamp',
-                            'uncurated_fields']
+                            'uncurated_fields',
+                            'custom_fields']
         data = self.to_simple(data, options)
         #pull out the non-chemical fields for the main search - 
         #we will send the hits to the backend for any subsequent structure searching
-        for item in non_chem_fields:
-            if data[item]:
-                newdata[item] = data[item]
-
+        # for item in non_chem_fields:
+        #     if data[item]:
+        #         newdata[item] = data[item]
+        newdata = copy.deepcopy(data)
         newdata['custom_field_list'] = []
         self.handle_data_from_django_hstore(data["custom_fields"])
 
         for key, value in data["custom_fields"].items():
             if type(value) == list:
                 for val in value:
-                    newdata['custom_field_list'].append({'name':key, 'value':val, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, val) })
+                    v = val.replace('\n', ' ').replace('\r', '')
+                    agg = '%s|%s' % (key, v)
+                    newdata['custom_field_list'].append({'name':key, 'value':v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg})
             else:
-                newdata['custom_field_list'].append({'name':key, 'value':value, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, value) })
+                v = value.replace('\n', ' ').replace('\r', '')
+                agg = '%s|%s' % (key, v)
+
+                newdata['custom_field_list'].append({'name':key, 'value':v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg })
                 
         newdata['custom_field_list'].append({'name': "Project", 'value':newdata['project'], 'searchable_name': 'project', 'aggregation': '%s|%s' % ('Project', newdata['project']) })
         newdata['custom_field_list'].append({'name': "Upload Id", 'value':newdata['multiple_batch_id'], 'searchable_name': 'upload', 'aggregation': '%s|%d' % ('Upload', newdata['multiple_batch_id']) })

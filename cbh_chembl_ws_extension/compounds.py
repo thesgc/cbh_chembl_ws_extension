@@ -16,6 +16,8 @@ import shortuuid
 from dateutil.parser import parse
 import copy
 import elasticsearch_client
+from difflib import SequenceMatcher as fuzzymatch
+import re
 try:
     from rdkit import Chem
     from rdkit.Chem import AllChem
@@ -332,7 +334,6 @@ class CBHCompoundBatchResource(ModelResource):
         #we only want to store certain fields in the search index
         batch_dicts = self.batches_to_es_ready(batches, request, non_chem_data_only=True)
         #reindex compound data
-        print(desired_format)
         index_name = elasticsearch_client.get_main_index_name()
         es_reindex = elasticsearch_client.create_temporary_index(batch_dicts, request, index_name)
 
@@ -475,6 +476,8 @@ class CBHCompoundBatchResource(ModelResource):
             self.wrap_view('update_temp_batches'), name="update_temp_batches"),
         url(r"^(?P<resource_name>%s)/get_part_processed_multiple_batch/$" % self._meta.resource_name,
             self.wrap_view('get_part_processed_multiple_batch'), name="api_get_part_processed_multiple_batch"),
+        url(r"^(?P<resource_name>%s)/get_list_elasticsearch/$" % self._meta.resource_name,
+            self.wrap_view('get_list_elasticsearch'), name="api_get_list_elasticsearch"),
         url(r"^(?P<resource_name>%s)/get_chembl_ids/$" % self._meta.resource_name,
             self.wrap_view('get_chembl_ids'), name="api_get_chembl_ids"),
         url(r"^(?P<resource_name>%s)/get_elasticsearch_ids/$" % self._meta.resource_name,
@@ -648,13 +651,12 @@ class CBHCompoundBatchResource(ModelResource):
         batches_not_errors = [batch for batch in batches if batch and not batch.warnings.get("parseError", None) and not batch.warnings.get("smilesParseError", None)]
         
         if (len(batches) ==0):
-            raise BadRequest("No data to process")
+            raise BadRequest("no_data")
         for b in batches_not_errors:
             b.properties["action"] = "New Batch"
 
         batches_with_structures = [batch for batch in batches_not_errors if not batch.blinded_batch_id]
         blinded_data =  [batch for batch in batches_not_errors if batch.blinded_batch_id]
-        print len(blinded_data)
         sdfstrings = [batch.ctab for batch in batches_with_structures]
         sdf = "\n".join(sdfstrings)
         
@@ -829,7 +831,7 @@ class CBHCompoundBatchResource(ModelResource):
 
     def post_validate_files(self, request, **kwargs):
         
-
+        automapped_structure = False
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
@@ -905,6 +907,8 @@ class CBHCompoundBatchResource(ModelResource):
                 #read in the file
                 suppl = Chem.ForwardSDMolSupplier(correct_file.file)
                 mols = [mo for mo in suppl]
+                if(len(mols) > 1000):
+                    raise BadRequest("file_too_large")
                 #read the headers from the first molecule
                 
                 headers = get_all_sdf_headers(correct_file.file.name)
@@ -936,9 +940,14 @@ class CBHCompoundBatchResource(ModelResource):
                 
                 headerswithdata = set([])
                 
+                df = None
+                try:
+                    df = pd.read_excel(correct_file.file)
+                except IndexError:
+                    raise BadRequest("no_headers")
 
-                df = pd.read_excel(correct_file.file)
-
+                if len(df.index) > 1000:
+                    raise BadRequest("file_too_large")
                 #read the smiles string value out of here, when we know which column it is.
                 row_iterator = df.iterrows()
                 headers = list(df)
@@ -946,6 +955,22 @@ class CBHCompoundBatchResource(ModelResource):
                 df.columns = headers
 
                 for index, row in row_iterator:
+                    #Only automap on the first attempt at mapping the smiles column
+                    if not structure_col and not bundle.data.get("headers", None):
+                        max_score = 0 
+
+                        for header in headers:
+                            #fuzzy matching for smiles - this should also match things like "canonical_smiles"
+                            hdr = re.sub('[^0-9a-zA-Z]+', ' ', header)
+                            for h in hdr.split(" "):
+                                h = h.strip()
+                                if h:
+                                    score = fuzzymatch(a="smiles", b=h.lower()).ratio()
+                                    if score > max_score and score > 0.9:
+                                        structure_col = header
+                                        max_score = score
+                                        automapped_structure = True
+
                     if structure_col:
                         smiles_str = row[structure_col]
                         try:
@@ -969,7 +994,6 @@ class CBHCompoundBatchResource(ModelResource):
                         b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])                    
 
                     if b: 
-                        print b.blinded_batch_id
                         if dict(b.uncurated_fields) == {}:
                         #Only rebuild the uncurated fields if this has not been done before
                             parse_pandas_record(headers, b, "uncurated_fields", row, fielderrors, headerswithdata)
@@ -978,7 +1002,7 @@ class CBHCompoundBatchResource(ModelResource):
                     batches.append(b)
                 headers = [hdr for hdr in headers if hdr in headerswithdata]
             else:
-                raise BadRequest("Invalid File Format")
+                raise BadRequest("file_format_error")
 
         multiple_batch = CBHCompoundMultipleBatch.objects.create(project = bundle.data["project"])
         for b in batches:
@@ -987,17 +1011,39 @@ class CBHCompoundBatchResource(ModelResource):
                 b.created_by = bundle.request.user.username
            
         bundle.data["fileerrors"] = errors
-        #custom_fields_schema = bundle.data["project"].
+        bundle.data["automapped"] = 0
+        cfr = ProjectResource()
+        schemaform = cfr.get_schema_form(bundle.data["project"].custom_field_config,"" )
         if not bundle.data.get("headers", None):
-            bundle.data["headers"] = [{"name": header, 
-                                        "copyTo": "SMILES for chemical structures" if header == structure_col  else "",
-                                        "fieldErrors" : { 
-                                            "stringdate": header in fielderrors["stringdate"],
-                                            "integer": header in fielderrors["integer"],
-                                            "number": header in fielderrors["number"]
-                                        }
-                                        }
-                                        for header in headers]
+            bundle.data["headers"] = []
+            for header in headers:
+                copyTo = ""
+                automapped = False
+                if header == structure_col:  
+                    copyTo = "SMILES for chemical structures" 
+                    if automapped_structure:
+                        automapped = True
+                else:
+                    form = copy.deepcopy(schemaform["form"])
+                    matched_item = ""
+                    max_score = 0
+                    for form_item in form:
+                        score = fuzzymatch(a=form_item["key"].lower(), b=header.lower()).ratio()
+                        if score > max_score and score > 0.9:
+                            matched_item = form_item["key"]
+                            automapped = True
+                    copyTo = matched_item
+
+                bundle.data["headers"].append({
+                                                    "name": header,
+                                                    "automapped": automapped, 
+                                                    "copyTo": copyTo,
+                                                    "fieldErrors" : { 
+                                                        "stringdate": header in fielderrors["stringdate"],
+                                                        "integer": header in fielderrors["integer"],
+                                                        "number": header in fielderrors["number"]
+                                                    }
+                                            })
 
         # bundle.data["fieldErrors"] = {key: list(value) for key, value in fielderrors.items()}
 
@@ -1136,7 +1182,10 @@ class CBHCompoundBatchResource(ModelResource):
                 if(not batch.id):
                     batch.id = index
                 bun = self.build_bundle(obj=batch, request=request)
+
                 bun = self.full_dehydrate(bun, for_list=True)
+                if bun.data["project"] == '':
+                    bun.data["project"] = '/%s/cbh_projects/%d' % (settings.WEBSERVICES_NAME, bun.obj.project_id)
                 if non_chem_data_only:
                     ready = es_serializer.to_es_ready_non_chemical_data(bun.data, options={"underscorize": True})
                 else:
@@ -1177,6 +1226,56 @@ class CBHCompoundBatchResource(ModelResource):
             data.append(datum)
         bundles["objects"] = data
         return bundles
+
+
+
+    def get_list_elasticsearch(self, request, **kwargs):
+        """
+        Returns a serialized list of resources.
+        Calls ``obj_get_list`` to provide the data, then handles that result
+        set and serializes it.
+        Should return a HttpResponse (200 OK).
+        """
+        # TODO: Uncached for now. Invalidation that works for everyone may be
+        #       impossible.
+        base_bundle = self.build_bundle(request=request)
+        must_list = []
+            #If there is a substructure query then we use the non-elasticsearch implementation to pull back the required fields
+        objects = self.obj_get_list(bundle=base_bundle, **self.remove_api_resource_names(kwargs))
+        ids = objects.values_list("id", flat=True)[0:100000]
+        query = {"ids" : {
+                                "type" : "batches",
+                                "values" : [str(i) for i in ids]
+                            }
+                }
+        get_data = request.GET
+        
+        es_request = {
+            "from" : get_data.get("offset", 0),
+            "size" : get_data.get("limit", 50),
+            "query" : query,
+            "sort" : json.loads(get_data.get("sorts",'[{"id": {"order": "desc"}}]'))
+        }
+        index = elasticsearch_client.get_main_index_name()
+        es_serializer = CBHCompoundBatchElasticSearchSerializer()
+        es_serializer.convert_query(es_request)
+        bundledata = elasticsearch_client.get(index, es_request, {})
+        bundledata["objects"] = [es_serializer.to_python_ready_data(d) for d in bundledata["objects"]]
+
+        # paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
+        # to_be_serialized = paginator.page()
+
+        # # Dehydrate the bundles in preparation for serialization.
+        # bundles = []
+
+        # for obj in to_be_serialized[self._meta.collection_name]:
+        #     bundle = self.build_bundle(obj=obj, request=request)
+        #     bundles.append(self.full_dehydrate(bundle, for_list=True))
+
+        return self.create_response(request, bundledata)
+
+
+
 
 
 
@@ -1298,7 +1397,7 @@ class CBHCompoundBatchUpload(ModelResource):
             #send back
             #we should allow SD file uploads with no meta data
         if (len(headers) == 0 and correct_file.extension in (".xls", ".xlsx") ):
-            raise BadRequest("No Headers")
+            raise BadRequest("no_headers")
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 

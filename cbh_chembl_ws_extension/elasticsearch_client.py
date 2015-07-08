@@ -72,7 +72,6 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
       },
       'size': 0,
     }
-    print body
     result = es.search(body=body)
     #return the results in the right format
     data = [res["key"] for res in result["aggregations"]["autocomplete"]["buckets"]]
@@ -143,7 +142,7 @@ def create_temporary_index(batches, request, index_name):
                             })
         bulk_items.append(item)
     #Data is not refreshed!
-    print es.bulk(body=bulk_items)
+    es.bulk(body=bulk_items)
 
 def get_project_index_name(project):
     index_name = "%s__project__%s" % (ES_PREFIX, str(project.id))
