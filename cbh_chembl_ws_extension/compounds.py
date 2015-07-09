@@ -123,6 +123,7 @@ class CBHCompoundBatchResource(ModelResource):
             "flexmatch": ALL_WITH_RELATIONS,
             "created": ['gte','lte'],
             "created_by": ALL_WITH_RELATIONS,
+            "excludes": ALL_WITH_RELATIONS,
         }
         always_return_data = True
         prefix = "related_molregno"
@@ -202,7 +203,7 @@ class CBHCompoundBatchResource(ModelResource):
         #this is the similarity index for fingerprint-like searching
         fp = request.GET.get("fpValue", None)
         cms = None
-
+        #get filters which indicate blanks should be ignored
         if ws:
             smiles = self.convert_mol_string(ws)
             cms = CompoundMols.objects.with_substructure(smiles)
@@ -216,7 +217,9 @@ class CBHCompoundBatchResource(ModelResource):
             smiles = self.convert_mol_string(fm)
             cms = CompoundMols.objects.flexmatch(smiles)
 
-        
+        eb = request.GET.get("excludeBlanks")
+        if eb:
+            print("exclude blanks") 
         #else:
         #    cms = CompoundMols.objects.all()
         #To be generalised
