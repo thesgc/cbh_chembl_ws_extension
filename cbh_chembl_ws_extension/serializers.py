@@ -491,11 +491,13 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
         for key, value in data["custom_fields"].items():
             if type(value) == list:
                 for val in value:
-                    val = val.replace(u"\n|\r", " ")
-                    data['custom_field_list'].append({'name':key, 'value':val, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, val) })
+                    if val:
+                        val = val.replace(u"\n|\r", " ")
+                        data['custom_field_list'].append({'name':key, 'value':val, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, val) })
             else:
-                value = val.replace(u"\n|\r", " ")
-                data['custom_field_list'].append({'name':key, 'value':value, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, value) })
+                if value:
+                    value = value.replace(u"\n|\r", " ")
+                    data['custom_field_list'].append({'name':key, 'value':value, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, value) })
                 
         data['custom_field_list'].append({'name': "Project", 'value':data['project'], 'searchable_name': 'project', 'aggregation': '%s|%s' % ('Project', data['project']) })
         data['custom_field_list'].append({'name': "Upload Id", 'value':data['multiple_batch_id'], 'searchable_name': 'upload', 'aggregation': '%s|%d' % ('Upload', data['multiple_batch_id']) })
@@ -539,12 +541,14 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
         for key, value in data["custom_fields"].items():
             if type(value) == list:
                 for val in value:
-                    v = val.replace('\n', ' ').replace('\r', '')
-                    agg = '%s|%s' % (key, v)
-                    newdata['custom_field_list'].append({'name':key, 'value':v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg})
+                    if val:
+                        v = val.replace('\n', ' ').replace('\r', '')
+                        agg = '%s|%s' % (key, v)
+                        newdata['custom_field_list'].append({'name':key, 'value':v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg})
             else:
-                v = value.replace('\n', ' ').replace('\r', '')
-                agg = '%s|%s' % (key, v)
+                if value:
+                    v = value.replace('\n', ' ').replace('\r', '')
+                    agg = '%s|%s' % (key, v)
 
                 newdata['custom_field_list'].append({'name':key, 'value':v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg })
                 
