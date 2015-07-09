@@ -550,7 +550,7 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                     v = value.replace('\n', ' ').replace('\r', '')
                     agg = '%s|%s' % (key, v)
 
-                newdata['custom_field_list'].append({'name':key, 'value':v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg })
+                    newdata['custom_field_list'].append({'name':key, 'value':v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg })
                 
         newdata['custom_field_list'].append({'name': "Project", 'value':newdata['project'], 'searchable_name': 'project', 'aggregation': '%s|%s' % ('Project', newdata['project']) })
         newdata['custom_field_list'].append({'name': "Upload Id", 'value':newdata['multiple_batch_id'], 'searchable_name': 'upload', 'aggregation': '%s|%d' % ('Upload', newdata['multiple_batch_id']) })
