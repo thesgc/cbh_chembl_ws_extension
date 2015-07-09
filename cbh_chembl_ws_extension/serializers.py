@@ -480,7 +480,7 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                 #         continuecompound_stats
                 #     except:
                 #         pass
-                value[k] = str(v)
+                value[k] = unicode(v)
 
     def to_es_ready_data(self, data, options=None):
         options = options or {}
