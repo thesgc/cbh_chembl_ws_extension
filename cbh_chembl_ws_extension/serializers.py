@@ -551,6 +551,11 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
         newdata['custom_field_list'].append({'name': "Project", 'value':newdata['project'], 'searchable_name': 'project', 'aggregation': '%s|%s' % ('Project', newdata['project']) })
         newdata['custom_field_list'].append({'name': "Upload Id", 'value':newdata['multiple_batch_id'], 'searchable_name': 'upload', 'aggregation': '%s|%d' % ('Upload', newdata['multiple_batch_id']) })
         
+        for key, value in data.items():
+            if key in ["custom_fields", "uncurated_fields"]:
+                if options and options.get("underscorize", False):
+                    newdata[key] = self.underscorize_fields(value)           
+                self.handle_data_from_django_hstore( value)
         return newdata
     
 
