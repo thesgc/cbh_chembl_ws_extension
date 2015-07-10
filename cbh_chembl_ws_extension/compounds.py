@@ -1344,7 +1344,7 @@ class CBHCompoundBatchResource(ModelResource):
         es_request = {
             "from" : get_data.get("offset", 0),
             "size" : get_data.get("limit", 50),
-            "query" : json.loads(get_data.get("query", '{ "match_all" : {}}')),
+            "filter" : json.loads(get_data.get("query", '{ "match_all" : {}}')),
             "sort" : json.loads(get_data.get("sorts",'[{"id": {"order": "asc"}}]'))
         }
         index = elasticsearch_client.get_temp_index_name(request, multi_batch_id)
