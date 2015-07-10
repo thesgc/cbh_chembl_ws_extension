@@ -1030,10 +1030,10 @@ class CBHCompoundBatchResource(ModelResource):
         if not bundle.data.get("headers", None):
             bundle.data["headers"] = []
             for header in headers:
-                copyTo = ""
+                copyto = ""
                 automapped = False
                 if header == structure_col:  
-                    copyTo = "SMILES for chemical structures" 
+                    copyto = "SMILES for chemical structures" 
                     if automapped_structure:
                         automapped = True
                 else:
@@ -1045,12 +1045,12 @@ class CBHCompoundBatchResource(ModelResource):
                         if score > max_score and score > 0.9:
                             matched_item = form_item["key"]
                             automapped = True
-                    copyTo = matched_item
+                    copyto = matched_item
 
                 bundle.data["headers"].append({
                                                     "name": header,
                                                     "automapped": automapped, 
-                                                    "copyTo": copyTo,
+                                                    "copyto": copyto,
                                                     "fieldErrors" : { 
                                                         "stringdate": header in fielderrors["stringdate"],
                                                         "integer": header in fielderrors["integer"],
