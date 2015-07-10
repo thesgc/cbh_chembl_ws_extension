@@ -540,8 +540,8 @@ class CBHCompoundBatchResource(ModelResource):
             set_of_batches = self.get_cached_temporary_batches( bundles ,request,  bundledata=bundle.data)
             batches.extend(set_of_batches["objects"])
             offset += limit
-            #if len(set_of_batches["objects"]) == 0:
-            hasMoreData = None
+            if len(set_of_batches["objects"]) == 0:
+                hasMoreData = None
 
         mb.saved=True
         mb.created_by = request.user.username
@@ -560,7 +560,7 @@ class CBHCompoundBatchResource(ModelResource):
 
         elasticsearch_client.delete_index(elasticsearch_client.get_temp_index_name(request, mb.id))
         batch_dicts = self.batches_to_es_ready(to_be_saved, request)
-        index_name=elasticsearch_client.get_project_index_name(mb.project)
+        index_name=elasticsearch_client.get_main_index_name()
         elasticsearch_client.create_temporary_index(batch_dicts, request, index_name)
         #this needs to be the main elasticsearch compound index
         #and should update any existing records in there? That might be in another method
@@ -618,7 +618,7 @@ class CBHCompoundBatchResource(ModelResource):
             options={"underscorize": True}) for dictdata in bundle.data["objects"]]
         index_name=elasticsearch_client.get_temp_index_name(request, multi_batch_id)
         elasticsearch_client.create_temporary_index(es_ready_updates, request, index_name)
-        
+        elasticsearch_client.get_action_totals(index_name, bundle.data)
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
@@ -644,8 +644,11 @@ class CBHCompoundBatchResource(ModelResource):
         processSmiles = False
         # if structure_col and structure_col != mb.uploaded_data.get("structure_col", ""):
         #     processSmiles =  True
+        index_name=elasticsearch_client.get_temp_index_name(request, mb.id)
+        elasticsearch_client.get_action_totals(index_name, bundle.data)
         mb.uploaded_data = bundle.data
         mb.save()
+
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
@@ -757,6 +760,10 @@ class CBHCompoundBatchResource(ModelResource):
         multi_batch.uploaded_data = bundle.data
         multi_batch.save()
         bundle.data["objects"] = fifty_batches_for_first_page
+
+        index_name=elasticsearch_client.get_temp_index_name(request, multi_batch.id)
+        elasticsearch_client.get_action_totals(index_name, bundle.data)
+
         return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
 
@@ -772,9 +779,12 @@ class CBHCompoundBatchResource(ModelResource):
         # self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
         id = request.GET.get("current_batch")
         mb = CBHCompoundMultipleBatch.objects.get(pk=id)
+        
         to_be_serialized = mb.uploaded_data
 
-        to_be_serialized = self.get_cached_temporary_batch_data( id, request.GET, request, bundledata = to_be_serialized)        
+        to_be_serialized = self.get_cached_temporary_batch_data( id, request.GET, request, bundledata = to_be_serialized)   
+        index_name=elasticsearch_client.get_temp_index_name(request, id)
+        elasticsearch_client.get_action_totals(index_name, to_be_serialized)     
         # to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
         return self.create_response(request, to_be_serialized)
  
