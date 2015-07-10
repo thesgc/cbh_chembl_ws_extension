@@ -22,6 +22,27 @@ def delete_index(index_name):
     return es.indices.delete(index_name)
 
 
+def get_action_totals(index_name,  bundledata):
+    es_request_body = {
+        "size": 0,
+        "query" : {"match_all": {}},
+        "aggs" :{
+            "actions": {
+                "terms": {"field": "properties.action.raw"}
+            }
+        }
+    }
+    es = elasticsearch.Elasticsearch()
+
+    result = es.search(index_name, body=es_request_body)
+    bundledata["savestats"] = {"ignoring":0, "newbatches" :0 }
+    for buck in  result["aggregations"]["actions"]["buckets"]:
+        if buck.get("key", "") == "New Batch":
+            bundledata["savestats"]["newbatches"] = buck.get("doc_count", 0)
+        if buck.get("key", "") == "Ignore":
+            bundledata["savestats"]["ignoring"] = buck.get("doc_count", 0)
+    return bundledata
+
 def get(index_name, es_request_body, bundledata):
     es = elasticsearch.Elasticsearch()
     result = es.search(index_name, body=es_request_body)
@@ -142,7 +163,7 @@ def create_temporary_index(batches, request, index_name):
                             })
         bulk_items.append(item)
     #Data is not refreshed!
-    es.bulk(body=bulk_items)
+    es.bulk(body=bulk_items, refresh=True)
 
 def get_project_index_name(project):
     index_name = "%s__project__%s" % (ES_PREFIX, str(project.id))
