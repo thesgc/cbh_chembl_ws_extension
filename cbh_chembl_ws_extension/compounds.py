@@ -59,7 +59,7 @@ except AttributeError:
 
 from cbh_chembl_ws_extension.authorization import ProjectAuthorization
 from cbh_chembl_ws_extension.projects import ProjectResource
-from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer, CBHCompoundBatchElasticSearchSerializer
+from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer, CBHCompoundBatchElasticSearchSerializer, get_key_from_field_name
 from chembl_business_model.models import CompoundStructures
 #from cbh_chembl_ws_extension.base import NBResource
 from tastypie.utils import dict_strip_unicode_keys
@@ -1246,17 +1246,65 @@ class CBHCompoundBatchResource(ModelResource):
             #If there is a substructure query then we use the non-elasticsearch implementation to pull back the required fields
         objects = self.obj_get_list(bundle=base_bundle, **self.remove_api_resource_names(kwargs))
         ids = objects.values_list("id", flat=True)[0:100000]
+        
+        get_data = request.GET
+        blanks_filter = json.loads(get_data.get("showBlanks", "[]"))
+        blanks_filter = [get_key_from_field_name(field) for field in blanks_filter]
+        nonblanks_filter = json.loads(get_data.get("showNonBlanks", "[]"))
+        nonblanks_filter = [get_key_from_field_name(field) for field in nonblanks_filter]
+        #we need to alter the query to look for blanks or limit to non-blanks if specified
         query = {"ids" : {
                                 "type" : "batches",
                                 "values" : [str(i) for i in ids]
                             }
                 }
-        get_data = request.GET
+        if blanks_filter or nonblanks_filter:
+            #modify the query to include
+            blanks_queries = []
+            if blanks_filter:
+                #blanks_queries = []
+                for blank in blanks_filter:
+                    
+                    blanks_queries.append({"bool" :
+                                                {"should" :[
+                                                  {"term": {blank + ".raw": ""} },
+                                                   {"missing": {"field": blank}}
+                                                   ]
+                                                 }
+                                                })
+            nonblanks_queries = []
+            if nonblanks_filter:
+                
+                for nonblank in nonblanks_filter:
+
+                    nonblanks_queries.append({"bool" :
+                                                {"should" :[
+                                                  {"term": {nonblank + ".raw": ""} },
+                                                   {"missing": {"field": nonblank}}
+                                                   ]
+                                                 }
+                                                })
+
+
+
+            modified_query = {
+                            "bool": {
+                                "must": [query] + blanks_queries,
+                                "must_not": nonblanks_queries,
+                            },
+                }
+            
+            #from pprint import pprint
+            #pprint(modified_query)
+
+        else:
+            modified_query = query;
+
         
         es_request = {
             "from" : get_data.get("offset", 0),
             "size" : get_data.get("limit", 50),
-            "query" : query,
+            "filter" : modified_query,
             "sort" : json.loads(get_data.get("sorts",'[{"id": {"order": "desc"}}]'))
         }
         index = elasticsearch_client.get_main_index_name()

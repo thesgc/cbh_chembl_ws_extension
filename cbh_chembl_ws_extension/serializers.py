@@ -440,7 +440,7 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
         def camelToUnderscore(match):
             return match.group()[0] + "_" + match.group()[1].lower()
 
-        es_request["query"] = convert_query(es_request["query"])
+        es_request["filter"] = convert_query(es_request["filter"])
         es_request["sort"] = convert_query(es_request["sort"])
         newsort = []
         for item in es_request["sort"]:
