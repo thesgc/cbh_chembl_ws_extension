@@ -22,10 +22,6 @@ class CovertDateOperation(jsonpatch.PatchOperation):
         except (KeyError, IndexError) as ex:
             raise jsonpatch.JsonPatchConflict(str(ex))
 
-        if isinstance(subobj, jsonpatch.MutableMapping) and \
-                self.pointer.contains(from_ptr):
-            raise jsonpatch.JsonPatchConflict('Cannot move values into its own children')
-
         obj = jsonpatch.RemoveOperation({
             'op': 'remove',
             'path': self.location
@@ -40,6 +36,34 @@ class CovertDateOperation(jsonpatch.PatchOperation):
         return obj
 
 
+class SplitOperation(jsonpatch.PatchOperation):
+    """Ensures that a data point is formatted correctly for a date field"""
+
+    def apply(self, obj):
+        try:
+            from_ptr = jsonpatch.JsonPointer(self.location)
+        except KeyError as ex:
+            raise jsonpatch.InvalidJsonPatch(
+                "The operation does not contain a 'from' member")
+
+        subobj, part = from_ptr.to_last(obj)
+        try:
+            value = subobj[part]
+        except (KeyError, IndexError) as ex:
+            raise jsonpatch.JsonPatchConflict(str(ex))
+
+        obj = jsonpatch.RemoveOperation({
+            'op': 'remove',
+            'path': self.location
+        }).apply(obj)
+
+        obj = jsonpatch.AddOperation({
+            'op': 'add',
+            'path': self.location,
+            'value': [v.strip() for v in value.split(",") if v.strip()]
+        }).apply(obj)
+
+        return obj
 
 
 
@@ -48,7 +72,7 @@ class MyJsonPatch(jsonpatch.JsonPatch):
     def __init__(self, patch):
         instance = super(MyJsonPatch, self).__init__(patch)
         self.operations["convertdate"] = CovertDateOperation
-
+        self.operations["split"] = SplitOperation
 
 
 
@@ -57,7 +81,6 @@ def apply_json_patch(dictdata, patch):
     try:
         data = mjp.apply(dictdata, in_place=True)
         return data
-
     except jsonpatch.JsonPatchConflict:
         return dictdata
     except jsonpatch.JsonPointerException:
