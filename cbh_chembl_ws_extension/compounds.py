@@ -540,8 +540,8 @@ class CBHCompoundBatchResource(ModelResource):
             set_of_batches = self.get_cached_temporary_batches( bundles ,request,  bundledata=bundle.data)
             batches.extend(set_of_batches["objects"])
             offset += limit
-            #if len(set_of_batches["objects"]) == 0:
-            hasMoreData = None
+            if len(set_of_batches["objects"]) == 0:
+                hasMoreData = None
 
         mb.saved=True
         mb.created_by = request.user.username
@@ -560,7 +560,7 @@ class CBHCompoundBatchResource(ModelResource):
 
         elasticsearch_client.delete_index(elasticsearch_client.get_temp_index_name(request, mb.id))
         batch_dicts = self.batches_to_es_ready(to_be_saved, request)
-        index_name=elasticsearch_client.get_project_index_name(mb.project)
+        index_name=elasticsearch_client.get_main_index_name()
         elasticsearch_client.create_temporary_index(batch_dicts, request, index_name)
         #this needs to be the main elasticsearch compound index
         #and should update any existing records in there? That might be in another method
