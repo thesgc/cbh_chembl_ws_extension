@@ -206,7 +206,7 @@ class ProjectResource(ModelResource):
 
                                                 },
                                                 "multiple_batch_id": {
-                                                  "title": "Multiple Batch ID",
+                                                  "title": "Upload ID",
                                                   "type": "string",
                                                 },
                                                 "functional_group": {
