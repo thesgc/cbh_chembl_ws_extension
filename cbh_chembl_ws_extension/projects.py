@@ -81,7 +81,7 @@ class ProjectResource(ModelResource):
                                     "htmlClass": "col-xs-12",
                                     "placeholder" : "Search multiple IDs",
                                     "feedback": False,
-                                    "description": "Add your ids and click on them as they appear in the drop-down.",
+                                    "description": "Add your IDs and click on them as they appear in the drop-down list.",
                                     "options": {
                                       "refreshDelay": 0,
                                       "async": {
@@ -1411,7 +1411,7 @@ class ProjectResource(ModelResource):
                                                 },
 
                                                 "dateStart": {
-                                                  "title": "Added From",
+                                                  "title": "Added after",
                                                   "type": "string",
                                                   "format": "date",
                                                   "style": {
@@ -1420,7 +1420,7 @@ class ProjectResource(ModelResource):
                                                 }, 
 
                                                 "dateEnd": {
-                                                  "title": "Added Until",
+                                                  "title": "Added before",
                                                   "type": "string",
                                                   "format": "date",
                                                 },

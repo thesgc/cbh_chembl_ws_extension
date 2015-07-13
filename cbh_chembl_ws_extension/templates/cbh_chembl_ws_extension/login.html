@@ -119,7 +119,7 @@
             
 {% if password_login %}
       <form class="form-horizontal mt" method="post">
-            <label>{% if logout %}Logged out, log in again below{% else %}Please Login {% endif %}</label>
+            <label>{% if logout %}Logged out, log in again below{% else %}Please login {% endif %}</label>
 {% csrf_token %}
           <fieldset><div id="div_id_username" class="form-group"><label for="id_username" class="control-label  requiredField">
                       Username<span class="asteriskField">*</span></label><div class="controls "><input class="textinput textInput form-control" id="id_username" maxlength="254" name="username" type="text"> </div></div>
@@ -131,7 +131,7 @@
 {% endif %}
 
 {% if webauth_login %}
-<p><a role="button" href="webauth" value="Sign in with webauth" class="btn btn-primary" > Sign in with webauth</a></p> <p><a href="https://webauth.ox.ac.uk/logout" role="button" class="btn btn-danger">Log out of Webauth entirely</a></p>
+<p><a role="button" href="webauth" value="Sign in with webauth" class="btn btn-primary" > Sign in with Webauth</a></p> <p><a href="https://webauth.ox.ac.uk/logout" role="button" class="btn btn-danger">Log out of Webauth entirely</a></p>
 {% endif %}
   </div>
 </div>
