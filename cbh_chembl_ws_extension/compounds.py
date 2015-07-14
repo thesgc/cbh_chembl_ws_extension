@@ -77,7 +77,7 @@ import numpy as np
 import urllib
 from tastypie.validation import Validation
 
-from django.db.models import Max
+from django.db.models import Max, Q
 
 from tastypie.serializers import Serializer
 
@@ -205,6 +205,7 @@ class CBHCompoundBatchResource(ModelResource):
         #this is the similarity index for fingerprint-like searching
         fp = request.GET.get("fpValue", None)
         cms = None
+        pids = self._meta.authorization.project_ids(request)
         #get filters which indicate blanks should be ignored
         if ws:
             smiles = self.convert_mol_string(ws)
@@ -226,8 +227,38 @@ class CBHCompoundBatchResource(ModelResource):
         #    cms = CompoundMols.objects.all()
         #To be generalised
         cust = request.GET.get("search_custom_fields__kv_any", None)
+        #initialise this with project ids, sets up the correct AND initialisation with custom fields
+        cust_queries = Q(project_id__in=set(pids))
+
         if cust:
-            applicable_filters["custom_fields__kv_any"] = cust
+            #loop through the custom fields
+            #split on pipe (|)
+            #put items which are from the same custom field into an OR Q query
+            #https://docs.djangoproject.com/en/1.7/topics/db/queries/#complex-lookups-with-q-objects
+
+            cfields = cust.split(",")
+            grouped_fields = {}
+            for cfield in cfields:
+                cfield_parts = cfield.split("|")
+                if grouped_fields.has_key(cfield_parts[0]):
+                    grouped_fields[cfield_parts[0]].append(cfield)
+                else:
+                    grouped_fields[cfield_parts[0]] = [cfield]
+            
+            #grouped_fields = json.dumps(grouped_fields)
+            print(grouped_fields)
+            for key,val in grouped_fields.iteritems():
+                field_specific_queries = [Q(custom_fields__kv_any=value) for value in val]
+                print(field_specific_queries)
+                inner_queries = field_specific_queries.pop()
+                for item in field_specific_queries:
+                    inner_queries |= item
+
+                cust_queries &= inner_queries
+
+        print(cust_queries)
+
+            #applicable_filters["custom_fields__kv_any"] = cust
         if cms != None:
             #run the sql for pulling in new compounds into compound_mols
             indexed = CBHCompoundBatch.objects.index_new_compounds()
@@ -235,11 +266,11 @@ class CBHCompoundBatchResource(ModelResource):
 
         if request.GET.get("related_molregno__chembl__chembl_id__in", None):
             applicable_filters["related_molregno__chembl__chembl_id__in"] = request.GET.get("related_molregno__chembl__chembl_id__in").split(",")
-        pids = self._meta.authorization.project_ids(request)
+        
         dateend = applicable_filters.get("created__lte", None)
         if dateend:
             applicable_filters["created__lte"] += " 23:59:59"
-        dataset = self.get_object_list(request).filter(**applicable_filters).filter(project_id__in=set(pids))
+        dataset = self.get_object_list(request).filter(**applicable_filters).filter(cust_queries)
         func_group = request.GET.get("functional_group", None)
         
         if func_group:
@@ -1304,11 +1335,13 @@ class CBHCompoundBatchResource(ModelResource):
                             },
                 }
             
-            #from pprint import pprint
-            #pprint(modified_query)
+            
 
         else:
             modified_query = query;
+
+        from pprint import pprint
+        pprint(modified_query)
 
         
         es_request = {
