@@ -250,13 +250,13 @@ class CBHCompoundBatchResource(ModelResource):
             for key,val in grouped_fields.iteritems():
                 field_specific_queries = [Q(custom_fields__kv_any=value) for value in val]
                 print(field_specific_queries)
+                #initialise with the first object
                 inner_queries = field_specific_queries.pop()
                 for item in field_specific_queries:
+                    #OR the subqueries from the same custom field column
                     inner_queries |= item
-
+                #AND the sets of custom field queries
                 cust_queries &= inner_queries
-
-        print(cust_queries)
 
             #applicable_filters["custom_fields__kv_any"] = cust
         if cms != None:
