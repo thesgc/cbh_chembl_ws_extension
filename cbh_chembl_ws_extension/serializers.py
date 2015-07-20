@@ -429,6 +429,17 @@ def convert_query(data):
         return data
     return data
 
+def whitespaced(string):
+    s = re.sub('[^0-9a-zA-Z]+', ' ', string)
+    return ' %s' % s
+
+def get_agg(field_name, field_value):
+    return '%s|%s|%s|%s' % (field_name, 
+                            field_value,
+                            whitespaced(field_name), 
+                            whitespaced(field_value))
+
+
 class CBHCompoundBatchElasticSearchSerializer(Serializer):
     formats = ['json']
     content_types = {
@@ -493,14 +504,34 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                 for val in value:
                     if val:
                         val = val.replace(u"\n|\r", " ")
-                        data['custom_field_list'].append({'name':key, 'value':val, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, val) })
+                        data['custom_field_list'].append(
+                            {'name':key, 
+                            'value':val, 
+                            'searchable_name': key.split(" ")[0].lower(), 
+                            'aggregation': get_agg(key, val) }
+                            )
             else:
                 if value:
                     value = value.replace(u"\n|\r", " ")
-                    data['custom_field_list'].append({'name':key, 'value':value, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': '%s|%s' % (key, value) })
+                    data['custom_field_list'].append(
+                        {'name':key, 
+                        'value':value, 
+                        'searchable_name': key.split(" ")[0].lower(), 
+                        'aggregation': get_agg(key, val) })
                 
-        data['custom_field_list'].append({'name': "Project", 'value':data['project'], 'searchable_name': 'project', 'aggregation': '%s|%s' % ('Project', data['project']) })
-        data['custom_field_list'].append({'name': "Upload Id", 'value':data['multiple_batch_id'], 'searchable_name': 'upload', 'aggregation': '%s|%d' % ('Upload', data['multiple_batch_id']) })
+        data['custom_field_list'].append(
+            {'name': "Project", 
+            'value':data['project'], 
+            'searchable_name': 'project', 
+            'aggregation': get_agg('Project', data['project']) 
+            }
+            )
+        data['custom_field_list'].append(
+            {'name': "Upload Id", 
+            'value':data['multiple_batch_id'], 
+            'searchable_name': 'upload', 
+            'aggregation': get_agg('Upload', data['multiple_batch_id']) 
+            })
         
 
         for key, value in data.items():

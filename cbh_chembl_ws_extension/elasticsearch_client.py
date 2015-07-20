@@ -54,6 +54,7 @@ def get(index_name, es_request_body, bundledata):
 def get_autocomplete(projects, search_term, field, custom_fields=None, single_field=None):
     es = elasticsearch.Elasticsearch()
     project_terms = []
+    #Search for a space before item to ensure it is a separate word, note that the terms have been formatted to allow this type of match to work
     search_regex = '.*%s.*|.*%s.*|.*%s.*|.*%s.*' % (search_term.title(), search_term, search_term.upper(), search_term.lower())
     field_to_search = '%s.raw' % (field)
     for proj in projects:
@@ -73,11 +74,16 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
     if (custom_fields and single_field):
         #create a bool must term which is the custom field identifier
         #cust_str = 'custom_fields.value.raw' % (single_field)
-        must_list.append({
-                              'bool': {
-                                  'must': {'prefix': { 'custom_field_list.name.raw':  single_field } }
-                              }
-                            })
+        # agg_regex = '^%s(.*)(%s)' % (single_field, search_regex)
+        agg_regex = '^%s.*' % (single_field, )
+
+    else:
+        agg_regex = search_regex
+        # must_list.append({
+        #                       'bool': {
+        #                           'must': {'prefix': { 'custom_field_list.name.raw':  single_field } }
+        #                       }
+        #                     })
     body = {
       'query':{
           'bool':{
@@ -87,12 +93,16 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
       'aggs': {
         'autocomplete': {
           'terms': { 'field': field_to_search, 
-          'size':100,  #'include': str(search_regex) Include not working
+          'size':300,  
+          'include': str(agg_regex) 
           }
         }
       },
       'size': 0,
     }
+    from pprint import pprint
+    pprint(body)
+
     result = es.search(body=body)
     #return the results in the right format
     data = [res["key"] for res in result["aggregations"]["autocomplete"]["buckets"]]

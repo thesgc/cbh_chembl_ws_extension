@@ -332,19 +332,16 @@ class CBHCompoundBatchResource(ModelResource):
         custom_field = request.GET.get("custom_field", None)
         desired_format = self.determine_format(request)
         #send these project ids to the elasticsearch query?
-        if(prefix):
             #filters["search_custom_fields__kv_any"] = prefix
-            uox_ids = list(elasticsearch_client.get_autocomplete(pids, 
-                                                                 prefix, 
-                                                                 'custom_field_list.aggregation', 
-                                                                 custom_fields=True, 
-                                                                 single_field=custom_field))
-            #bundle.data = ["%s|%s" % (uox, uox) for uox in uox_ids]
-            bundle.data = [{"value" :uox, "label" : self.labelify_aggregate(uox, single_field=custom_field)} for uox in uox_ids]
-            serialized = json.dumps(bundle.data)
-        else:
-            serialized = "[]"
-
+        uox_ids = list(elasticsearch_client.get_autocomplete(pids, 
+                                                             prefix, 
+                                                             'custom_field_list.aggregation', 
+                                                             custom_fields=True, 
+                                                             single_field=custom_field))
+        #bundle.data = ["%s|%s" % (uox, uox) for uox in uox_ids]
+        bundle.data = [{"value" :uox, "label" : self.labelify_aggregate(uox, single_field=custom_field)} for uox in uox_ids]
+        serialized = json.dumps(bundle.data)
+       
        
         rc = HttpResponse(content=serialized, content_type=build_content_type(desired_format), )
         
@@ -1339,9 +1336,6 @@ class CBHCompoundBatchResource(ModelResource):
 
         else:
             modified_query = query;
-
-        from pprint import pprint
-        pprint(modified_query)
 
         
         es_request = {
