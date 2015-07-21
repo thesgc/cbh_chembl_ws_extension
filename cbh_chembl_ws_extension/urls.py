@@ -31,6 +31,7 @@ api.register(CBHCompoundMultipleBatchResource())
 api.register(CBHCompoundBatchUpload())
 api.register(UserResource())
 api.register(ProjectResource())
+api.register(SkinningResource())
 
 
 admin.autodiscover()

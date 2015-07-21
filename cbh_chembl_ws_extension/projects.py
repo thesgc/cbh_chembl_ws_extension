@@ -7,7 +7,7 @@ from tastypie.resources import ModelResource, Resource
 from itertools import chain
 
 
-from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project, CustomFieldConfig, PinnedCustomField
+from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project, CustomFieldConfig, PinnedCustomField, SkinningConfig
 from cbh_chembl_ws_extension.base import UserResource
 from cbh_chembl_ws_extension.authorization import ProjectAuthorization, ProjectListAuthorization
 from tastypie.serializers import Serializer
@@ -1563,5 +1563,16 @@ class ProjectResource(ModelResource):
         return (obj.name, data, obj.required, form, searchitems)
 
 
+'''URL resourcing for pulling out sitewide skinning config '''
+class SkinningResource(ModelResource):
 
+    class Meta:
+        always_return_data = True
+        queryset = SkinningConfig.objects.all()
+        resource_name = 'cbh_skinning'
+        #authorization = Authorization()
+        include_resource_uri = False
+        allowed_methods = ['get', 'post', 'put']
+        default_format = 'application/json'
+        authentication = SessionAuthentication()
         
