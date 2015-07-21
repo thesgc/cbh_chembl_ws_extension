@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.contrib import admin
-from cbh_chembl_model_extension.models import Project, PinnedCustomField, CustomFieldConfig, SkinningConfig
+from cbh_chembl_model_extension.models import Project, PinnedCustomField, CustomFieldConfig, SkinningConfig, ProjectType
 
 from django.contrib.admin import ModelAdmin
 from cbh_chembl_ws_extension.projects import ProjectResource
@@ -94,10 +94,14 @@ class CustomFieldConfigAdmin(ModelAdmin):
         models.CharField: {'widget': TextInput(attrs={'size':'20'})},
     }
 
+class ProjectTypeAdmin(ModelAdmin):
+    list_display = ('name', 'show_compounds')
+
+
 
 class ProjectAdmin(ModelAdmin):
     prepopulated_fields = {"project_key": ("name",)}
-    list_display = ('name', 'project_key', 'created')
+    list_display = ('name', 'project_key', 'created', 'project_type')
     search_fields = ('name',)
     ordering = ('-created',)
     date_hierarchy = 'created'
@@ -116,6 +120,8 @@ class ProjectAdmin(ModelAdmin):
 
 
 
+
 admin.site.register(CustomFieldConfig, CustomFieldConfigAdmin)
 admin.site.register(Project, ProjectAdmin)
+admin.site.register(ProjectType, ProjectTypeAdmin)
 admin.site.register(SkinningConfig, SingletonModelAdmin)
