@@ -430,8 +430,11 @@ def convert_query(data):
     return data
 
 def whitespaced(string):
-    s = re.sub('[^0-9a-zA-Z]+', ' ', string)
-    return ' %s' % s
+    if string:
+        s = re.sub('[^0-9a-zA-Z]+', ' ', unicode(string))
+        return ' %s' % s
+    else:
+        return ""
 
 def get_agg(field_name, field_value):
     return '%s|%s|%s|%s' % (field_name, 

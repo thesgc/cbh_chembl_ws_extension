@@ -1015,22 +1015,19 @@ class CBHCompoundBatchResource(ModelResource):
                     if structure_col:
                         smiles_str = row[structure_col]
                         try:
-                            
                             struc = Chem.MolFromSmiles(smiles_str)
                             if struc:
                                 Compute2DCoords(struc)
-                                try:
-                                    b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
-                                    b.blinded_batch_id = None
-                                except Exception, e:
-                                    b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])
-                                    b.original_smiles = smiles_str
-                                    b.warnings["smilesParseError"] = "true"
-                                    b.properties["action"] = "Ignore"
+                                b = CBHCompoundBatch.objects.from_rd_mol(struc, smiles=smiles_str, project=bundle.data["project"], reDraw=True)
+                                b.blinded_batch_id = None
+                            else:
+                                raise Exception("Smiles not processed")
+                                    
                         except Exception, e:
-                            errors.append({"index" : index+1,  "message" : str(e)})
                             b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])
+                            b.original_smiles = smiles_str
                             b.warnings["smilesParseError"] = "true"
+                            b.properties["action"] = "Ignore"
                     else:
                         b = CBHCompoundBatch.objects.blinded(project=bundle.data["project"])                    
 
@@ -1060,33 +1057,43 @@ class CBHCompoundBatchResource(ModelResource):
             for header in headers:
                 copyto = ""
                 automapped = False
+                operations = []
                 if header == structure_col:  
                     copyto = "SMILES for chemical structures" 
                     if automapped_structure:
                         automapped = True
                 else:
                     form = copy.deepcopy(schemaform["form"])
-                    matched_item = ""
+                    copyto = ""
                     max_score = 0
+
                     for form_item in form:
                         score = fuzzymatch(a=form_item["key"].lower(), b=header.lower()).ratio()
                         if score > max_score and score > 0.9:
-                            matched_item = form_item["key"]
-                            automapped = True
-                    copyto = matched_item
+                            matched_item = form_item
+                            print matched_item
+                            copyto = matched_item["key"]
+                            automapped = True 
+                            if(matched_item["field_type"]=="uiselecttags"):
+                                operations.append({"op": "split", "path": "/uncurated_fields/" + header})
+                                operations.append({"op": "move", "path": "/custom_fields/" + matched_item["key"] , "from" : "/uncurated_fields/" + header })
+                            else:
+                                operation = {"op": "move", "path": "/custom_fields/" + matched_item["key"]  , "from" : "/uncurated_fields/" + header }
+                                operation.append(operation);
+                                if(newField.format=="date"):
+                                    operations.append({"op": "convertdate", "path": "/custom_fields/" + matched_item["key"]})
 
                 bundle.data["headers"].append({
                                                     "name": header,
                                                     "automapped": automapped, 
                                                     "copyto": copyto,
+                                                    "operations" : operations,
                                                     "fieldErrors" : { 
                                                         "stringdate": header in fielderrors["stringdate"],
                                                         "integer": header in fielderrors["integer"],
                                                         "number": header in fielderrors["number"]
                                                     }
                                             })
-
-        # bundle.data["fieldErrors"] = {key: list(value) for key, value in fielderrors.items()}
 
         return self.validate_multi_batch(multiple_batch, bundle, request, batches)
 
