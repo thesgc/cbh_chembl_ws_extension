@@ -522,19 +522,19 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                         'searchable_name': key.split(" ")[0].lower(), 
                         'aggregation': get_agg(key, val) })
                 
-        data['custom_field_list'].append(
-            {'name': "Project", 
-            'value':data['project'], 
-            'searchable_name': 'project', 
-            'aggregation': get_agg('Project', data['project']) 
-            }
-            )
-        data['custom_field_list'].append(
-            {'name': "Upload Id", 
-            'value':data['multiple_batch_id'], 
-            'searchable_name': 'upload', 
-            'aggregation': get_agg('Upload', data['multiple_batch_id']) 
-            })
+        # data['custom_field_list'].append(
+        #     {'name': "Project", 
+        #     'value':data['project'], 
+        #     'searchable_name': 'project', 
+        #     'aggregation': get_agg('Project', data['project']) 
+        #     }
+        #     )
+        # data['custom_field_list'].append(
+        #     {'name': "Upload Id", 
+        #     'value':data['multiple_batch_id'], 
+        #     'searchable_name': 'upload', 
+        #     'aggregation': get_agg('Upload', data['multiple_batch_id']) 
+        #     })
         
 
         for key, value in data.items():
@@ -549,25 +549,9 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
     def to_es_ready_non_chemical_data(self, data, options=None):
         options = options or {}
         newdata = {}
-        non_chem_fields = ['batch_number', 
-                            'blinded_batch_id', 
-                            'chemblId', 
-                            'created', 
-                            'created_by', 
-                            'editable_by', 
-                            'id', 
-                            'modified',
-                            'multiple_batch_id',
-                            'project',
-                            'timestamp',
-                            'uncurated_fields',
-                            'custom_fields']
+
         data = self.to_simple(data, options)
-        #pull out the non-chemical fields for the main search - 
-        #we will send the hits to the backend for any subsequent structure searching
-        # for item in non_chem_fields:
-        #     if data[item]:
-        #         newdata[item] = data[item]
+
         newdata = copy.deepcopy(data)
         newdata['custom_field_list'] = []
         self.handle_data_from_django_hstore(data["custom_fields"])
@@ -586,8 +570,8 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
 
                     newdata['custom_field_list'].append({'name':key, 'value':v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg })
                 
-        newdata['custom_field_list'].append({'name': "Project", 'value':newdata['project'], 'searchable_name': 'project', 'aggregation': '%s|%s' % ('Project', newdata['project']) })
-        newdata['custom_field_list'].append({'name': "Upload Id", 'value':newdata['multiple_batch_id'], 'searchable_name': 'upload', 'aggregation': '%s|%d' % ('Upload', newdata['multiple_batch_id']) })
+        # newdata['custom_field_list'].append({'name': "Project", 'value':newdata['project'], 'searchable_name': 'project', 'aggregation': '%s|%s' % ('Project', newdata['project']) })
+        # newdata['custom_field_list'].append({'name': "Upload Id", 'value':newdata['multiple_batch_id'], 'searchable_name': 'upload', 'aggregation': '%s|%d' % ('Upload', newdata['multiple_batch_id']) })
         
         for key, value in data.items():
             if key in ["custom_fields", "uncurated_fields"]:
