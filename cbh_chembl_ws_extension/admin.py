@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.contrib import admin
-from cbh_chembl_model_extension.models import Project, PinnedCustomField, CustomFieldConfig
+from cbh_chembl_model_extension.models import Project, PinnedCustomField, CustomFieldConfig, SkinningConfig
 
 from django.contrib.admin import ModelAdmin
 from cbh_chembl_ws_extension.projects import ProjectResource
@@ -10,6 +10,7 @@ from cbh_chembl_ws_extension.compounds import CBHCompoundBatchResource
 from django.forms.widgets import HiddenInput, TextInput
 from django.db import models
 import json
+from solo.admin import SingletonModelAdmin
 
 class GrappelliSortableHiddenMixin(object):
     """
@@ -94,9 +95,6 @@ class CustomFieldConfigAdmin(ModelAdmin):
     }
 
 
-
-
-
 class ProjectAdmin(ModelAdmin):
     prepopulated_fields = {"project_key": ("name",)}
     list_display = ('name', 'project_key', 'created')
@@ -120,3 +118,4 @@ class ProjectAdmin(ModelAdmin):
 
 admin.site.register(CustomFieldConfig, CustomFieldConfigAdmin)
 admin.site.register(Project, ProjectAdmin)
+admin.site.register(SkinningConfig, SingletonModelAdmin)
