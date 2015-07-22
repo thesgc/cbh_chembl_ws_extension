@@ -236,7 +236,7 @@ class CBHCompoundBatchResource(ModelResource):
             #put items which are from the same custom field into an OR Q query
             #https://docs.djangoproject.com/en/1.7/topics/db/queries/#complex-lookups-with-q-objects
 
-            cfields = cust.split(",")
+            cfields = json.loads(cust)
             grouped_fields = {}
             for cfield in cfields:
                 cfield_parts = cfield.split("|")
@@ -246,10 +246,9 @@ class CBHCompoundBatchResource(ModelResource):
                     grouped_fields[cfield_parts[0]] = [cfield]
             
             #grouped_fields = json.dumps(grouped_fields)
-            print(grouped_fields)
             for key,val in grouped_fields.iteritems():
-                field_specific_queries = [Q(custom_fields__kv_any=value) for value in val]
-                print(field_specific_queries)
+                print val
+                field_specific_queries = [Q(custom_fields__kv_single=value) for value in val]
                 #initialise with the first object
                 inner_queries = field_specific_queries.pop()
                 for item in field_specific_queries:
@@ -1071,7 +1070,6 @@ class CBHCompoundBatchResource(ModelResource):
                         score = fuzzymatch(a=form_item["key"].lower(), b=header.lower()).ratio()
                         if score > max_score and score > 0.9:
                             matched_item = form_item
-                            print matched_item
                             copyto = matched_item["key"]
                             automapped = True 
                             if(matched_item["field_type"]=="uiselecttags"):
