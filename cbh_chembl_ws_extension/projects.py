@@ -69,7 +69,7 @@ class ProjectResource(ModelResource):
                                                   "format" : "uiselect",
                                                   "items" :[],
                                                   "placeholder": "Tagged fields",
-                                                  "title": "Any of the following custom field values:",
+                                                  "title": "Any of the following project data values:",
                                                 }
                                 }
                   },
@@ -1444,7 +1444,7 @@ class ProjectResource(ModelResource):
                                                   "format" : "uiselect",
                                                   "items" :[],
                                                   "placeholder": "Tagged fields",
-                                                  "title": "Any of the following custom field values:",
+                                                  "title": "Any of the following project data values:",
                                                 }
 
                                     
