@@ -175,7 +175,7 @@ class ProjectResource(ModelResource):
                                     "htmlClass": "col-sm-12",
                                     "key": "search_custom_fields__kv_any",
                                     "disableSuccessState": True,
-                                    "help": "Searching using this filter will bring back results that match an OR pattern, i.e. results which contain this item OR that item. AND functionality will be added soon.",
+                                    "help": "Searching using this filter will bring back results that match an OR pattern within the same data category, with AND across data categories, i.e. results which contain this item within category a OR that item within category a AND that item within category b.",
                                     "feedback": False,
                                     "options": {
                                     "refreshDelay": 0,
