@@ -520,22 +520,9 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                         {'name':key, 
                         'value':value, 
                         'searchable_name': key.split(" ")[0].lower(), 
-                        'aggregation': get_agg(key, val) })
+                        'aggregation': get_agg(key, value) })
                 
-        # data['custom_field_list'].append(
-        #     {'name': "Project", 
-        #     'value':data['project'], 
-        #     'searchable_name': 'project', 
-        #     'aggregation': get_agg('Project', data['project']) 
-        #     }
-        #     )
-        # data['custom_field_list'].append(
-        #     {'name': "Upload Id", 
-        #     'value':data['multiple_batch_id'], 
-        #     'searchable_name': 'upload', 
-        #     'aggregation': get_agg('Upload', data['multiple_batch_id']) 
-        #     })
-        
+
 
         for key, value in data.items():
             if key in ["custom_fields", "uncurated_fields"]:
