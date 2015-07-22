@@ -100,8 +100,7 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
       },
       'size': 0,
     }
-    from pprint import pprint
-    pprint(body)
+
 
     result = es.search(body=body)
     #return the results in the right format
