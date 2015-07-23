@@ -734,7 +734,7 @@ class ProjectResource(ModelResource):
                                                                   {
                                                                     "label":"Two Nitro groups",
                                                                     "value":"[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8].[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]",
-                                                                   # "description":""
+                                                                 # "description":""
                                                                   },
                                                                   {
                                                                     "label":"Nitroso-group",
@@ -1443,8 +1443,8 @@ class ProjectResource(ModelResource):
                                                   "type": "array", 
                                                   "format" : "uiselect",
                                                   "items" :[],
-                                                  "placeholder": "Tagged fields",
-                                                  "title": "Any of the following custom field values:",
+                                                  "placeholder": "Choose column and value...",
+                                                  "title": "Filter by project data values:",
                                                 }
 
                                     
