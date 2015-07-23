@@ -38,7 +38,8 @@ class ProjectResource(ModelResource):
             "project_key": ALL_WITH_RELATIONS,
         }
 
-
+    def get_object_list(self, request):
+        return super(ProjectResource, self).get_object_list(request).order_by('-modified')
 
     def get_searchform(self, bundle,searchfield_items ):
         '''Note that the form here is expected to have the UOx id as the first item'''
@@ -68,9 +69,9 @@ class ProjectResource(ModelResource):
                                                   "type": "array", 
                                                   "format" : "uiselect",
                                                   "items" :[],
-                                                  "placeholder": "Tagged fields",
-                                                  "title": "Any of the following project data values:",
-                                                }
+                                                  "placeholder": "Filter project data",
+                                                  "title": "Project data values:",                                                }
+
                                 }
                   },
 
