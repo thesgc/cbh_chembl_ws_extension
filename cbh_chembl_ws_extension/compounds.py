@@ -1078,7 +1078,7 @@ class CBHCompoundBatchResource(ModelResource):
                             else:
                                 operation = {"op": "move", "path": "/custom_fields/" + matched_item["key"]  , "from" : "/uncurated_fields/" + header }
                                 operations.append(operation);
-                                if(newField.format=="date"):
+                                if(matched_item.get("format", "")=="date"):
                                     operations.append({"op": "convertdate", "path": "/custom_fields/" + matched_item["key"]})
 
                 bundle.data["headers"].append({
