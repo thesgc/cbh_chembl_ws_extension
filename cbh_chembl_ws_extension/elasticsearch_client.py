@@ -182,8 +182,5 @@ def reindex_compound(dataset, id):
     #reindex the specified compound in the specified index
     index_name = get_main_index_name()
     es = elasticsearch.Elasticsearch()
-    update_body = {
-      "doc" : dataset,
-      "detect_noop": "true"
-    }
+    update_body= dataset
     return es.index(id=id, doc_type="batches" ,index=index_name, body=update_body, refresh=True)

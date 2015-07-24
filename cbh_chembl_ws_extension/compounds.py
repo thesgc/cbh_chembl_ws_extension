@@ -367,17 +367,19 @@ class CBHCompoundBatchResource(ModelResource):
         index_name = elasticsearch_client.get_main_index_name()
         es_reindex = elasticsearch_client.create_temporary_index(batch_dicts, request, index_name)
 
-        return HttpResponse(content=es_reindex, content_type=build_content_type(desired_format) )
+        return HttpResponse(content=json.dumps({"data" :es_reindex}), content_type=build_content_type(desired_format) )
 
     def reindex_compound(self, request, **kwargs):
         #call this when we need to re-index a compound record which has had fields edited
         desired_format = self.determine_format(request)
-        id = request.GET.get("current_batch", None)
+        deserialized = self.deserialize(request, request.body, format=desired_format)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        id = bundle.data.get("id", None)
         dataset = self.get_object_list(request).filter(id=id)
         batch_dicts = self.batches_to_es_ready(dataset, request, non_chem_data_only=True)
-        es_reindex = elasticsearch_client.reindex_compound(batch_dicts, id)
+        es_reindex = elasticsearch_client.reindex_compound(batch_dicts[0], id)
 
-        return HttpResponse(content=es_reindex, content_type=build_content_type(desired_format) )
+        return HttpResponse(content=json.dumps({"data" :es_reindex}), content_type=build_content_type(desired_format) )
 
 
     def convert_mol_string(self, strn):
