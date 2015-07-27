@@ -109,16 +109,15 @@ class ProjectResource(ModelResource):
                                     }},
                                 {
                                   "key": "project__project_key__in",
-                                  "type": "checkboxes",
                                  # "description": "<info-box freetext='Limit your search results to items tagged with project-specific information'></info-box>",
-                                  "placeholder": "Check the console",
+                                  "placeholder": "Select projects to search",
                                   "htmlClass": "col-sm-12",
-                                  "onChange": "getSearchCustomFields()",
-                                  "titleMap": {
-                                        p.obj.project_key : p.obj.name for p in  bundle["objects"]
-                                  },
+                                  # "onChange": "getSearchCustomFields()",
+                                  "feedback": True,
+                                  "validationMessage": {
+                                      'default': 'Please select projects to be searched.',                                                    }
                                   
-                                  "disableSuccessState": True,
+                                  # "disableSuccessState": True,
                                 },
                                 {
                                   "key": "dateStart",
@@ -217,9 +216,12 @@ class ProjectResource(ModelResource):
                                                 },
                                                 "project__project_key__in": {
                                                   "title": "Project",
-                                                  "type": "string",
-                                                    "enum" :[p.obj.project_key for p in bundle["objects"]],
-                                                 "default" : [p.obj.project_key for p in bundle["objects"]]
+                                                  "type": "array",
+                                                  "format" : "uiselect", 
+                                                  "items"  : [
+                                                      {"label": p.obj.name, "value": p.obj.project_key } for p in  bundle["objects"]
+                                                  ],
+                                                                    # "enum" :[p.obj.project_key for p in bundle["objects"]],
 
                                                 },
                                                 "multiple_batch_id": {
@@ -750,7 +752,7 @@ class ProjectResource(ModelResource):
                                                                   {
                                                                     "label":"Two Nitro groups",
                                                                     "value":"[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8].[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]",
-                                                                   # "description":""
+                                                                 # "description":""
                                                                   },
                                                                   {
                                                                     "label":"Nitroso-group",
@@ -1459,8 +1461,9 @@ class ProjectResource(ModelResource):
                                                   "type": "array", 
                                                   "format" : "uiselect",
                                                   "items" :[],
-                                                  "placeholder": "Tagged fields",
-                                                  "title": "Any of the following project data values:",
+                                                  "placeholder": "Choose column and value...",
+                                                  "title": "Filter by project data values:",
+
                                                 }
 
                                     
