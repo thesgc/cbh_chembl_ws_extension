@@ -5,9 +5,10 @@ from django.http import HttpResponse
 
 from tastypie.resources import ModelResource, Resource
 from itertools import chain
+from tastypie import fields
 
 
-from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project, CustomFieldConfig, PinnedCustomField, SkinningConfig
+from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project, ProjectType, CustomFieldConfig, PinnedCustomField, SkinningConfig
 from cbh_chembl_ws_extension.base import UserResource
 from cbh_chembl_ws_extension.authorization import ProjectAuthorization, ProjectListAuthorization
 from tastypie.serializers import Serializer
@@ -20,9 +21,23 @@ import urllib
 from django.core.urlresolvers import reverse
 from cbh_chembl_ws_extension.serializers import CBHCompoundBatchElasticSearchSerializer
 import elasticsearch_client
+from django.db.models import Prefetch
+
+class ProjectTypeResource(ModelResource):
+
+    '''Resource for Project Type, specifies whether this is a chemical/inventory instance etc '''
+    class Meta:
+        always_return_data = True
+        queryset = ProjectType.objects.all()
+        resource_name = 'cbh_project_types'
+        #authorization = Authorization()
+        include_resource_uri = False
+        allowed_methods = ['get', 'post', 'put']
+        default_format = 'application/json'
+        authentication = SessionAuthentication()
 
 class ProjectResource(ModelResource):
-
+    project_type = fields.ForeignKey(ProjectTypeResource, 'project_type', blank=False, null=False, full=True)
     class Meta:
         queryset = Project.objects.all()
         authentication = SessionAuthentication()
@@ -39,7 +54,7 @@ class ProjectResource(ModelResource):
         }
 
     def get_object_list(self, request):
-        return super(ProjectResource, self).get_object_list(request).order_by('-modified')
+        return super(ProjectResource, self).get_object_list(request).prefetch_related(Prefetch("project_type")).order_by('-modified')
 
     def get_searchform(self, bundle,searchfield_items ):
         '''Note that the form here is expected to have the UOx id as the first item'''
@@ -1564,9 +1579,8 @@ class ProjectResource(ModelResource):
         return (obj.name, data, obj.required, form, searchitems)
 
 
-'''URL resourcing for pulling out sitewide skinning config '''
 class SkinningResource(ModelResource):
-
+    '''URL resourcing for pulling out sitewide skinning config '''
     class Meta:
         always_return_data = True
         queryset = SkinningConfig.objects.all()
@@ -1576,4 +1590,6 @@ class SkinningResource(ModelResource):
         allowed_methods = ['get', 'post', 'put']
         default_format = 'application/json'
         authentication = SessionAuthentication()
+        
+
         
