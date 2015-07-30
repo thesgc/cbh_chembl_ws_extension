@@ -19,9 +19,18 @@ import copy
 import time
 import urllib
 from django.core.urlresolvers import reverse
-from cbh_chembl_ws_extension.serializers import CBHCompoundBatchElasticSearchSerializer
+from cbh_chembl_ws_extension.serializers import CBHCompoundBatchElasticSearchSerializer, CustomFieldsSerializer
 import elasticsearch_client
 from django.db.models import Prefetch
+
+def build_content_type(format, encoding='utf-8'):
+    """
+    Appends character encoding to the provided format if not already present.
+    """
+    if 'charset' in format:
+        return format
+
+    return "%s; charset=%s" % (format, encoding)
 
 class ProjectTypeResource(ModelResource):
 
@@ -36,8 +45,25 @@ class ProjectTypeResource(ModelResource):
         default_format = 'application/json'
         authentication = SessionAuthentication()
 
+class CustomFieldConfigResource(ModelResource):
+
+    '''Resource for Custom Field Config '''
+    class Meta:
+        always_return_data = True
+        queryset = CustomFieldConfig.objects.all()
+        resource_name = 'cbh_custom_field_configs'
+        #authorization = ProjectListAuthorization()
+        include_resource_uri = False
+        allowed_methods = ['get', 'post', 'put']
+        default_format = 'application/json'
+        authentication = SessionAuthentication()
+        filtering = {
+            "name": ALL_WITH_RELATIONS
+        }
+
 class ProjectResource(ModelResource):
     project_type = fields.ForeignKey(ProjectTypeResource, 'project_type', blank=False, null=False, full=True)
+    custom_field_config = fields.ForeignKey(CustomFieldConfigResource, 'custom_field_config', blank=False, null=False, full=True)
     class Meta:
         queryset = Project.objects.all()
         authentication = SessionAuthentication()
@@ -47,7 +73,8 @@ class ProjectResource(ModelResource):
         authorization = ProjectListAuthorization()
         include_resource_uri = False
         default_format = 'application/json'
-        serializer = Serializer()
+        #serializer = Serializer()
+        serializer = CustomFieldsSerializer()
         filtering = {
             
             "project_key": ALL_WITH_RELATIONS,
@@ -55,6 +82,15 @@ class ProjectResource(ModelResource):
 
     def get_object_list(self, request):
         return super(ProjectResource, self).get_object_list(request).prefetch_related(Prefetch("project_type")).order_by('-modified')
+
+    def prepend_urls(self):
+        return [
+        url(r"^(?P<resource_name>%s)/custom_fields/$" % self._meta.resource_name,
+            self.wrap_view('get_custom_fields'), name="get_custom_fields"),
+        ]
+
+    def get_custom_fields(self, request):
+        return super(ProjectResource, self).get_object_list(request).prefetch_related(Prefetch("custom_field_config"))
 
     def get_searchform(self, bundle,searchfield_items ):
         '''Note that the form here is expected to have the UOx id as the first item'''
@@ -1482,6 +1518,7 @@ class ProjectResource(ModelResource):
         userbundle = userres.build_bundle(obj=request.user, request=request)
         userbundle = userres.full_dehydrate(userbundle)
         bundle['user'] = userbundle.data
+
         editor_projects = self._meta.authorization.editor_projects(request)
         for bun in bundle["objects"]:
             bun.data["editor"] = bun.obj.id in editor_projects
@@ -1499,6 +1536,14 @@ class ProjectResource(ModelResource):
                 bun.data["editor"] = bun.obj.id in editor_projects
 
             bundle["searchform"] = self.get_searchform(bundle,searchfield_items)
+
+
+        if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or request.GET.get("format") == "xls"  ):
+            
+            cfr_string = self.get_object_list(request).filter(id=request.GET.get("project_key"))[0].custom_field_config.schemaform
+            cfr_json = json.loads(cfr_string)
+            bundle['custom_field_config'] = cfr_json['form']
+
         return bundle
 
 
@@ -1582,6 +1627,21 @@ class ProjectResource(ModelResource):
         return (obj.name, data, obj.required, form, searchitems)
 
 
+    def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
+        """
+        Extracts the common "which-format/serialize/return-response" cycle.
+        Mostly a useful shortcut/hook.
+        """
+
+        desired_format = self.determine_format(request)
+        serialized = self.serialize(request, data, desired_format)
+        rc = response_class(content=serialized, content_type=build_content_type(desired_format), **response_kwargs)
+
+        if(desired_format == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
+            rc['Content-Disposition'] = 'attachment; filename=project_data_explanation.xlsx'
+        return rc
+
+
 class SkinningResource(ModelResource):
     '''URL resourcing for pulling out sitewide skinning config '''
     class Meta:
@@ -1593,6 +1653,5 @@ class SkinningResource(ModelResource):
         allowed_methods = ['get', 'post', 'put']
         default_format = 'application/json'
         authentication = SessionAuthentication()
-        
 
-        
+
