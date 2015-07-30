@@ -230,6 +230,7 @@ class CBHCompoundBatchResource(ModelResource):
         #initialise this with project ids, sets up the correct AND initialisation with custom fields
         cust_queries = Q(project_id__in=set(pids))
 
+
         if cust:
             #loop through the custom fields
             #split on pipe (|)
@@ -1297,52 +1298,60 @@ class CBHCompoundBatchResource(ModelResource):
         blanks_filter = [get_key_from_field_name(field) for field in blanks_filter]
         nonblanks_filter = json.loads(get_data.get("showNonBlanks", "[]"))
         nonblanks_filter = [get_key_from_field_name(field) for field in nonblanks_filter]
+        archived = request.GET.get("archived", None)
         #we need to alter the query to look for blanks or limit to non-blanks if specified
         query = {"ids" : {
                                 "type" : "batches",
                                 "values" : [str(i) for i in ids]
                             }
+
                 }
-        if blanks_filter or nonblanks_filter:
-            #modify the query to include
-            blanks_queries = []
-            if blanks_filter:
-                #blanks_queries = []
-                for blank in blanks_filter:
-                    
-                    blanks_queries.append({"bool" :
-                                                {"should" :[
-                                                  {"term": {blank + ".raw": ""} },
-                                                   {"missing": {"field": blank}}
-                                                   ]
-                                                 }
-                                                })
-            nonblanks_queries = []
-            if nonblanks_filter:
+
+        #modify the query to include
+        blanks_queries = []
+        if blanks_filter:
+            #blanks_queries = []
+            for blank in blanks_filter:
                 
-                for nonblank in nonblanks_filter:
+                blanks_queries.append({"bool" :
+                                            {"should" :[
+                                              {"term": {blank + ".raw": ""} },
+                                               {"missing": {"field": blank}}
+                                               ]
+                                             }
+                                            })
 
-                    nonblanks_queries.append({"bool" :
-                                                {"should" :[
-                                                  {"term": {nonblank + ".raw": ""} },
-                                                   {"missing": {"field": nonblank}}
-                                                   ]
-                                                 }
-                                                })
-
-
-
-            modified_query = {
-                            "bool": {
-                                "must": [query] + blanks_queries,
-                                "must_not": nonblanks_queries,
-                            },
-                }
-            
-            
-
+        if archived == "true" :
+            blanks_queries.append({"term": {"properties.archived" : "true"}})
         else:
-            modified_query = query;
+            blanks_queries.append({"bool" : 
+                                            {"should" :[{"term": {"properties.archived" : "false"}},
+                                            {"missing": {"field": "properties.archived"}}]}
+                                })
+        nonblanks_queries = []
+        if nonblanks_filter:
+            
+            for nonblank in nonblanks_filter:
+
+                nonblanks_queries.append({"bool" :
+                                            {"should" :[
+                                              {"term": {nonblank + ".raw": ""} },
+                                               {"missing": {"field": nonblank}}
+                                               ]
+                                             }
+                                            })
+
+
+
+        modified_query = {
+                        "bool": {
+                            "must": [query] + blanks_queries,
+                            "must_not": nonblanks_queries,
+                        },
+            }
+        
+        print modified_query
+
 
         
         es_request = {
