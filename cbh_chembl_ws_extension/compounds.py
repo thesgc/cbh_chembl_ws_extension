@@ -509,6 +509,8 @@ class CBHCompoundBatchResource(ModelResource):
             self.wrap_view('update_temp_batches'), name="update_temp_batches"),
         url(r"^(?P<resource_name>%s)/get_part_processed_multiple_batch/$" % self._meta.resource_name,
             self.wrap_view('get_part_processed_multiple_batch'), name="api_get_part_processed_multiple_batch"),
+         url(r"^(?P<resource_name>%s)/get_single_elasticsearch/$" % self._meta.resource_name,
+            self.wrap_view('get_single_elasticsearch'), name="api_get_single_elasticsearch"),
         url(r"^(?P<resource_name>%s)/get_list_elasticsearch/$" % self._meta.resource_name,
             self.wrap_view('get_list_elasticsearch'), name="api_get_list_elasticsearch"),
         url(r"^(?P<resource_name>%s)/get_chembl_ids/$" % self._meta.resource_name,
@@ -1278,6 +1280,30 @@ class CBHCompoundBatchResource(ModelResource):
 
 
 
+
+
+    def get_single_elasticsearch(self, request, **kwargs):
+        """
+        Returns a serialized list of resources.
+        Calls ``obj_get_list`` to provide the data, then handles that result
+        set and serializes it.
+        Should return a HttpResponse (200 OK).
+        """
+        # TODO: Uncached for now. Invalidation that works for everyone may be
+        #       impossible.
+        base_bundle = self.build_bundle(request=request)
+        must_list = []        
+        index = elasticsearch_client.get_main_index_name()
+       
+        item = elasticsearch_client.get_single(index=index, id=request.GET.get("id", None), version= request.GET.get("version", None) )
+        bundledata = es_serializer.to_python_ready_data(item) 
+
+
+        return self.create_response(request, bundledata)
+
+
+
+
     def get_list_elasticsearch(self, request, **kwargs):
         """
         Returns a serialized list of resources.
@@ -1349,12 +1375,10 @@ class CBHCompoundBatchResource(ModelResource):
                             "must_not": nonblanks_queries,
                         },
             }
-        
-        print modified_query
-
 
         
         es_request = {
+            "version" : True,
             "from" : get_data.get("offset", 0),
             "size" : get_data.get("limit", 50),
             "filter" : modified_query,
