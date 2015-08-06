@@ -8,7 +8,9 @@ from itertools import chain
 from tastypie import fields
 
 
-from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project, ProjectType, CustomFieldConfig, PinnedCustomField, SkinningConfig
+from cbh_core_model.models import Project, ProjectType, CustomFieldConfig, PinnedCustomField, SkinningConfig
+from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch
+
 from cbh_chembl_ws_extension.base import UserResource
 from cbh_chembl_ws_extension.authorization import ProjectAuthorization, ProjectListAuthorization
 from tastypie.serializers import Serializer
@@ -31,6 +33,20 @@ def build_content_type(format, encoding='utf-8'):
         return format
 
     return "%s; charset=%s" % (format, encoding)
+
+
+class SkinningResource(ModelResource):
+    '''URL resourcing for pulling out sitewide skinning config '''
+    class Meta:
+        always_return_data = True
+        queryset = SkinningConfig.objects.all()
+        resource_name = 'cbh_skinning'
+        #authorization = Authorization()
+        include_resource_uri = False
+        allowed_methods = ['get', 'post', 'put']
+        default_format = 'application/json'
+        authentication = SessionAuthentication()
+
 
 class ProjectTypeResource(ModelResource):
 
@@ -61,7 +77,7 @@ class CustomFieldConfigResource(ModelResource):
             "name": ALL_WITH_RELATIONS
         }
 
-class ProjectResource(ModelResource):
+class ChemregProjectResource(ModelResource):
     project_type = fields.ForeignKey(ProjectTypeResource, 'project_type', blank=False, null=False, full=True)
     custom_field_config = fields.ForeignKey(CustomFieldConfigResource, 'custom_field_config', blank=False, null=False, full=True)
     class Meta:
@@ -81,7 +97,7 @@ class ProjectResource(ModelResource):
         }
 
     def get_object_list(self, request):
-        return super(ProjectResource, self).get_object_list(request).prefetch_related(Prefetch("project_type")).order_by('-modified')
+        return super(ChemregProjectResource, self).get_object_list(request).prefetch_related(Prefetch("project_type")).order_by('-modified')
 
     def prepend_urls(self):
         return [
@@ -90,7 +106,7 @@ class ProjectResource(ModelResource):
         ]
 
     def get_custom_fields(self, request):
-        return super(ProjectResource, self).get_object_list(request).prefetch_related(Prefetch("custom_field_config"))
+        return super(ChemregProjectResource, self).get_object_list(request).prefetch_related(Prefetch("custom_field_config"))
 
     def get_searchform(self, bundle,searchfield_items ):
         '''Note that the form here is expected to have the UOx id as the first item'''
@@ -1642,16 +1658,6 @@ class ProjectResource(ModelResource):
         return rc
 
 
-class SkinningResource(ModelResource):
-    '''URL resourcing for pulling out sitewide skinning config '''
-    class Meta:
-        always_return_data = True
-        queryset = SkinningConfig.objects.all()
-        resource_name = 'cbh_skinning'
-        #authorization = Authorization()
-        include_resource_uri = False
-        allowed_methods = ['get', 'post', 'put']
-        default_format = 'application/json'
-        authentication = SessionAuthentication()
+
 
 

@@ -62,7 +62,9 @@ def step(context, format=None):
 
 @then('retain its salt')
 def step(context, action=None, projkey=None):
-  from cbh_chembl_model_extension.models import Project, CBHCompoundBatch
+  from cbh_chembl_model_extension.models import CBHCompoundBatch
+  from cbh_core_model.models import Project
+
   from rdkit import Chem
   from rdkit.Chem import AllChem, inchi
   

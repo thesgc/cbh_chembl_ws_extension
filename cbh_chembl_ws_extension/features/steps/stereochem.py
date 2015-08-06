@@ -94,7 +94,7 @@ def step(context):
 
 @then("I {action} my cbh_compound_batch to {projkey}")
 def step(context, action=None, projkey=None, responsecode=202):
-    from cbh_chembl_model_extension.models import Project
+    from cbh_core_model.models import Project
     if action =="validate":
       #something
       path = "/dev/cbh_compound_batches/validate/"
@@ -121,7 +121,7 @@ def step(context, action=None, projkey=None, responsecode=202):
 
 @then("I {action} my stereochem compounds to {projkey}")
 def step(context, action=None, projkey=None, responsecode=202):
-    from cbh_chembl_model_extension.models import Project
+    from cbh_core_model.models import Project
     if action =="validate":
       #something
       path = "/dev/cbh_compound_batches/validate_list/"
@@ -149,7 +149,7 @@ def step(context, action=None, projkey=None, responsecode=202):
 
 @then('retain its stereochemistry')
 def step(context, action=None, projkey=None):
-  from cbh_chembl_model_extension.models import Project, CBHCompoundBatch
+  from cbh_core_model.models import Project, CBHCompoundBatch
   from rdkit import Chem
   from rdkit.Chem import AllChem, inchi
   
@@ -176,7 +176,7 @@ def step(context, action=None, projkey=None):
 @then("retain all their stereochemistry")
 def step(context, action=None, projkey=None):
   #something here
-  from cbh_chembl_model_extension.models import Project, CBHCompoundBatch
+  from cbh_core_model.models import Project, CBHCompoundBatch
   from rdkit import Chem
   from rdkit.Chem import AllChem, inchi
   

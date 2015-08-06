@@ -3,7 +3,7 @@ from tastypie.exceptions import TastypieError, Unauthorized
 import logging
 logger = logging.getLogger(__name__)
 logger_debug = logging.getLogger(__name__)
-from cbh_chembl_model_extension.models import Project
+from cbh_core_model.models import Project
 
 
 

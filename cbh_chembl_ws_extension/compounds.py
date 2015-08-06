@@ -58,7 +58,7 @@ except AttributeError:
     WS_DEBUG = False
 
 from cbh_chembl_ws_extension.authorization import ProjectAuthorization
-from cbh_chembl_ws_extension.projects import ProjectResource
+from cbh_chembl_ws_extension.projects import ChemregProjectResource
 from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer, CBHCompoundBatchElasticSearchSerializer, get_key_from_field_name
 from chembl_business_model.models import CompoundStructures
 #from cbh_chembl_ws_extension.base import NBResource
@@ -113,7 +113,7 @@ def build_content_type(format, encoding='utf-8'):
 
 
 class CBHCompoundBatchResource(ModelResource):
-    project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False)
+    project = fields.ForeignKey(ChemregProjectResource, 'project', blank=False, null=False)
     substructure_smarts = ""
     class Meta:
         filtering = {
@@ -1053,7 +1053,7 @@ class CBHCompoundBatchResource(ModelResource):
            
         bundle.data["fileerrors"] = errors
         bundle.data["automapped"] = 0
-        cfr = ProjectResource()
+        cfr = ChemregProjectResource()
         schemaform = cfr.get_schema_form(bundle.data["project"].custom_field_config,"" )
         if not bundle.data.get("headers", None):
             bundle.data["headers"] = []
@@ -1427,7 +1427,7 @@ def deepgetattr(obj, attr, ex):
 class CBHCompoundMultipleBatchResource(ModelResource):
     #comp_batch = fields.ForeignKey(CBHCompoundBatchResource, 'cbh_compound_batches', blank=False, null=False)
     #batches = fields.ToManyField(CBHCompoundBatchResource, 'batches', full=True)
-    project = fields.ForeignKey(ProjectResource, 'project', blank=False, null=False, full=True)
+    project = fields.ForeignKey(ChemregProjectResource, 'project', blank=False, null=False, full=True)
     class Meta:
         filtering = {
             "created_by": ALL_WITH_RELATIONS,

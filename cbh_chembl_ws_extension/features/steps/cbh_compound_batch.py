@@ -26,61 +26,7 @@ def step(context):
   4  82  0     0  0
 M  END"""
 
-@given("my user is member of a group")
-def step(context):
-    context.g = Group.objects.create(name="g")
-    context.g.user_set.add(context.u)
 
-@given("a valid project exists {projkey}")
-def step(context, projkey):
-    from cbh_chembl_model_extension.models import Project, CustomFieldConfig
-    cfc = CustomFieldConfig.objects.create(created_by=context.u, name='test')
-    Project.objects.create(name=projkey, project_key=projkey, created_by=context.u, custom_field_config=cfc)
-
-
-@given("I automatically have editor permissions as creator")
-def step(context):
-    from cbh_chembl_model_extension.models import Project
-    for p in Project.objects.all():
-        assert p.created_by.has_perm("%d.%s" % ( p.id, "editor"))
-
-@given("I remove my permissions")
-def step(context):
-    for perm in context.u.user_permissions.all():
-        context.u.user_permissions.remove(perm)
-        context.u = User.objects.get(pk=context.u.id)
-    from cbh_chembl_model_extension.models import Project
-    for p in Project.objects.all():
-        assert p.created_by.has_perm("%d.%s" % ( p.id, "editor")) == False
-
-
-@given("I have given {me_or_group} editor privileges for {projkey}")
-def step(context,me_or_group, projkey):
-    from cbh_chembl_model_extension.models import Project
-    p = Project.objects.get(project_key=projkey)
-    if me_or_group == "myself":
-        p.make_editor(context.u)
-    elif me_or_group == "mygroup":
-        p.make_editor(context.g)
-    context.u = User.objects.get(pk=context.u.id)
-    assert context.u.has_perm("%d.%s" % ( p.id, "editor"))
-
-
-@given("I have given {me_or_group} viewer privileges for {projkey}")
-def step(context,me_or_group, projkey):
-    from cbh_chembl_model_extension.models import Project
-    p = Project.objects.get(project_key=projkey)
-    if me_or_group == "myself":
-        p.make_viewer(context.u)
-    elif me_or_group == "mygroup":
-        p.make_viewer(context.g)
-    context.u = User.objects.get(pk=context.u.id)
-    assert context.u.has_perm("%d.%s" % ( p.id, "viewer"))
-
-
-@given("I havent given {grouporuser} {editororviewer} privileges for {projkey}")
-def step(context,grouporuser, editororviewer, projkey):
-    pass
 
 
 @given("I have a valid list of SMILES")
@@ -95,13 +41,14 @@ def step(context):
 
 @given("a single batch exists in {projkey}")
 def step(context, projkey):
-    from cbh_chembl_model_extension.models import Project, CBHCompoundBatch
+    from cbh_core_model.models import Project
+    from cbh_chembl_model_extension.models import CBHCompoundBatch
     p = Project.objects.get(project_key=projkey)
     context.batch = CBHCompoundBatch.objects.create(ctab=context.post_data["ctab"], project=p)
 
 @then("I {action} my cbh_compound_batch to {projkey} and the response code will be {responsecode}")
 def step(context, action=None, projkey=None, responsecode=None):
-    from cbh_chembl_model_extension.models import Project    
+    from cbh_core_model.models import Project    
     if action in ["validate","create"]:
         if action =="validate":
             path = "/dev/cbh_compound_batches/validate/"
@@ -119,7 +66,7 @@ def step(context, action=None, projkey=None, responsecode=None):
         print(resp.__dict__)
         assert resp.status_code == int(responsecode)
     else:
-        from cbh_chembl_model_extension.models import Project
+        from cbh_core_model.models import Project
         
         path = "/dev/cbh_compound_batches/"
         if action == "get":

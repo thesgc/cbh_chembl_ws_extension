@@ -30,7 +30,7 @@ api.register(CBHCompoundBatchResource())
 api.register(CBHCompoundMultipleBatchResource())
 api.register(CBHCompoundBatchUpload())
 api.register(UserResource())
-api.register(ProjectResource())
+api.register(ChemregProjectResource())
 api.register(SkinningResource())
 
 

@@ -36,7 +36,6 @@ def before_all(context):
     # from deployment.settings  import development as settings
     # setup_environ(settings)
     #os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myapp.settings")
-    from cbh_chembl_model_extension import models
     django.setup()
 
     ### Take a TestRunner hostage.
@@ -87,7 +86,9 @@ def after_scenario(context, scenario):
     #context.runner.teardown_databases(context.old_db_config)
     context.api_client.client.logout()
  
-    from cbh_chembl_model_extension.models import Project, CBHCompoundBatch, CustomFieldConfig
+    from cbh_chembl_model_extension.models import CBHCompoundBatch
+    from cbh_core_model.models import Project, CustomFieldConfig
+
     from django.contrib.auth.models import User, Group
     User.objects.all().delete()
     Project.objects.all().delete()
