@@ -11,8 +11,8 @@ from tastypie import fields
 from cbh_core_model.models import Project, ProjectType, CustomFieldConfig, PinnedCustomField, SkinningConfig
 from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch
 
-from cbh_chembl_ws_extension.base import UserResource
-from cbh_chembl_ws_extension.authorization import ProjectAuthorization, ProjectListAuthorization
+from cbh_core_ws.resources import UserResource
+from cbh_core_ws.authorization import ProjectAuthorization, ProjectListAuthorization
 from tastypie.serializers import Serializer
 from tastypie.authentication import SessionAuthentication
 from tastypie.paginator import Paginator
@@ -21,7 +21,8 @@ import copy
 import time
 import urllib
 from django.core.urlresolvers import reverse
-from cbh_chembl_ws_extension.serializers import CBHCompoundBatchElasticSearchSerializer, CustomFieldsSerializer
+from cbh_chembl_ws_extension.serializers import CBHCompoundBatchElasticSearchSerializer
+from cbh_core_ws.serializers import CustomFieldsSerializer
 import elasticsearch_client
 from django.db.models import Prefetch
 
@@ -35,47 +36,8 @@ def build_content_type(format, encoding='utf-8'):
     return "%s; charset=%s" % (format, encoding)
 
 
-class SkinningResource(ModelResource):
-    '''URL resourcing for pulling out sitewide skinning config '''
-    class Meta:
-        always_return_data = True
-        queryset = SkinningConfig.objects.all()
-        resource_name = 'cbh_skinning'
-        #authorization = Authorization()
-        include_resource_uri = False
-        allowed_methods = ['get', 'post', 'put']
-        default_format = 'application/json'
-        authentication = SessionAuthentication()
+from cbh_core_ws.resources import SkinningResource, ProjectTypeResource, CustomFieldConfigResource
 
-
-class ProjectTypeResource(ModelResource):
-
-    '''Resource for Project Type, specifies whether this is a chemical/inventory instance etc '''
-    class Meta:
-        always_return_data = True
-        queryset = ProjectType.objects.all()
-        resource_name = 'cbh_project_types'
-        #authorization = Authorization()
-        include_resource_uri = False
-        allowed_methods = ['get', 'post', 'put']
-        default_format = 'application/json'
-        authentication = SessionAuthentication()
-
-class CustomFieldConfigResource(ModelResource):
-
-    '''Resource for Custom Field Config '''
-    class Meta:
-        always_return_data = True
-        queryset = CustomFieldConfig.objects.all()
-        resource_name = 'cbh_custom_field_configs'
-        #authorization = ProjectListAuthorization()
-        include_resource_uri = False
-        allowed_methods = ['get', 'post', 'put']
-        default_format = 'application/json'
-        authentication = SessionAuthentication()
-        filtering = {
-            "name": ALL_WITH_RELATIONS
-        }
 
 class ChemregProjectResource(ModelResource):
     project_type = fields.ForeignKey(ProjectTypeResource, 'project_type', blank=False, null=False, full=True)

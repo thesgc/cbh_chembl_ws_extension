@@ -57,11 +57,11 @@ try:
 except AttributeError:
     WS_DEBUG = False
 
-from cbh_chembl_ws_extension.authorization import ProjectAuthorization
+from cbh_core_ws.authorization import ProjectAuthorization
 from cbh_chembl_ws_extension.projects import ChemregProjectResource
 from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer, CBHCompoundBatchElasticSearchSerializer, get_key_from_field_name
 from chembl_business_model.models import CompoundStructures
-#from cbh_chembl_ws_extension.base import NBResource
+#from cbh_core_ws.resources import NBResource
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
 from tastypie import fields, utils

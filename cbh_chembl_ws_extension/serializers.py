@@ -84,83 +84,7 @@ def flatten_dict(d, base=None):
     return new_dict
 
 
-class CSVUnicodeWriter(object):
-    """
-    A CSV writer which will write rows to CSV file "f",
-    which is encoded in the given encoding.
 
-    Original code from http://docs.python.org/library/csv.html#csv-examples
-    Altered by Giorgos Logiotatidis <giorgos@mozilla.com>
-
-    """
-
-    def __init__(self, f, dialect=csv.excel, encoding='utf-8', **kwds):
-        # Redirect output to a queue
-        self.queue = cStringIO.StringIO()
-        self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
-        self.stream = f
-        self.encoder = codecs.getincrementalencoder(encoding)()
-
-    def writerow(self, row):
-        newrow = []
-        for s in row:
-            newrow.append(unicode(s))
-
-        self.writer.writerow([s.encode('utf-8') for s in newrow])
-        # Fetch UTF-8 output from the queue ...
-        data = self.queue.getvalue()
-        data = data.decode('utf-8')
-        # ... and reencode it into the target encoding
-        data = self.encoder.encode(data)
-        # write to the target stream
-        self.stream.write(data)
-        # empty queue
-        self.queue.truncate(0)
-
-    def writerows(self, rows):
-        for row in rows:
-            self.writerow(row)
-
-
-class CSVSerializer(Serializer):
-    """Extend tastypie's serializer to export to CSV format."""
-    # formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv']
-    # content_types = {'json': 'application/json',
-    #                  'jsonp': 'text/javascript',
-    #                  'xml': 'application/xml',
-    #                  'yaml': 'text/yaml',
-    #                  'html': 'text/html',
-    #                  'csv': 'text/csv'}
-
-    def to_csv(self, data, options=None):
-        """Convert data to CSV."""
-        options = options or {}
-        data = self.to_simple(data, options)
-        raw_data = cStringIO.StringIO()
-
-        writer = CSVUnicodeWriter(raw_data, delimiter=';', quotechar='"',
-                                  quoting=csv.QUOTE_MINIMAL)
-
-        for category in data:
-            if category == 'objects' and len(data[category]) > 0:
-                items = []
-                available_keys = []
-                for item in data[category]:
-                    flatitem = flatten_dict(item)
-                    items.append(flatitem)
-                    available_keys += [key for key in flatitem.keys()
-                                       if key not in available_keys]
-
-                available_keys = sorted(available_keys)
-                writer.writerow(available_keys)
-
-                for item in data[category]:
-                    flatitem = flatten_dict(item)
-                    writer.writerow(map(lambda x: flatitem.get(x),
-                                        available_keys))
-
-        raw_data.seek(0)
-        return raw_data
 
 class XLSSerializer(Serializer):
     # formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv', 'xls']
@@ -235,80 +159,7 @@ class XLSSerializer(Serializer):
         return output.getvalue()
 
 
-class CustomFieldXLSSerializer(Serializer):
-    ''' COde for preparing an Excel summary of the custom fields for the given project '''
-    formats = ['json', 'jsonp', 'xls']
-    content_types = {'json': 'application/json',
-                     'jsonp': 'text/javascript', 
-                     'xls': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}
-    
-    def to_xls(self, data, options=None):
-        
-        output = cStringIO.StringIO()
-        exp_json = data.get('custom_field_config')
 
-        cleaned_data = []
-        
-        #need to manipulate the dataset which is used to apply to dataframe
-        #date fields do not have allowed values but do have specified data ranges
-        for field in exp_json:
-            
-            #is it a date field? add the date ranges to the allowed values column
-            if(field['field_type'] == 'date'):
-                field['field_type'] = 'Date'
-                field['allowed_values'] = 'Valid Date'
-            elif(field['field_type'] == 'uiselecttags'):
-                field['field_type'] = 'Multiple select'
-                field['placeholder'] = 'Select one or more of the Allowed Values, separated by a comma'
-            elif(field['field_type'] == 'percentage'):
-                field['field_type'] = 'Percentage'
-                field['allowed_values'] = '0-100%'
-            elif(field['field_type'] == 'text'):
-                field['field_type'] = 'Plain Text'
-                field['allowed_values'] = 'Plain Text. There may be a character length restriction on this field.'
-
-
-
-        df = pd.DataFrame(exp_json, columns=['title', 'field_type', 'placeholder', 'allowed_values'])
-        #human readable titles
-        df.rename(columns={'title': 'Name', 'field_type': 'Data Type', 'placeholder': 'Description', 'allowed_values': 'Allowed Values'}, inplace=True)
-
-        #deal with empty fields
-        df.fillna('', inplace=True)
-
-        #autosize column widths setup
-        widths = []
-        for col in df.columns.tolist():
-            col = str(col)
-            titlewidth = len(col)
-            try:
-                w = df[col].astype(unicode).str.len().max()
-                if w > titlewidth:
-                    widths.append(int(w*1.2))
-                else:
-                    widths.append(int(titlewidth* 1.2))
-            except:
-                widths.append(int(titlewidth* 1.2))
-
-        writer = pd.ExcelWriter('temp.xlsx', engine='xlsxwriter')
-        writer.book.filename = output
-        df.to_excel(writer, sheet_name='Sheet1', index=False)
-        workbook = writer.book
-        format = workbook.add_format()
-        worksheet = writer.sheets['Sheet1']
-        format.set_text_wrap()
-        #make the UOx ID and SMILES columns bigger
-        #BUG - can't set column format until pandas 0.16
-        #https://github.com/pydata/pandas/issues/9167
-        for index, width in enumerate(widths):
-            if width > 150:
-                width = 150
-            elif width < 15:
-                width = 15
-            worksheet.set_column(index ,index , width)
-        writer.save()
-        
-        return output.getvalue()
 
 
 
@@ -368,33 +219,6 @@ class SDFSerializer(Serializer):
 
 
 
-class iCalSerializer(Serializer):
-    """Extend tastypie's serializer to export to iCal format."""
-    formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'ical']
-    content_types = {'json': 'application/json',
-                     'jsonp': 'text/javascript',
-                     'xml': 'application/xml',
-                     'yaml': 'text/yaml',
-                     'html': 'text/html',
-                     'ical': 'text/calendar'}
-
-    def to_ical(self, data, options=None):
-        """Convert data to iCal."""
-        options = options or {}
-
-        if 'error' in data:
-            raise Http404
-
-        if isinstance(data, dict) and 'objects' in data:
-            events = [event.obj for event in data['objects']]
-        else:
-            events = [data.obj]
-
-        date_now = timezone.now()
-        ical = get_template('multi_event_ical_template.ics')
-
-        return ical.render(Context({'events': events, 'date_now': date_now,
-                                    'host': settings.SITE_URL}))
 
 class CamelCaseJSONSerializer(Serializer):
     # formats = ['json']
@@ -486,11 +310,10 @@ class CamelCaseJSONSerializer(Serializer):
         return underscored_data
 
 
-class CBHCompoundBatchSerializer(CamelCaseJSONSerializer,CSVSerializer,XLSSerializer,SDFSerializer):
+class CBHCompoundBatchSerializer(CamelCaseJSONSerializer,XLSSerializer,SDFSerializer):
     pass
 
-class CustomFieldsSerializer(CustomFieldXLSSerializer):
-    pass
+
 
 def convert_query(data):
     if isinstance(data, dict):

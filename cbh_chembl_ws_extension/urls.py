@@ -1,6 +1,6 @@
 
 from django.conf.urls import patterns, url, include
-from cbh_chembl_ws_extension.base import Login, Logout
+from cbh_core_ws.resources import Login, Logout
 from chembl_core_db.utils import DirectTemplateView
 from django.conf import settings
 from flowjs import urls as flow
@@ -13,7 +13,7 @@ from tastypie.api import Api
 from cbh_chembl_ws_extension.compounds import *
 from cbh_chembl_ws_extension.projects import *
 
-from cbh_chembl_ws_extension.base import *
+from cbh_core_ws.resources import *
 from django.conf import settings
 DEFAULT_API_NAME='chemblws'
 
