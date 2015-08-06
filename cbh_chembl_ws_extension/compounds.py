@@ -65,7 +65,8 @@ from chembl_business_model.models import CompoundStructures
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
 from tastypie import fields, utils
-from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch, Project, PinnedCustomField
+from cbh_chembl_model_extension.models import CBHCompoundBatch, CBHCompoundMultipleBatch
+from cbh_core_model.models import Project, PinnedCustomField
 from tastypie.authentication import SessionAuthentication
 import json
 from tastypie.paginator import Paginator
