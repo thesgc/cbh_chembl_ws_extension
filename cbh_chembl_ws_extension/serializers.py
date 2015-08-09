@@ -26,11 +26,9 @@ import pybel
 
 import copy
 
-def get_field_name_from_key(key):
-    return key.replace(u"__space__", u" ")
 
-def get_key_from_field_name(name):
-    return name.replace(u" ", u"__space__")
+from cbh_core_ws.resources import get_field_name_from_key
+from cbh_core_ws.resources import get_key_from_field_name
 
 
 
