@@ -8,9 +8,12 @@ import json
 @given('a user')
 def step(context):
     from django.contrib.auth.models import User
-    u = User(username='foo', email='foo@example.com')
-    u.set_password('bar')
-    u.save()
+    try:
+        u = User(username='foo', email='foo@example.com')
+        u.set_password('bar')
+        u.save()
+    except:
+        pass
     context.u = u
  
 
@@ -22,11 +25,7 @@ def step(context):
  
 
  
-@when('I log in')
-def step(context):
-    context.api_client.client.login(username="foo", password="bar")
- 
- 
+
 @then('I see a 401 error')
 def step(context):
 
