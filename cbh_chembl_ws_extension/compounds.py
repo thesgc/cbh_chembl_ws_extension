@@ -582,6 +582,7 @@ class CBHCompoundBatchResource(ModelResource):
         to_be_saved = []
         for batch in batches: 
             if(batch.obj.properties.get("action", "") == "New Batch"):   
+                batch.obj.created_by = request.user.username
                 batch.obj.id = None    
                 batch.obj.generate_structure_and_dictionary()
                 batch.multi_batch_id = id
