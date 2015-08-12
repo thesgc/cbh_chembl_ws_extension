@@ -1219,7 +1219,7 @@ class CBHCompoundBatchResource(ModelResource):
             else:
                 bundle.data["created_by"] = user.username
         else:
-            bundle.data["created_by"] = ""
+            bundle.data["created_by"] = bundle.obj.created_by;
         bundle.data["timestamp"] = str(bundle.data["created"])[0:10]
         #except:
         #    pass
