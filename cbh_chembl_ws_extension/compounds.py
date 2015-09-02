@@ -585,6 +585,7 @@ class CBHCompoundBatchResource(ModelResource):
                 batch.obj.created_by = request.user.username
                 batch.obj.id = None    
                 batch.obj.generate_structure_and_dictionary()
+                
                 batch.multi_batch_id = id
                 bundle.data["saved"] += 1
                 to_be_saved.append(batch.obj)
@@ -1096,6 +1097,7 @@ class CBHCompoundBatchResource(ModelResource):
                                                         "number": header in fielderrors["number"]
                                                     }
                                             })
+            
 
         return self.validate_multi_batch(multiple_batch, bundle, request, batches)
 
