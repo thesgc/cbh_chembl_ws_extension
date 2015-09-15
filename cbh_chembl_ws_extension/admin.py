@@ -36,8 +36,9 @@ class ProjectAdmin(ModelAdmin):
         self.message_user(request, "Successfully reindexed ChemReg compounds")
     reindex.short_description = "Reindex all compounds"
 
+from cbh_core_model.models import post_save, sync_permissions
 
-
+post_save.connect(sync_permissions, sender=ChemregProject, dispatch_uid="proj_perms2")
 
 admin.site.register(ChemregProject, ProjectAdmin)
 

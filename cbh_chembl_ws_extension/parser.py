@@ -171,7 +171,7 @@ def get_response(uri, session):
         time.sleep(10)
         return  get_response(uri, session)
 
-
+# https://github.com/akesterson/dpath-python
 class ChemblAPIConverter(APIConverter):
     
     schema_endpoint = "https://www.ebi.ac.uk/chembl/api/data/spore/?format=json"
