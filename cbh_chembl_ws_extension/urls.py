@@ -23,7 +23,7 @@ except AttributeError:
     api_name = DEFAULT_API_NAME
 
 
-
+from cbh_chembl_id_generator.resources import CBHPluginResource
 api = Api(api_name=api_name)
 
 api.register(CBHCompoundBatchResource())
@@ -32,7 +32,7 @@ api.register(CBHCompoundBatchUpload())
 api.register(UserResource())
 api.register(ChemregProjectResource())
 api.register(SkinningResource())
-
+api.register(CBHPluginResource())
 
 admin.autodiscover()
 
