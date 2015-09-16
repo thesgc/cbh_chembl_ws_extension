@@ -195,11 +195,14 @@ class ChemblAPIConverter(APIConverter):
                     for fielder, value in PinnedCustomField.FIELD_TYPE_CHOICES.items():
                         if value["data"]["type"] == info["type"]:
                             field_type = fielder
-                            continue
+                            break
+                            
 
                     pcf, created = PinnedCustomField.objects.get_or_create(pinned_for_datatype_id=dt.id,
                                                                     name=capfirst(field_name.replace("_", " ")),
-                                                                    field_key=field_name, 
+                                                                    field_key="/%s/%s/%s" % ("chembl",
+                                                                                                datatype["collection_name"],
+                                                                                                field_name), 
                                                                     field_type=field_type, 
                                                                     description=info["help_text"],
                                                                     required=info["nullable"],
