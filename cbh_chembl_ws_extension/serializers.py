@@ -29,7 +29,7 @@ import copy
 
 from cbh_core_ws.resources import get_field_name_from_key
 from cbh_core_ws.resources import get_key_from_field_name
-
+from cbh_core_ws import parser as coreparser
 
 
 
@@ -122,20 +122,10 @@ class XLSSerializer(Serializer):
 
         #reindex the dataframe
         df = df.ix[:, cols]
-        widths = []
-        for col in df.columns.tolist():
-            col = str(col)
-            titlewidth = len(col)
-            try:
-                w = df[col].astype(unicode).str.len().max()
-                if w > titlewidth:
-                    widths.append(int(w*1.2))
-                else:
-                    widths.append(int(titlewidth* 1.2))
-            except:
-                widths.append(int(titlewidth* 1.2))
+        
 
-
+        widths = coreparser.get_widths(df)
+      
         writer = pd.ExcelWriter('temp.xlsx', engine='xlsxwriter')
         writer.book.filename = output
         df.to_excel(writer, sheet_name='Sheet1', index=False)
