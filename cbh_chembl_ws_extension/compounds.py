@@ -953,7 +953,7 @@ class CBHCompoundBatchResource(ModelResource):
                 #read in the file
                 suppl = Chem.ForwardSDMolSupplier(correct_file.file)
                 mols = [mo for mo in suppl]
-                if(len(mols) > 1000):
+                if(len(mols) > 10000):
                     raise BadRequest("file_too_large")
                 #read the headers from the first molecule
                 
@@ -992,7 +992,7 @@ class CBHCompoundBatchResource(ModelResource):
                 except IndexError:
                     raise BadRequest("no_headers")
 
-                if len(df.index) > 1000:
+                if len(df.index) > 10000:
                     raise BadRequest("file_too_large")
                 #read the smiles string value out of here, when we know which column it is.
                 row_iterator = df.iterrows()
