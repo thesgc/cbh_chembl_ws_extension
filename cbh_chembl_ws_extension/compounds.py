@@ -717,6 +717,7 @@ class CBHCompoundBatchResource(ModelResource):
         error_locs = []
 
         #a[0] holds the generated inchis. a[1] holds all of the error and warning information (if any)
+        print(a[1])
         errorparts = a[1].split("\nError")
         if(len(errorparts) > 1):
             for i, errorp in enumerate(errorparts):
@@ -728,13 +729,19 @@ class CBHCompoundBatchResource(ModelResource):
                     #convert to number, put this number in an errors list
                     error_locs.append(error_loc)
 
+        print(error_locs)
+        print(len(batches_with_structures))
+        err_batches = []
         #for the errors found, remove from non-error lists and flag as erroring
         for error_no in error_locs:
             error_no_int = int(float(error_no)) - 1
 
             #find structures at the position indicated - 1 (for 0-indexed list)
             err_batch = batches_with_structures[error_no_int]
+            err_batches.append(err_batch)
 
+        #we can't remove these while looping through err_locs as it messes up the list order and gives arrayindex exceptions
+        for err_batch in err_batches:
             #remove from batches_with_structures and batches_not_errors
             batches_with_structures.remove(err_batch)
             batches_not_errors.remove(err_batch)
@@ -763,10 +770,13 @@ class CBHCompoundBatchResource(ModelResource):
         already_found = set([])
         duplicates = set([])
         
-        
+        print(inchis)
+        print(error_locs)
         for i, batch in enumerate(batches_with_structures):
-            
-            batch.standard_inchi = inchis[str(i+1)]
+            if (str(i+1) in error_locs):
+                batch.standard_inchi = None
+            else: 
+                batch.standard_inchi = inchis[str(i+1)]
             batch.validate(temp_props=False)  
             if batch.standard_inchi_key in already_found:
                 #setting this in case we change it later
