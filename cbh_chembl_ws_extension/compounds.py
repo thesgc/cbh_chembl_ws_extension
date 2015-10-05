@@ -582,8 +582,10 @@ class CBHCompoundBatchResource(ModelResource):
         to_be_saved = []
         for batch in batches: 
             if(batch.obj.properties.get("action", "") == "New Batch"):   
+                batch.obj.created_by = request.user.username
                 batch.obj.id = None    
                 batch.obj.generate_structure_and_dictionary()
+                
                 batch.multi_batch_id = id
                 bundle.data["saved"] += 1
                 to_be_saved.append(batch.obj)
@@ -1133,6 +1135,7 @@ class CBHCompoundBatchResource(ModelResource):
                                                         "number": header in fielderrors["number"]
                                                     }
                                             })
+            
 
         return self.validate_multi_batch(multiple_batch, bundle, request, batches)
 
@@ -1240,7 +1243,10 @@ class CBHCompoundBatchResource(ModelResource):
             try:
                 user = User.objects.get(username=bundle.obj.created_by)
             except ObjectDoesNotExist:
-                pass
+                try:
+                    user = User.objects.get(first_name=bundle.obj.created_by.split[" "][0], last_name=bundle.obj.created_by.split[" "][1])
+                except:
+                    user=None
 
 
         mynames = ["editable_by","uncurated_fields", "warnings", "properties", "custom_fields", "errors"]
@@ -1253,7 +1259,7 @@ class CBHCompoundBatchResource(ModelResource):
             else:
                 bundle.data["created_by"] = user.username
         else:
-            bundle.data["created_by"] = ""
+            bundle.data["created_by"] = bundle.obj.created_by;
         bundle.data["timestamp"] = str(bundle.data["created"])[0:10]
         #except:
         #    pass

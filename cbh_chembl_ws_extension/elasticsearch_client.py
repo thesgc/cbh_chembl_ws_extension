@@ -48,7 +48,6 @@ def get(index_name, es_request_body, bundledata):
     result = es.search(index_name, body=es_request_body)
     data = []
     for hit in result["hits"]["hits"]:
-        hit["_source"]["_version"] = hit["_version"]
         data.append(hit["_source"])
 
     bundledata["meta"] = {"totalCount" : result["hits"]["total"]}
