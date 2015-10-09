@@ -748,7 +748,7 @@ class CBHCompoundBatchResource(ModelResource):
 
             #flag this batch as erroring due to inability to generate anything for the standard_inchi_key field
             batches_index = batches.index(err_batch)
-            batches[batches_index].warnings["smilesParseError"] = "true"
+            batches[batches_index].warnings["inchiCreationError"] = "true"
             batches[batches_index].properties["action"] = "Ignore"
 
         inchiparts = a[0].split("\nStructure:")
