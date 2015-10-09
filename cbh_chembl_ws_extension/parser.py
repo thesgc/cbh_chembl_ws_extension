@@ -96,7 +96,7 @@ def parse_sdf_record(headers, obj, destination_field, mol,fielderrors):
 
     for hdr in headers:
         try:
-            value = unicode(mol.GetProp(hdr)).strip()
+            value = unicode(mol.GetProp(hdr), errors='ignore').strip()
             custom_fields[hdr] = value
             test_specific_parse_errors(hdr, value, fielderrors)
 
