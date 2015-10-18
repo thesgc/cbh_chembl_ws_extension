@@ -4,8 +4,6 @@ from django.contrib import admin
 from cbh_core_model.models import Project, PinnedCustomField, CustomFieldConfig, SkinningConfig, ProjectType
 
 from django.contrib.admin import ModelAdmin
-from cbh_chembl_ws_extension.projects import ChemregProjectResource
-from cbh_chembl_ws_extension.compounds import CBHCompoundBatchResource
 
 from django.forms.widgets import HiddenInput, TextInput
 from django.db import models
@@ -31,6 +29,8 @@ class ProjectAdmin(ModelAdmin):
         obj.save()
 
     def reindex(self, request, queryset):
+        from cbh_chembl_ws_extension.compounds import CBHCompoundBatchResource
+
         cbr = CBHCompoundBatchResource()
         cbr.reindex_elasticsearch(request)
         self.message_user(request, "Successfully reindexed ChemReg compounds")
