@@ -25,7 +25,7 @@ from cbh_chembl_ws_extension.serializers import CBHCompoundBatchElasticSearchSer
 from cbh_core_ws.serializers import CustomFieldsSerializer
 import elasticsearch_client
 from django.db.models import Prefetch
-
+from cbh_core_ws.cache import CachedResource
 def build_content_type(format, encoding='utf-8'):
     """
     Appends character encoding to the provided format if not already present.
@@ -39,9 +39,11 @@ def build_content_type(format, encoding='utf-8'):
 from cbh_core_ws.resources import SkinningResource, ProjectTypeResource, CustomFieldConfigResource
 
 
-class ChemregProjectResource(ModelResource):
+class ChemregProjectResource(CachedResource, ModelResource):
     project_type = fields.ForeignKey(ProjectTypeResource, 'project_type', blank=False, null=False, full=True)
     custom_field_config = fields.ForeignKey(CustomFieldConfigResource, 'custom_field_config', blank=False, null=False, full=True)
+    valid_cache_get_keys = ['format', 'limit','project_key', 'schemaform']
+
     class Meta:
         queryset = Project.objects.all()
         authentication = SessionAuthentication()
@@ -52,6 +54,7 @@ class ChemregProjectResource(ModelResource):
         include_resource_uri = False
         default_format = 'application/json'
         #serializer = Serializer()
+
         serializer = CustomFieldsSerializer()
         filtering = {
             
