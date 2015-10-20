@@ -16,15 +16,16 @@ For the basic solution: https://github.com/nathforge/django-mechanize/
 """
 
 
-import os, django
+import os
+import django
 import urlparse
 # This is necessary for all installed apps to be recognized, for some reason.
-#Already set this on vagrant
+# Already set this on vagrant
 #os.environ['DJANGO_SETTINGS_MODULE'] = 'myproject.settings'
 from tastypie.test import TestApiClient
 from tastypie.serializers import Serializer
 
- 
+
 def before_all(context):
     # Even though DJANGO_SETTINGS_MODULE is set, this may still be
     # necessary. Or it may be simple CYA insurance.
@@ -38,26 +39,23 @@ def before_all(context):
     #os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myapp.settings")
     django.setup()
 
-    ### Take a TestRunner hostage.
+    # Take a TestRunner hostage.
     from django.test.simple import DjangoTestSuiteRunner
     context.runner = DjangoTestSuiteRunner(interactive=False)
 
-    ## If you use South for migrations, uncomment this to monkeypatch
-    ## syncdb to get migrations to run.
+    # If you use South for migrations, uncomment this to monkeypatch
+    # syncdb to get migrations to run.
     #from south.management.commands import patch_for_test_db_setup
-    #patch_for_test_db_setup()
+    # patch_for_test_db_setup()
 
-    
     context.runner.setup_test_environment()
     context.runner.setup_databases()
 
 
-
 def before_scenario(context, scenario):
     # Set up the scenario test environment
-    
 
-    ### Set up the WSGI intercept "port".
+    # Set up the WSGI intercept "port".
     context.api_client = TestApiClient()
     context.ser = Serializer()
     context.post_data = {}
@@ -71,7 +69,7 @@ def before_scenario(context, scenario):
     # TestClient does, if we're doing full-stack tests with Mechanize,
     # because Django closes the db connection after finishing the HTTP
     # response.
-    ### Set up the Mechanize browser.
+    # Set up the Mechanize browser.
     # from wsgi_intercept import mechanize_intercept
     # # MAGIC: All requests made by this monkeypatched browser to the magic
     # # host and port will be intercepted by wsgi_intercept via a
@@ -80,12 +78,11 @@ def before_scenario(context, scenario):
     # browser.set_handle_robots(False)
 
 
-
 def after_scenario(context, scenario):
     # Tear down the scenario test environment.
-    #context.runner.teardown_databases(context.old_db_config)
+    # context.runner.teardown_databases(context.old_db_config)
     context.api_client.client.logout()
- 
+
     from cbh_chembl_model_extension.models import CBHCompoundBatch
     from cbh_core_model.models import Project, CustomFieldConfig
 

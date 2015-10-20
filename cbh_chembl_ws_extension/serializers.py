@@ -32,9 +32,6 @@ from cbh_core_ws.resources import get_key_from_field_name
 from cbh_core_ws import parser as coreparser
 
 
-
-
-
 def flatten_dict(d, base=None):
     """Converts a dictionary of dictionaries or lists into a simple
     dictionary.
@@ -82,8 +79,6 @@ def flatten_dict(d, base=None):
     return new_dict
 
 
-
-
 class XLSSerializer(Serializer):
     # formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv', 'xls']
     # content_types = {'json': 'application/json',
@@ -97,35 +92,33 @@ class XLSSerializer(Serializer):
     def to_xls(self, data, options=None):
         '''write excel file here'''
         output = cStringIO.StringIO()
-        
-        #make a pandas dataframe from the data here
-        #then export as xls or to xlsxwriter
+
+        # make a pandas dataframe from the data here
+        # then export as xls or to xlsxwriter
         data = self.to_simple(data, {})
-        exp_json = json.loads(data.get('export',[]))
-        ordered_fields = [ 'UOx ID', 'SMILES', 'Added By',  'Std InChi', 'Mol Weight', 'alogp'  ]
+        exp_json = json.loads(data.get('export', []))
+        ordered_fields = [
+            'UOx ID', 'SMILES', 'Added By',  'Std InChi', 'Mol Weight', 'alogp']
         headers = data.get('headers', {})
         ordered_fields += headers["custom_fields"]
         ordered_fields += headers["uncurated_fields"]
         df = pd.DataFrame(exp_json)
 
-
         df.fillna('', inplace=True)
 
         cols = df.columns.tolist()
-        #now for the list we have in the order we have it, move the columns by name
-        #this way you end up with your core fields at the start and custom fields at the end.
-        
+        # now for the list we have in the order we have it, move the columns by name
+        # this way you end up with your core fields at the start and custom
+        # fields at the end.
+
         for idx, item in enumerate(ordered_fields):
             cols.insert(idx, cols.pop(cols.index(item)))
-            
 
-
-        #reindex the dataframe
+        # reindex the dataframe
         df = df.ix[:, cols]
-        
 
         widths = coreparser.get_widths(df)
-      
+
         writer = pd.ExcelWriter('temp.xlsx', engine='xlsxwriter')
         writer.book.filename = output
         df.to_excel(writer, sheet_name='Sheet1', index=False)
@@ -133,29 +126,25 @@ class XLSSerializer(Serializer):
         format = workbook.add_format()
         worksheet = writer.sheets['Sheet1']
         format.set_text_wrap()
-        #make the UOx ID and SMILES columns bigger
-        #BUG - can't set column format until pandas 0.16
-        #https://github.com/pydata/pandas/issues/9167
+        # make the UOx ID and SMILES columns bigger
+        # BUG - can't set column format until pandas 0.16
+        # https://github.com/pydata/pandas/issues/9167
         for index, width in enumerate(widths):
             if width > 150:
                 width = 150
             elif width < 15:
                 width = 15
-            worksheet.set_column(index ,index , width)
+            worksheet.set_column(index, index, width)
         writer.save()
-        
+
         return output.getvalue()
-
-
-
-
 
 
 SDF_TEMPLATE = ">  <{name}>\n{value}\n\n"
 
 
-
 class SDFSerializer(Serializer):
+
     '''For exporting query sets as SD/Mol files'''
     formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv', 'xls', 'sdf']
     content_types = {'json': 'application/json',
@@ -172,40 +161,39 @@ class SDFSerializer(Serializer):
         mols = []
         index = 0
         options = options or {}
-        exp_json = json.loads(data.get('export',[]))
+        exp_json = json.loads(data.get('export', []))
         df = pd.DataFrame(exp_json)
         df.fillna('', inplace=True)
         cols = df.columns.tolist()
-        #now for the list we have in the order we have it, move the columns by name
-        #this way you end up with your core fields at the start and custom fields at the end.
-        ordered_fields = [ 'UOx ID', 'SMILES', 'Known Drug', 'Added By', 'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp'  ]
+        # now for the list we have in the order we have it, move the columns by name
+        # this way you end up with your core fields at the start and custom
+        # fields at the end.
+        ordered_fields = ['UOx ID', 'SMILES', 'Known Drug', 'Added By',
+                          'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp']
         for idx, item in enumerate(ordered_fields):
             cols.insert(idx, cols.pop(cols.index(item)))
-        #reindex the dataframe
+        # reindex the dataframe
         df = df.ix[:, cols]
-        #pull data back out of dataframe to put into rdkit tools
+        # pull data back out of dataframe to put into rdkit tools
 
         row_iterator = df.iterrows()
         headers = list(df)
 
         mol_strings = []
         for index, row in row_iterator:
-            #Simple string based SDF formatter
-            mol_str = row['ctab'].replace("RDKit          2D\n", "Generated by ChemBio Hub ChemReg http://chembiohub.ox.ac.uk/chemreg\n").split("END")[0]
+            # Simple string based SDF formatter
+            mol_str = row['ctab'].replace(
+                "RDKit          2D\n", "Generated by ChemBio Hub ChemReg http://chembiohub.ox.ac.uk/chemreg\n").split("END")[0]
             properties = []
             for field in headers:
-                if field !="ctab":
+                if field != "ctab":
                     properties.append(
                         SDF_TEMPLATE.format(
-                            **{"name" :str(field), "value" : str(row[field])}
-                            )
+                            **{"name": str(field), "value": str(row[field])}
                         )
-            mol_strings.append("".join([mol_str,"END\n"] + properties))
+                    )
+            mol_strings.append("".join([mol_str, "END\n"] + properties))
         return "$$$$\n".join(mol_strings) + "$$$$"
-        
-
-
-
 
 
 class CamelCaseJSONSerializer(Serializer):
@@ -215,7 +203,8 @@ class CamelCaseJSONSerializer(Serializer):
     # }
 
     def to_json(self, data, options=None):
-        # Changes underscore_separated names to camelCase names to go from python convention to javacsript convention
+        # Changes underscore_separated names to camelCase names to go from
+        # python convention to javacsript convention
         data = self.to_simple(data, options)
 
         def underscoreToCamel(match):
@@ -227,10 +216,10 @@ class CamelCaseJSONSerializer(Serializer):
                 for key, value in data.items():
                     new_key = re.sub(r"[a-z]_[a-z]", underscoreToCamel, key)
                     if new_key in ["customFields", "uncuratedFields"]:
-                        
+
                         for k, v in value.iteritems():
                             if isinstance(v, basestring):
-                                if  v.startswith("[") and v.endswith("]"):
+                                if v.startswith("[") and v.endswith("]"):
                                     try:
                                         value[k] = json.loads(v)
                                         continue
@@ -270,7 +259,8 @@ class CamelCaseJSONSerializer(Serializer):
         return json.dumps(camelized_data, sort_keys=True)
 
     def from_json(self, content):
-        # Changes camelCase names to underscore_separated names to go from javascript convention to python convention
+        # Changes camelCase names to underscore_separated names to go from
+        # javascript convention to python convention
         data = json.loads(content)
 
         def camelToUnderscore(match):
@@ -298,9 +288,8 @@ class CamelCaseJSONSerializer(Serializer):
         return underscored_data
 
 
-class CBHCompoundBatchSerializer(CamelCaseJSONSerializer,XLSSerializer,SDFSerializer):
+class CBHCompoundBatchSerializer(CamelCaseJSONSerializer, XLSSerializer, SDFSerializer):
     pass
-
 
 
 def convert_query(data):
@@ -308,8 +297,8 @@ def convert_query(data):
         new_dict = {}
         for key, value in data.items():
             new_key = get_key_from_field_name(key)
-            new_key = new_key.replace("uncuratedFields","uncurated_fields")
-            new_key = new_key.replace("customFields","custom_fields")
+            new_key = new_key.replace("uncuratedFields", "uncurated_fields")
+            new_key = new_key.replace("customFields", "custom_fields")
 
             new_dict[new_key] = convert_query(value)
         return new_dict
@@ -319,6 +308,7 @@ def convert_query(data):
         return data
     return data
 
+
 def whitespaced(string):
     if string:
         s = re.sub('[^0-9a-zA-Z]+', ' ', unicode(string))
@@ -326,10 +316,11 @@ def whitespaced(string):
     else:
         return ""
 
+
 def get_agg(field_name, field_value):
-    return '%s|%s|%s|%s' % (field_name, 
+    return '%s|%s|%s|%s' % (field_name,
                             field_value,
-                            whitespaced(field_name), 
+                            whitespaced(field_name),
                             whitespaced(field_value))
 
 
@@ -360,13 +351,11 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
             newsort.append(newItem)
         es_request["sort"] = newsort
 
-
-
     def handle_data_from_django_hstore(self, value):
         '''Hstore passes data in the wrong format'''
         for k, v in value.iteritems():
             if isinstance(v, basestring):
-                if  v.startswith("[") and v.endswith("]"):
+                if v.startswith("[") and v.endswith("]"):
                     try:
                         value[k] = json.loads(v)
                         continue
@@ -398,30 +387,26 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                     if val:
                         val = val.replace(u"\n|\r", " ")
                         data['custom_field_list'].append(
-                            {'name':key, 
-                            'value':val, 
-                            'searchable_name': key.split(" ")[0].lower(), 
-                            'aggregation': get_agg(key, val) }
-                            )
+                            {'name': key,
+                             'value': val,
+                             'searchable_name': key.split(" ")[0].lower(),
+                             'aggregation': get_agg(key, val)}
+                        )
             else:
                 if value:
                     value = value.replace(u"\n|\r", " ")
                     data['custom_field_list'].append(
-                        {'name':key, 
-                        'value':value, 
-                        'searchable_name': key.split(" ")[0].lower(), 
-                        'aggregation': get_agg(key, value) })
-                
-
+                        {'name': key,
+                         'value': value,
+                         'searchable_name': key.split(" ")[0].lower(),
+                         'aggregation': get_agg(key, value)})
 
         for key, value in data.items():
             if key in ["custom_fields", "uncurated_fields"]:
                 if options and options.get("underscorize", False):
-                    data[key] = self.underscorize_fields(value)           
-                self.handle_data_from_django_hstore( value)
+                    data[key] = self.underscorize_fields(value)
+                self.handle_data_from_django_hstore(value)
         return data
-
-
 
     def to_es_ready_non_chemical_data(self, data, options=None):
         options = options or {}
@@ -439,25 +424,25 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                     if val:
                         v = val.replace('\n', ' ').replace('\r', '')
                         agg = '%s|%s' % (key, v)
-                        newdata['custom_field_list'].append({'name':key, 'value':v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg})
+                        newdata['custom_field_list'].append(
+                            {'name': key, 'value': v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg})
             else:
                 if value:
                     v = value.replace('\n', ' ').replace('\r', '')
                     agg = '%s|%s' % (key, v)
 
-                    newdata['custom_field_list'].append({'name':key, 'value':v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg })
-                
+                    newdata['custom_field_list'].append(
+                        {'name': key, 'value': v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg})
+
         # newdata['custom_field_list'].append({'name': "Project", 'value':newdata['project'], 'searchable_name': 'project', 'aggregation': '%s|%s' % ('Project', newdata['project']) })
         # newdata['custom_field_list'].append({'name': "Upload Id", 'value':newdata['multiple_batch_id'], 'searchable_name': 'upload', 'aggregation': '%s|%d' % ('Upload', newdata['multiple_batch_id']) })
-        
+
         for key, value in data.items():
             if key in ["custom_fields", "uncurated_fields"]:
                 if options and options.get("underscorize", False):
-                    newdata[key] = self.underscorize_fields(value)           
-                self.handle_data_from_django_hstore( value)
+                    newdata[key] = self.underscorize_fields(value)
+                self.handle_data_from_django_hstore(value)
         return newdata
-    
-
 
     def to_python_ready_data(self, data, options=None):
         options = options or {}
@@ -468,30 +453,18 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                 data[key] = self.deunderscorize_fields(value)
         return data
 
-
     def to_json(self, data, options=None):
-        self.to_es_ready_data( data, options=options) 
+        self.to_es_ready_data(data, options=options)
         return json.dumps(data, sort_keys=True)
 
-    def underscorize_fields(self,dictionary):
+    def underscorize_fields(self, dictionary):
         return {
-                    get_key_from_field_name(key):value 
-                    for key, value in dictionary.items()
-                }
+            get_key_from_field_name(key): value
+            for key, value in dictionary.items()
+        }
 
-
-
-    def deunderscorize_fields(self,dictionary):
+    def deunderscorize_fields(self, dictionary):
         return {
-                    get_field_name_from_key(key):value 
-                    for key, value in dictionary.items()
-                }
-
-
-
-
-
-
-
-
-
+            get_field_name_from_key(key): value
+            for key, value in dictionary.items()
+        }

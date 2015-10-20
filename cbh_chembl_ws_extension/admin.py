@@ -10,7 +10,9 @@ from django.db import models
 import json
 from solo.admin import SingletonModelAdmin
 
+
 class ChemregProject(Project):
+
     class Meta:
         proxy = True
 
@@ -21,10 +23,10 @@ class ProjectAdmin(ModelAdmin):
     search_fields = ('name',)
     ordering = ('-created',)
     date_hierarchy = 'created'
-    exclude= ["created_by"]
+    exclude = ["created_by"]
     actions = ['reindex']
 
-    def save_model(self, request, obj, form, change): 
+    def save_model(self, request, obj, form, change):
         obj.created_by = request.user
         obj.save()
 
@@ -38,7 +40,7 @@ class ProjectAdmin(ModelAdmin):
 
 from cbh_core_model.models import post_save, sync_permissions
 
-post_save.connect(sync_permissions, sender=ChemregProject, dispatch_uid="proj_perms2")
+post_save.connect(
+    sync_permissions, sender=ChemregProject, dispatch_uid="proj_perms2")
 
 admin.site.register(ChemregProject, ProjectAdmin)
-

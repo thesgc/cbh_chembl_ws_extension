@@ -1,4 +1,4 @@
-#Tests to implement
+# Tests to implement
 
 '''
 ModelResources will be created for each of the required models
@@ -35,7 +35,8 @@ class CompoundBatchResourceTest(ResourceTestCase):
         # Create a user.
         self.username = 'daniel'
         self.password = 'pass'
-        self.user = User.objects.create_user(self.username, 'daniel@example.com', self.password)
+        self.user = User.objects.create_user(
+            self.username, 'daniel@example.com', self.password)
 
         # Fetch the ``Entry`` object we'll use in testing.
         # Note that we aren't using PKs because they can change depending
@@ -70,26 +71,21 @@ class CompoundBatchResourceTest(ResourceTestCase):
   4  82  0     0  0
 M  END"""
 
-        ,
+            ,
         }
         self.project = None
         self.project_key = "valid-key"
         self.project_name = "Valid Name"
 
-
-
-
-
-
-
-
     def setup_project(self):
-        self.project = Project.objects.create(project_key=self.project_key, name=self.project_name, created_by=self.user)
+        self.project = Project.objects.create(
+            project_key=self.project_key, name=self.project_name, created_by=self.user)
         self.project.sync_permissions()
         self.post_data["project_key"] = self.project.project_key
 
     def setup_session(self):
-        self.api_client.client.login(username=self.username, password=self.password)
+        self.api_client.client.login(
+            username=self.username, password=self.password)
 
     def get_credentials(self):
         return self.create_basic(username=self.username, password=self.password)
@@ -100,8 +96,8 @@ M  END"""
         I try to create a new batch
         I expect to be blocked because I am not authorized
         """
-        self.assertHttpUnauthorized(self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data))
-
+        self.assertHttpUnauthorized(self.api_client.post(
+            '/chemblws/cbh_compound_batches/', format='json', data=self.post_data))
 
     def test_save_single_without_valid_project(self):
         """
@@ -111,44 +107,33 @@ M  END"""
         """
         self.setup_session()
         self.post_data["project_key"] = "a project that does not exist"
-        self.assertHttpUnauthorized(self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data))
-
-
-
+        self.assertHttpUnauthorized(self.api_client.post(
+            '/chemblws/cbh_compound_batches/', format='json', data=self.post_data))
 
     def test_save_single_with_valid_project(self):
         self.setup_session()
-        #create a project for which the user is not authorized
+        # create a project for which the user is not authorized
         self.setup_project()
 
-
-        resp = self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data)
+        resp = self.api_client.post(
+            '/chemblws/cbh_compound_batches/', format='json', data=self.post_data)
         print resp.__dict__
         self.assertHttpUnauthorized(resp)
         self.project.make_viewer(self.user)
-        self.assertHttpUnauthorized(self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data))
-        
+        self.assertHttpUnauthorized(self.api_client.post(
+            '/chemblws/cbh_compound_batches/', format='json', data=self.post_data))
+
         self.project.make_editor(self.user)
 
         # Check how many are there first.
         self.assertEqual(CBHCompoundBatch.objects.count(), 0)
-        resp = self.api_client.post('/chemblws/cbh_compound_batches/', format='json', data=self.post_data)
+        resp = self.api_client.post(
+            '/chemblws/cbh_compound_batches/', format='json', data=self.post_data)
         print resp.__dict__
         self.assertHttpCreated(resp)
         # Verify a new one has been added.
         self.assertEqual(CBHCompoundBatch.objects.count(), 1)
         self.project.delete()
-
-
-
-
-
-
-
-
-
-
-
 
     # def test_post_validate_without_valid_project(self):
     #      """
@@ -162,11 +147,6 @@ M  END"""
     #     resp = self.api_client.post('/chemblws/cbh_compound_batches/validate/', format='json', data=self.post_data)
     #     self.assertHttpUnauthorized(resp)
 
-
-
-
-
-
     # def test_post_list_validate(self):
     #     self.setup_session()
     #     self.setup_project()
@@ -174,7 +154,6 @@ M  END"""
     #     # Check how many are there first.
     #     resp = self.api_client.post('/chemblws/cbh_compound_batches/validate/', format='json', data=self.post_data)
     #     self.assertHttpAccepted(resp)
-
 
     # def test_post_list(self):
     #     self.setup_session()
@@ -188,4 +167,3 @@ M  END"""
     #     c = CBHCompoundBatch.objects.filter(warnings__contains={"pains_count":"1"})
     #     self.assertEqual(c.count(),1)
     #     print resp.__dict__
-

@@ -1,7 +1,9 @@
 from behave import given, when, then
-import json, os
+import json
+import os
 from django.contrib.auth.models import User, Group
 from pybel import readfile
+
 
 @given('I have valid salted compound')
 def step(context):
@@ -44,46 +46,48 @@ def step(context):
 M  CHG  3   1   2   2  -1  10  -1
 M  END"""
 
+
 @given("I have valid salted compounds within a ChemDraw {format} file")
 def step(context, format=None):
-  #pull the contents of our chemdraw test file
-  fp = 'files/behave-triflate.%s' % (format)
-  fn = os.path.join(os.path.dirname(__file__), fp)
-  #convert the chemdraw file contents to mol
-  print(fp)
-  print(fn)
-  print(format)
-  mols = [mol.write("smi").split("\t")[0] for mol in readfile( format, fn )]
-  #file_contents = "".join(mols)
-  print(len(mols))
-  context.post_data["type"] = "Smiles"
-  context.post_data["objects"] = mols
-  #also populate our inchi list
+    # pull the contents of our chemdraw test file
+    fp = 'files/behave-triflate.%s' % (format)
+    fn = os.path.join(os.path.dirname(__file__), fp)
+    # convert the chemdraw file contents to mol
+    print(fp)
+    print(fn)
+    print(format)
+    mols = [mol.write("smi").split("\t")[0] for mol in readfile(format, fn)]
+    #file_contents = "".join(mols)
+    print(len(mols))
+    context.post_data["type"] = "Smiles"
+    context.post_data["objects"] = mols
+    # also populate our inchi list
+
 
 @then('retain its salt')
 def step(context, action=None, projkey=None):
-  from cbh_chembl_model_extension.models import CBHCompoundBatch
-  from cbh_core_model.models import Project
+    from cbh_chembl_model_extension.models import CBHCompoundBatch
+    from cbh_core_model.models import Project
 
-  from rdkit import Chem
-  from rdkit.Chem import AllChem, inchi
-  
-  path = "/dev/cbh_compound_batches/"
-  resp = context.api_client.get(
-      path,
-      format='json',
-      data=context.post_data,
-      )
-  
-  reg_cmpds = context.ser.deserialize(resp.content)["objects"]
-  #retrieve registered inchi
-  reg_inchi = reg_cmpds[0]['standardInchi']
-  #convert our ctab mol to inchi
-  #m = Chem.MolFromMolBlock(context.post_data["ctab"])
-  #mol_inchi = inchi.MolToInchi(m)
+    from rdkit import Chem
+    from rdkit.Chem import AllChem, inchi
 
-  #we are now using a hard coded inchi from Chemicalize
-  mol_inchi = context.inchi
- 
-  #assert they are equal
-  assert mol_inchi == reg_inchi
+    path = "/dev/cbh_compound_batches/"
+    resp = context.api_client.get(
+        path,
+        format='json',
+        data=context.post_data,
+    )
+
+    reg_cmpds = context.ser.deserialize(resp.content)["objects"]
+    # retrieve registered inchi
+    reg_inchi = reg_cmpds[0]['standardInchi']
+    # convert our ctab mol to inchi
+    #m = Chem.MolFromMolBlock(context.post_data["ctab"])
+    #mol_inchi = inchi.MolToInchi(m)
+
+    # we are now using a hard coded inchi from Chemicalize
+    mol_inchi = context.inchi
+
+    # assert they are equal
+    assert mol_inchi == reg_inchi

@@ -9,7 +9,9 @@ A parser object to work with our custom field configs and uncurated fields
 
 '''
 
+
 class CovertDateOperation(jsonpatch.PatchOperation):
+
     """Ensures that a data point is formatted correctly for a date field"""
 
     def apply(self, obj):
@@ -40,6 +42,7 @@ class CovertDateOperation(jsonpatch.PatchOperation):
 
 
 class SplitOperation(jsonpatch.PatchOperation):
+
     """Ensures that a data point is formatted correctly for a date field"""
 
     def apply(self, obj):
@@ -69,14 +72,12 @@ class SplitOperation(jsonpatch.PatchOperation):
         return obj
 
 
-
-
 class MyJsonPatch(jsonpatch.JsonPatch):
+
     def __init__(self, patch):
         instance = super(MyJsonPatch, self).__init__(patch)
         self.operations["convertdate"] = CovertDateOperation
         self.operations["split"] = SplitOperation
-
 
 
 def apply_json_patch(dictdata, patch):
@@ -90,11 +91,7 @@ def apply_json_patch(dictdata, patch):
         return dictdata
 
 
-
-
-
-
-def parse_sdf_record(headers, obj, destination_field, mol,fielderrors):
+def parse_sdf_record(headers, obj, destination_field, mol, fielderrors):
     custom_fields = {}
 
     for hdr in headers:
@@ -106,16 +103,13 @@ def parse_sdf_record(headers, obj, destination_field, mol,fielderrors):
         except KeyError:
             pass
             #custom_fields[hdr]   = u""
-                            
-    setattr(obj,destination_field, custom_fields)
+
+    setattr(obj, destination_field, custom_fields)
 
 
-
-
-
-def parse_pandas_record(headers, obj, destination_field, row,fielderrors, headerswithdata):
+def parse_pandas_record(headers, obj, destination_field, row, fielderrors, headerswithdata):
     custom_fields = {}
-    
+
     for hdr in headers:
         if unicode(row[hdr]) == u"nan":
             pass
@@ -126,11 +120,8 @@ def parse_pandas_record(headers, obj, destination_field, row,fielderrors, header
                 headerswithdata.add(hdr)
                 custom_fields[hdr] = unicode(value)
                 test_specific_parse_errors(hdr, value, fielderrors)
-    #Set excel fields as uncurated
-    setattr(obj,destination_field, custom_fields)
-
-
-
+    # Set excel fields as uncurated
+    setattr(obj, destination_field, custom_fields)
 
 
 def test_specific_parse_errors(hdr, value, fielderrors):
@@ -139,10 +130,10 @@ def test_specific_parse_errors(hdr, value, fielderrors):
             curated_value = dateutil.parser.parse(value).strftime("%Y-%m-%d")
         except:
             fielderrors["stringdate"].add(hdr)
-    if hdr not in fielderrors["number"]:      
+    if hdr not in fielderrors["number"]:
         try:
             curated_value = float(value)
-            if hdr not in fielderrors["integer"]: 
+            if hdr not in fielderrors["integer"]:
                 if "." in value:
                     fielderrors["integer"].add(hdr)
         except:
@@ -150,18 +141,19 @@ def test_specific_parse_errors(hdr, value, fielderrors):
             fielderrors["number"].add(hdr)
 
 
-
-
 class APIConverter(object):
+
     """ writes the formats of APIs to the cbh_core_model format"""
     pass
 
 import time
+
+
 def get_response(uri, session):
-    try: 
+    try:
         req = session.get(uri)
         data = req.json()
-        for key ,value in data.iteritems():
+        for key, value in data.iteritems():
             pass
         return data
     except:
@@ -169,13 +161,15 @@ def get_response(uri, session):
         print uri
         print "sleeping for 10"
         time.sleep(10)
-        return  get_response(uri, session)
+        return get_response(uri, session)
 
 # https://github.com/akesterson/dpath-python
+
+
 class ChemblAPIConverter(APIConverter):
-    
+
     schema_endpoint = "https://www.ebi.ac.uk/chembl/api/data/spore/?format=json"
-    
+
     def write_schema(self):
         from django.utils.text import capfirst
         import json
@@ -184,29 +178,30 @@ class ChemblAPIConverter(APIConverter):
         data = get_response(self.schema_endpoint, session)
         for key, datatype in data["methods"].iteritems():
             if "api_dispatch_list" in key:
-                dt , created = DataType.objects.get_or_create(
-                    name="chembl__%s" % datatype["collection_name"], 
-                    uri="https://www.ebi.ac.uk%s/?format=json" % datatype["schema"],
+                dt, created = DataType.objects.get_or_create(
+                    name="chembl__%s" % datatype["collection_name"],
+                    uri="https://www.ebi.ac.uk%s/?format=json" % datatype[
+                        "schema"],
                     version=data["version"]
                 )
                 schema = get_response(dt.uri, session)
-                for field_name, info in schema.get("fields",{}).iteritems():
+                for field_name, info in schema.get("fields", {}).iteritems():
                     field_type = info["type"]
                     for fielder, value in PinnedCustomField.FIELD_TYPE_CHOICES.items():
                         if value["data"]["type"] == info["type"]:
                             field_type = fielder
                             break
-                            
 
                     pcf, created = PinnedCustomField.objects.get_or_create(pinned_for_datatype_id=dt.id,
-                                                                    name=capfirst(field_name.replace("_", " ")),
-                                                                    field_key="/%s/%s/%s" % ("chembl",
-                                                                                                datatype["collection_name"],
-                                                                                                field_name), 
-                                                                    field_type=field_type, 
-                                                                    description=info["help_text"],
-                                                                    required=info["nullable"],
-                                                                    position=0)
-
-
-
+                                                                           name=capfirst(
+                                                                               field_name.replace("_", " ")),
+                                                                           field_key="/%s/%s/%s" % ("chembl",
+                                                                                                    datatype[
+                                                                                                        "collection_name"],
+                                                                                                    field_name),
+                                                                           field_type=field_type,
+                                                                           description=info[
+                                                                               "help_text"],
+                                                                           required=info[
+                                                                               "nullable"],
+                                                                           position=0)
