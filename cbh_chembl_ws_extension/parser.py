@@ -144,7 +144,6 @@ def test_specific_parse_errors(hdr, value, fielderrors):
 class APIConverter(object):
 
     """ writes the formats of APIs to the cbh_core_model format"""
-    pass
 
 import time
 
@@ -172,7 +171,6 @@ class ChemblAPIConverter(APIConverter):
 
     def write_schema(self):
         from django.utils.text import capfirst
-        import json
         from cbh_core_model.models import DataType, PinnedCustomField
         session = requests.Session()
         data = get_response(self.schema_endpoint, session)

@@ -17,12 +17,10 @@ UserResource
 
 '''
 
-import datetime
 from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCase
 from cbh_chembl_model_extension.models import CBHCompoundBatch
 from cbh_core_model.models import Project
-from django.db import connection
 
 
 class CompoundBatchResourceTest(ResourceTestCase):

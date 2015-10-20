@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from django.contrib import admin
-from cbh_core_model.models import Project, PinnedCustomField, CustomFieldConfig, SkinningConfig, ProjectType
+from cbh_core_model.models import Project
 
 from django.contrib.admin import ModelAdmin
 
-from django.forms.widgets import HiddenInput, TextInput
-from django.db import models
-import json
-from solo.admin import SingletonModelAdmin
 
 
 class ChemregProject(Project):

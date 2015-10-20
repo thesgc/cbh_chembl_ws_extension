@@ -4,12 +4,10 @@ from tastypie.resources import ModelResource, ALL_WITH_RELATIONS
 from django.conf import settings
 from django.conf.urls import url
 from django.http import HttpResponse
-from itertools import chain
 from tastypie import fields
 from cbh_core_model.models import Project
 from cbh_core_ws.resources import UserResource
 from cbh_core_ws.authorization import ProjectListAuthorization
-from tastypie.serializers import Serializer
 from tastypie.authentication import SessionAuthentication
 from tastypie.paginator import Paginator
 import json

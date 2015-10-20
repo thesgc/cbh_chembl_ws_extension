@@ -1,4 +1,6 @@
-from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS, Resource
+from tastypie.resources import ALL
+from tastypie.resources import ALL_WITH_RELATIONS
+from tastypie.resources import ModelResource
 from django.conf import settings
 from django.conf.urls import *
 from django.core.exceptions import ObjectDoesNotExist
@@ -653,7 +655,6 @@ class CBHCompoundBatchResource(ModelResource):
         text_file = open(filename, "w")
         text_file.write(sdf)
         text_file.close()
-        import subprocess
         from subprocess import PIPE, Popen
         p = Popen([settings.INCHI_BINARIES_LOCATION['1.02'],
                    "-STDIO",  filename], stdout=PIPE, stderr=PIPE)

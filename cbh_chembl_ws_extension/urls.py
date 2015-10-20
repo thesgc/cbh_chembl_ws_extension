@@ -1,7 +1,6 @@
 
 from django.conf.urls import patterns, url, include
 from cbh_core_ws.resources import Login, Logout
-from chembl_core_db.utils import DirectTemplateView
 from django.conf import settings
 from flowjs import urls as flow
 from django.contrib import admin
