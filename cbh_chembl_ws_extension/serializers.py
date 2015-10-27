@@ -66,15 +66,6 @@ def flatten_dict(d, base=None):
 
 
 class XLSSerializer(Serializer):
-    # formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv', 'xls']
-    # content_types = {'json': 'application/json',
-    #                  'jsonp': 'text/javascript',
-    #                  'xml': 'application/xml',
-    #                  'yaml': 'text/yaml',
-    #                  'html': 'text/html',
-    #                  'csv': 'text/csv',
-    #                  'xls': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}
-
     def to_xls(self, data, options=None):
         '''write excel file here'''
         output = cStringIO.StringIO()
