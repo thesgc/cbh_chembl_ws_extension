@@ -661,6 +661,47 @@ class CBHCompoundBatchResource(ModelResource):
         a = p.communicate()
         inchis = {}
 
+        #PB - there is an assumption here that everything that has a structure will generate an inChi without issue. This is not the case.
+        #Where a molecule does not generate an inchi, there will be a key error looking up the inchi in inchiparts, as anything that cannot 
+        #generate an inchi will be missing from inchiparts, i.e. 50 structures with 1 error will have 49 entries in inchiparts, and this 
+        #will in turn bin the whole file - not great when we can handle erroring structures elsewhere
+
+        error_locs = []
+
+        #a[0] holds the generated inchis. a[1] holds all of the error and warning information (if any)
+        errorparts = a[1].split("\nError")
+        if(len(errorparts) > 1):
+            for i, errorp in enumerate(errorparts):
+                #split on 'structure #', then get the number given
+                if(i > 0):
+                    splits = errorp.split('structure #')
+
+                    error_loc = splits[1].split('.')[0]
+                    #convert to number, put this number in an errors list
+                    error_locs.append(error_loc)
+
+        err_batches = []
+        #for the errors found, remove from non-error lists and flag as erroring
+        for error_no in error_locs:
+            error_no_int = int(float(error_no)) - 1
+
+            #find structures at the position indicated - 1 (for 0-indexed list)
+            err_batch = batches_with_structures[error_no_int]
+            err_batches.append(err_batch)
+ 
+        #we can't remove these while looping through err_locs as it messes up the list order and gives arrayindex exceptions
+        for err_batch in err_batches:
+
+            #remove from batches_with_structures and batches_not_errors
+            batches_with_structures.remove(err_batch)
+            batches_not_errors.remove(err_batch)
+
+            #flag this batch as erroring due to inability to generate anything for the standard_inchi_key field
+            batches_index = batches.index(err_batch)
+            batches[batches_index].warnings["inchiCreationError"] = "true"
+            batches[batches_index].properties["action"] = "Ignore"
+
+
         inchiparts = a[0].split("\nStructure:")
 
         for i, inch in enumerate(inchiparts):
@@ -676,7 +717,10 @@ class CBHCompoundBatchResource(ModelResource):
         already_found = set([])
         duplicates = set([])
         for i, batch in enumerate(batches_with_structures):
-            batch.standard_inchi = inchis[str(i+1)]
+            if (str(i+1) in error_locs):
+                batch.standard_inchi = None
+            else: 
+                batch.standard_inchi = inchis[str(i+1)]
             batch.validate(temp_props=False)
             if batch.standard_inchi_key in already_found:
                 # setting this in case we change it later
