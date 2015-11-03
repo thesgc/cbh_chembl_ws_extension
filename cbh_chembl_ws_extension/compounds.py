@@ -1394,7 +1394,7 @@ class CBHCompoundBatchResource(ModelResource):
 
         projkeys = request.GET.get("project__project_key__in", "")
         if projkeys:
-            pq = {"terms": {"projectKey": projkeys.split(",")}}
+            pq = {"terms": {"projectKey.raw": projkeys.split(",")}}
             modified_query["bool"]["must"] += [pq]
 
         if dateend or datestart:
