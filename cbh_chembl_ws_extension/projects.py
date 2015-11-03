@@ -19,7 +19,7 @@ from django.db.models import Prefetch
 from cbh_core_ws.cache import CachedResource
 from cbh_core_ws.resources import ProjectTypeResource, \
     CustomFieldConfigResource
-
+from django.contrib.auth.models import User
 
 def build_content_type(format, encoding='utf-8'):
     """
@@ -98,45 +98,64 @@ class ChemregProjectResource(CachedResource, ModelResource):
                 {
                     'key': 'related_molregno__chembl__chembl_id__in',
                     'title': '%s ID' % settings.ID_PREFIX,
-                    'htmlClass': 'col-xs-12',
                     'placeholder': 'Search multiple IDs',
                     'feedback': False,
-                    'description': 'Add your IDs and click on them as they appear in the drop-down list.',
+                        'htmlClass': 'col-md-4 col-xs-6',
+
                     'options': {'refreshDelay': 0,
                                 'async': {'url': reverse('api_get_elasticsearch_ids',
                                                          kwargs={'resource_name': 'cbh_compound_batches',
                                                                  'api_name': settings.WEBSERVICES_NAME})}},
                 },
+                
+                # {
+                #      'key': 'created_by',
+                #  'htmlClass': 'col-md-4 col-xs-6',
+                #     'placeholder': 'Select users to search',
+                #     'feedback': False,
+
+
+                # },
+                {
+                    'key': 'multiple_batch_id',
+                    'htmlClass': 'col-md-4 col-xs-6',
+                    'disableSuccessState': True,
+                    'feedback': False,
+                },
                 {
                     'key': 'project__project_key__in',
                     'placeholder': 'Select projects to search',
-                    'htmlClass': 'col-sm-12',
+                     'htmlClass': 'col-md-4 col-xs-6',
                     'feedback': True,
-                    'validationMessage': {'default': 'Please select projects to be searched.'
-                                          },
+                    'validationMessage': {'default': 'Please select projects to be searched.'}
                 },
+                
+
                 {
                     'key': 'dateStart',
                     'type': 'datepicker',
                     'minDate': '2004-01-01',
-                    'htmlClass': 'col-sm-6',
+                    'htmlClass': 'col-md-4 col-xs-6',
                     'disableSuccessState': True,
                     'feedback': False,
-                    'pickadate': {'selectYears': True,
-                                  'selectMonths': True},
+                    'pickadate': {
+                        'selectYears': True,
+                        'selectMonths': True
+                        },
                 },
                 {
                     'key': 'dateEnd',
                     'type': 'datepicker',
                     'minDate': '2004-01-01',
-                    'htmlClass': 'col-sm-6',
+                        'htmlClass': 'col-md-4 col-xs-6',
                     'disableSuccessState': True,
                     'feedback': False,
                     'pickadate': {'selectYears': True,
                                   'selectMonths': True},
                 },
+                
                 {
-                    'htmlClass': 'col-sm-6',
+                    'htmlClass': 'col-md-4 col-xs-6',
                     'disableSuccessState': True,
                     'feedback': False,
                     'key': 'functional_group',
@@ -146,14 +165,14 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'placeholder': 'Search SMILES or SMARTS string',
                     'append': 'today',
                     'feedback': False,
-                    'htmlClass': 'col-sm-6',
+                    'htmlClass': 'col-md-4 col-xs-6',
                     'disableSuccessState': True,
                 },
                 {
                     'key': 'substruc',
                     'style': {'selected': 'btn-success',
                               'unselected': 'btn-default'},
-                    'htmlClass': 'col-sm-6',
+                        'htmlClass': 'col-md-4 col-xs-6',
                     'type': 'radiobuttons',
                     'disableSuccessState': True,
                     'feedback': False,
@@ -163,13 +182,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                                   'name': 'Exact Match'}],
                 },
                 {
-                    'key': 'multiple_batch_id',
-                    'htmlClass': 'col-xs-6',
-                    'disableSuccessState': True,
-                    'feedback': False,
-                },
-                {
-                    'htmlClass': 'col-sm-12',
+                        'htmlClass': 'col-md-4 col-xs-6',
                     'key': 'search_custom_fields__kv_any',
                     'disableSuccessState': True,
                     'help': 'Searching using this filter will bring back results that match an OR pattern within the same data category, with AND across data categories, i.e. results which contain this item within category a OR that item within category a AND that item within category b.',
@@ -179,15 +192,32 @@ class ChemregProjectResource(CachedResource, ModelResource):
                                                          kwargs={'resource_name': 'cbh_compound_batches',
                                                                  'api_name': settings.WEBSERVICES_NAME})}},
                 },
+
             ],
             'schema': {'required': [], 'type': 'object', 'properties': {
                 'related_molregno__chembl__chembl_id__in': {
                     'type': 'array',
                     'format': 'uiselect',
-                    'placeholder': 'Look for ids',
-                    'title': '',
-                    'items': [],
+                    
                 },
+
+                'created_by': {
+                    'type': 'array',
+                    'format': 'uiselect',
+                       'title': 'Compound batch created by',
+                        'type': 'array',
+                        'format': 'uiselect',
+                        'htmlClass': 'col-md-4 col-xs-6',
+                        'placeholder': 'Search user who created the batch',
+                        'options': {'searchDescriptions': False},
+                        'items':  sorted([
+                            {'label': user.first_name + " " + user.last_name + ""+ user.username + "", "value" : str(user.id) } 
+                            for user in User.objects.exclude(pk=-1)
+                        ], key=lambda k: k['label'])
+                },
+                
+                'multiple_batch_id': {'title': 'Upload ID',
+                                      'type': 'string'},
                 'project__project_key__in': {
                     'title': 'Project',
                     'type': 'array',
@@ -196,8 +226,6 @@ class ChemregProjectResource(CachedResource, ModelResource):
                                'value': p.obj.project_key} for p in
                               bundle['objects']],
                 },
-                'multiple_batch_id': {'title': 'Upload ID',
-                                      'type': 'string'},
                 'functional_group': {
                     'title': 'Functional Group',
                     'type': 'string',
@@ -472,6 +500,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'placeholder': 'Choose column and value...',
                     'title': 'Filter by project data values:',
                 },
+
             }},
         }
 
