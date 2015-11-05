@@ -70,6 +70,7 @@ class CBHCompoundBatchResource(ModelResource):
         ChemregProjectResource, 'project', blank=False, null=False)
     substructure_smarts = ""
 
+
     class Meta:
         filtering = {
             "std_ctab": ALL_WITH_RELATIONS,
@@ -105,7 +106,8 @@ class CBHCompoundBatchResource(ModelResource):
                       ('compoundproperties.acd_logd', 'acdLogd'),
                       ('compoundproperties.acd_most_apka', 'acdAcidicPka'),
                       ('compoundproperties.acd_most_bpka', 'acdBasicPka'),
-                      ('compoundproperties.full_molformula', 'fullMolformula')]
+                      ('compoundproperties.full_molformula', 'fullMolformula'),
+                      ('project.project_key', 'projectKey')]
         csv_fieldnames = [('chembl_id', 'UOX ID'),
                           ('pref_name', 'Preferred Name'),
                           ('max_phase', 'Known Drug'),
@@ -188,6 +190,7 @@ class CBHCompoundBatchResource(ModelResource):
         cust = request.GET.get("search_custom_fields__kv_any", None)
         # initialise this with project ids, sets up the correct AND
         # initialisation with custom fields
+        '''
         cust_queries = Q(project_id__in=set(pids))
         if cust:
             # loop through the custom fields
@@ -216,6 +219,7 @@ class CBHCompoundBatchResource(ModelResource):
                 # AND the sets of custom field queries
                 cust_queries &= inner_queries
             #applicable_filters["custom_fields__kv_any"] = cust
+        '''
         if cms != None:
             # run the sql for pulling in new compounds into compound_mols
             indexed = CBHCompoundBatch.objects.index_new_compounds()
@@ -229,7 +233,7 @@ class CBHCompoundBatchResource(ModelResource):
         if dateend:
             applicable_filters["created__lte"] += " 23:59:59"
         dataset = self.get_object_list(request).filter(
-            **applicable_filters).filter(cust_queries)
+            **applicable_filters)     #.filter(cust_queries) done in elasticsearch instead
         func_group = request.GET.get("functional_group", None)
 
         if func_group:
@@ -425,6 +429,7 @@ class CBHCompoundBatchResource(ModelResource):
         return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
 
     def save_related(self, bundle):
+
         bundle.obj.generate_structure_and_dictionary()
 
     def alter_deserialized_list_data(self, request, deserialized):
@@ -444,6 +449,7 @@ class CBHCompoundBatchResource(ModelResource):
         bundle = super(CBHCompoundBatchResource, self).full_hydrate(bundle)
         if not bundle.obj.id:
             bundle.obj.created_by = bundle.request.user.username
+            bundle.obj.created_by_id = bundle.request.user.id
             # bundle.obj.validate()
             # self.match_list_to_moleculedictionaries(bundle.obj,bundle.data["project"] )
         return bundle
@@ -529,6 +535,7 @@ class CBHCompoundBatchResource(ModelResource):
         for batch in batches:
             if(batch.obj.properties.get("action", "") == "New Batch"):
                 batch.obj.created_by = request.user.username
+                batch.obj.created_by_id = request.user.id
                 batch.obj.id = None
                 batch.obj.generate_structure_and_dictionary()
 
@@ -1316,9 +1323,27 @@ class CBHCompoundBatchResource(ModelResource):
         must_list = []
         # If there is a substructure query then we use the non-elasticsearch
         # implementation to pull back the required fields
-        objects = self.obj_get_list(
-            bundle=base_bundle, **self.remove_api_resource_names(kwargs))
-        ids = objects.values_list("id", flat=True)[0:100000]
+
+
+        ws = request.GET.get("with_substructure", None)
+        st = request.GET.get("similar_to", None)
+        fm = request.GET.get("flexmatch", None)
+        # this is the similarity index for fingerprint-like searching
+        fp = request.GET.get("fpValue", None)
+        fg = request.GET.get("functional_group", None)
+
+
+        query = None
+        if ws or st or fm or fp or fg:
+            objects = self.obj_get_list(
+                bundle=base_bundle, **self.remove_api_resource_names(kwargs))
+            ids = objects.values_list("id", flat=True)[0:100000]
+            query = {
+                "ids": {
+                "type": "batches",
+                "values": [str(i) for i in ids]
+                }
+            }
 
         get_data = request.GET
         blanks_filter = json.loads(get_data.get("showBlanks", "[]"))
@@ -1330,11 +1355,7 @@ class CBHCompoundBatchResource(ModelResource):
         archived = request.GET.get("archived", None)
         # we need to alter the query to look for blanks or limit to non-blanks
         # if specified
-        query = {"ids": {
-            "type": "batches",
-            "values": [str(i) for i in ids]
-        }
-        }
+        
         # modify the query to include
         blanks_queries = []
         if blanks_filter:
@@ -1370,10 +1391,49 @@ class CBHCompoundBatchResource(ModelResource):
                                           })
         modified_query = {
             "bool": {
-                "must": [query] + blanks_queries,
+                "must":  blanks_queries,
                 "must_not": nonblanks_queries,
             },
         }
+        if query:
+            modified_query["bool"]["must"] += [query] 
+
+        datestart = request.GET.get("created__gte", None)
+        dateend = request.GET.get("created__lte", None)
+        uoxs = request.GET.get("related_molregno__chembl__chembl_id__in", None)
+        created_by = request.GET.get("created_by", "").split()
+        if len(created_by) > 0:
+            for id in created_by:
+                modified_query["bool"]["must"] += [{
+                                                        "term": {
+                                                            "createdById" : int(id) 
+                                                        }
+                                                    }]
+
+        projkeys = request.GET.get("project__project_key__in", "")
+        if projkeys:
+            pq = {"terms": {"projectKey.raw": projkeys.split(",")}}
+            modified_query["bool"]["must"] += [pq]
+
+        if dateend or datestart:
+            rq = {
+                "range" : {
+                    "created" : {
+                        
+                    }
+                }
+            }
+            if dateend:
+                dateend += " 23:59:59"
+                rq["range"]["created"]["lte"] = dateend
+            if datestart:
+                rq["range"]["created"]["gte"] = datestart
+            # rq["range"]["created"]["format"] = "yyyy/MM/dd HH:mm:ss"
+            modified_query["bool"]["must"] += [rq]
+
+        if uoxs:
+            tq = {"terms": {"chemblId.raw" : uoxs.split(",")}}
+            modified_query["bool"]["must"] += [tq]
 
         es_request = {
             "version": True,
