@@ -8,7 +8,7 @@ from tastypie.authorization import Authorization
 from tastypie import http
 from django.http import HttpResponse
 from collections import OrderedDict
-from pybel import readfile
+from pybel import readfile, readstring
 import re
 import shortuuid
 import copy
@@ -948,11 +948,29 @@ class CBHCompoundBatchResource(ModelResource):
                 data = correct_file.file.read()
                 data = data.replace("\r\n", "\n").replace("\r", "\n")
                 ctabs = data.split("$$$$")
+                
                 for index, mol in enumerate(mols):
                     if mol is None:
-                        b = None
-                        errors.append(
-                            {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
+                        #b = None
+                        #b = Chem.MolFromMolBlock(ctabs[index])
+                        b = readstring('mol', ctabs[index])
+                        blinded_uncurated_fields = b.data
+                        print(blinded_uncurated_fields)
+                        if b == None:
+                            #try pybel to get the fields?
+                            print('mol is none')
+                            errors.append(
+                                {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
+                        else:
+                            # errors.append(
+                            #     {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
+                            b = None
+                            b = CBHCompoundBatch.objects.blinded(
+                                project=bundle.data["project"])
+                            b.warnings["smilesParseError"] = "true"
+                            b.properties["action"] = "Ignore"
+
+                            b.uncurated_fields = dict(blinded_uncurated_fields)
                     else:
                         orig_data = ctabs[index]
                         # try:
@@ -1024,7 +1042,7 @@ class CBHCompoundBatchResource(ModelResource):
                             b = CBHCompoundBatch.objects.blinded(
                                 project=bundle.data["project"])
                             b.original_smiles = smiles_str
-                            b.warnings["smilesParseError"] = "true"
+                            b.warnings["parseError"] = "true"
                             b.properties["action"] = "Ignore"
                     else:
                         b = CBHCompoundBatch.objects.blinded(
