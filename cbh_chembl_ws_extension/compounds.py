@@ -995,35 +995,56 @@ class CBHCompoundBatchResource(ModelResource):
 
         else: 
             if (correct_file.extension == ".sdf"):
-                #read in the file
+                # read in the file
                 suppl = Chem.ForwardSDMolSupplier(correct_file.file)
                 mols = [mo for mo in suppl]
-                if(len(mols) > 1000):
+                if(len(mols) > 10000):
                     raise BadRequest("file_too_large")
-                #read the headers from the first molecule
-                
+                # read the headers from the first molecule
+
                 headers = get_all_sdf_headers(correct_file.file.name)
                 data = correct_file.file.read()
-                data = data.replace("\r\n","\n").replace("\r","\n")
+                data = data.replace("\r\n", "\n").replace("\r", "\n")
                 ctabs = data.split("$$$$")
+                
                 for index, mol in enumerate(mols):
-                    if mol is None: 
-                        b=None
-                        errors.append({"index" : index+1, "message" : "Invalid valency or other error parsing this molecule"})
+                    if mol is None:
+                        #b = None
+                        #b = Chem.MolFromMolBlock(ctabs[index])
+                        b = readstring('mol', ctabs[index])
+                        blinded_uncurated_fields = b.data
+                        print(blinded_uncurated_fields)
+                        if b == None:
+                            #try pybel to get the fields?
+                            print('mol is none')
+                            errors.append(
+                                {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
+                        else:
+                            # errors.append(
+                            #     {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
+                            b = None
+                            b = CBHCompoundBatch.objects.blinded(
+                                project=bundle.data["project"])
+                            b.warnings["parseError"] = "true"
+                            b.properties["action"] = "Ignore"
+
+                            b.uncurated_fields = dict(blinded_uncurated_fields)
                     else:
                         orig_data = ctabs[index]
                         # try:
                         try:
-                            b = CBHCompoundBatch.objects.from_rd_mol(mol, orig_ctab=orig_data, project=bundle.data["project"])
-                            # from pprint import pprint
-                            # pprint(vars(b))
+                            b = CBHCompoundBatch.objects.from_rd_mol(
+                                mol, orig_ctab=orig_data, project=bundle.data["project"])
                         except Exception, e:
-                            errors.append({"index" : index+1,  "message" : str(e)})
-                            b =None
+                            errors.append(
+                                {"index": index+1,  "message": str(e)})
+                            b = None
                         if b and dict(b.uncurated_fields) == {}:
-                            #Only rebuild the uncurated fields if this has not been done before
-                            parse_sdf_record(headers, b, "uncurated_fields", mol, fielderrors)
-                            
+                            # Only rebuild the uncurated fields if this has not
+                            # been done before
+                            parse_sdf_record(
+                                headers, b, "uncurated_fields", mol, fielderrors)
+
                     batches.append(b)
                
 
