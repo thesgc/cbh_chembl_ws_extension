@@ -108,6 +108,7 @@ class CBHCompoundBatchResource(ModelResource):
                       ('compoundproperties.acd_most_bpka', 'acdBasicPka'),
                       ('compoundproperties.full_molformula', 'fullMolformula'),
                       ('project.project_key', 'projectKey')]
+
         csv_fieldnames = [('chembl_id', 'UOX ID'),
                           ('pref_name', 'Preferred Name'),
                           ('max_phase', 'Known Drug'),
@@ -160,6 +161,10 @@ class CBHCompoundBatchResource(ModelResource):
         The default simply applies the ``applicable_filters`` as ``**kwargs``,
         but should make it possible to do more advanced things.
         """
+        pr = request.GET.get("project__project_key__in", None)
+        if pr == "":
+            applicable_filters.pop("project__project_key__in")
+
         self.substructure_smarts = ""
         ws = request.GET.get("with_substructure", None)
         st = request.GET.get("similar_to", None)
@@ -264,6 +269,7 @@ class CBHCompoundBatchResource(ModelResource):
         return rc
 
     def get_elasticsearch_ids(self, request, **kwargs):
+        '''Fetch the UOx ids from elasticsearch'''
         bundle = self.build_bundle(request=request)
         pids = self._meta.authorization.project_ids(request)
         filters = {"project__id__in": pids}
@@ -285,6 +291,7 @@ class CBHCompoundBatchResource(ModelResource):
         return rc
 
     def get_elasticsearch_autocomplete(self, request, **kwargs):
+        '''Fetch any autocomplete data from elasticsearch'''
         bundle = self.build_bundle(request=request)
         pids = self._meta.authorization.project_ids(request)
         prefix = request.GET.get("custom__field__startswith", None)
@@ -1294,10 +1301,10 @@ class CBHCompoundBatchResource(ModelResource):
 
     def get_list_elasticsearch(self, request, **kwargs):
         """
-        Returns a serialized list of resources.
-        Calls ``obj_get_list`` to provide the data, then handles that result
-        set and serializes it.
-        Should return a HttpResponse (200 OK).
+        Search for compound batches or inventory items
+        The search GET request is interpretted into a request to elasticsearch.
+        If a request for a structure search is made then the search is executed first using PostgreSQL 
+        via the RDKit Cartridge. Otherwise the search goes direct to elasticsearch
         """
         # TODO: Uncached for now. Invalidation that works for everyone may be
         #       impossible.
@@ -1417,6 +1424,11 @@ class CBHCompoundBatchResource(ModelResource):
             tq = {"terms": {"chemblId.raw" : uoxs.split(",")}}
             modified_query["bool"]["must"] += [tq]
 
+        
+
+        pids = self._meta.authorization.project_ids(request)
+        pq = elasticsearch_client.get_project_uri_terms(pids)
+        modified_query["bool"]["must"] += pq
         es_request = {
             "version": True,
             "from": get_data.get("offset", 0),
@@ -1424,6 +1436,25 @@ class CBHCompoundBatchResource(ModelResource):
             "filter": modified_query,
             "sort": json.loads(get_data.get("sorts", '[{"id": {"order": "desc"}}]'))
         }
+        custom_fields__kv_any = request.GET.get("search_custom_fields__kv_any", "")
+        if custom_fields__kv_any:
+            custom_q = elasticsearch_client.get_custom_fields_query_from_string(custom_fields__kv_any)
+            modified_query["bool"]["must"] += [custom_q]
+
+        textsearch = request.GET.get("textsearch", None)
+        if textsearch:
+             es_request["query"] = {
+                    "multi_match" :
+                    { 
+                        "type": "phrase_prefix", 
+                        "fields": ["custom_field_list.value",] , 
+                        "query" : textsearch
+                    }
+                }
+        multiple_batch_id = request.GET.get("multiple_batch_id", None)
+        if multiple_batch_id:
+            modified_query["bool"]["must"] += [{"term": {"multiple_batch_id" : multiple_batch_id}}]
+
         index = elasticsearch_client.get_main_index_name()
         es_serializer = CBHCompoundBatchElasticSearchSerializer()
         es_serializer.convert_query(es_request)

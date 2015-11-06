@@ -126,8 +126,12 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'key': 'project__project_key__in',
                     'placeholder': 'Select projects to search',
                      'htmlClass': 'col-md-4 col-xs-6',
-                    'feedback': True,
-                    'validationMessage': {'default': 'Please select projects to be searched.'}
+                    'feedback': False,
+                    'description': 'Search for projects in order to limit the choice of fields on show.',
+
+                                    'disableSuccessState': True,
+
+                    # 'validationMessage': {'default': 'Please select projects to view other fields.'}
                 },
                 
 
@@ -159,6 +163,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'disableSuccessState': True,
                     'feedback': False,
                     'key': 'functional_group',
+
                 },
                 {
                     'key': 'smiles',
@@ -182,7 +187,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                                   'name': 'Exact Match'}],
                 },
                 {
-                        'htmlClass': 'col-md-4 col-xs-6',
+                    'htmlClass': 'col-md-4 col-xs-6',
                     'key': 'search_custom_fields__kv_any',
                     'disableSuccessState': True,
                     'help': 'Searching using this filter will bring back results that match an OR pattern within the same data category, with AND across data categories, i.e. results which contain this item within category a OR that item within category a AND that item within category b.',
@@ -190,7 +195,11 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'options': {'refreshDelay': 0,
                                 'async': {'url': reverse('api_get_elasticsearch_autocomplete',
                                                          kwargs={'resource_name': 'cbh_compound_batches',
-                                                                 'api_name': settings.WEBSERVICES_NAME})}},
+                                                                 'api_name': settings.WEBSERVICES_NAME})},
+                                "tagging": "tagFunction",
+                                "taggingLabel": "(in any field)",
+                                "taggingTokens": "",
+                                },
                 },
 
             ],

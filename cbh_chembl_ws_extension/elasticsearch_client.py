@@ -1,7 +1,7 @@
 
 from django.conf import settings
 import elasticsearch
-
+import json
 import time
 try:
     ES_PREFIX = settings.ES_PREFIX
@@ -60,23 +60,44 @@ def get(index_name, es_request_body, bundledata):
     bundledata["objects"] = data
     return bundledata
 
+def get_project_uri_terms(project_id_list):
+    project_terms = []
+    for proj in project_id_list:
+        project_name = '/%s/cbh_projects/%d' % (
+            settings.WEBSERVICES_NAME, proj)
+        project_terms.append({'term': {'project.raw': project_name}})
+    return [{'bool': {
+        'should': project_terms,
+    }, }]
+
+
+
+def get_custom_fields_query_from_string(cf_string):
+    project_terms = []
+    for keyvalue in json.loads(cf_string):
+        
+        splitted = keyvalue.split("|")
+        project_terms.append({"term": 
+                {"customFields.%s.raw" % splitted[0] : splitted[1]}}
+                )
+        print project_terms
+    return {'bool': {
+            'should': project_terms,
+                }, }
 
 def get_autocomplete(projects, search_term, field, custom_fields=None, single_field=None):
+    project_terms = get_project_uri_terms(projects)
     es = elasticsearch.Elasticsearch()
-    project_terms = []
+    
     # Search for a space before item to ensure it is a separate word, note
     # that the terms have been formatted to allow this type of match to work
     search_regex = '.*%s.*|.*%s.*|.*%s.*|.*%s.*' % (
         search_term.title(), search_term, search_term.upper(), search_term.lower())
     field_to_search = '%s.raw' % (field)
-    for proj in projects:
-        project_name = '/%s/cbh_projects/%d' % (
-            settings.WEBSERVICES_NAME, proj)
-        project_terms.append({'term': {'project.raw': project_name}})
+   
 
-    must_list = [{'bool': {
-        'should': project_terms,
-    }, }]
+    must_list = project_terms
+
     if search_term and custom_fields:
         must_list.append({'bool': {
             'should': [
@@ -137,7 +158,7 @@ def create_temporary_index(batches, request, index_name):
         "mappings": {
             "_default_": {
                 "_all": {"enabled": False},
-
+                
 
                 "dynamic_templates": [{
                     "string_fields": {
