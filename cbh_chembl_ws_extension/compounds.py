@@ -960,24 +960,47 @@ class CBHCompoundBatchResource(ModelResource):
                     if mol is None:
                         #b = None
                         #b = Chem.MolFromMolBlock(ctabs[index])
-                        b = readstring('mol', ctabs[index])
-                        blinded_uncurated_fields = b.data
-                        print(blinded_uncurated_fields)
-                        if b == None:
-                            #try pybel to get the fields?
-                            print('mol is none')
-                            errors.append(
-                                {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
-                        else:
-                            # errors.append(
-                            #     {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
+                        print(ctabs[index])
+                        try:
+                            b = readstring('sdf', ctabs[index])
+                            blinded_uncurated_fields = b.data
+                            print('openbabel doesnt error')
+                            print(blinded_uncurated_fields)
+                            if b == None:
+                                #try pybel to get the fields?
+                                print('mol is none')
+                                errors.append(
+                                    {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
+                            else:
+                                # errors.append(
+                                #     {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
+                                b = None
+                                b = CBHCompoundBatch.objects.blinded(
+                                    project=bundle.data["project"])
+                                b.warnings["parseError"] = "true"
+                                b.properties["action"] = "Ignore"
+
+                                b.uncurated_fields = dict(blinded_uncurated_fields)
+                        except Exception, e:
+                            #use a regular expression to pull properties out of the ctab for now
+                            pns = re.findall(r'> *<(\w+)>',ctabs[index]);
+                            pns2 = re.findall(r'> <\w+>\s*(.+)\n',ctabs[index]);
+                            #print('pns below')
+                            #print(pns)
+                            #print(pns2)
+                            blinded_uncurated_fields = {}
+                            for idx, val in enumerate(pns):
+                                blinded_uncurated_fields[val] = pns2[idx]
                             b = None
                             b = CBHCompoundBatch.objects.blinded(
                                 project=bundle.data["project"])
-                            b.warnings["smilesParseError"] = "true"
+                            b.warnings["parseError"] = "true"
                             b.properties["action"] = "Ignore"
+                            b.uncurated_fields = blinded_uncurated_fields
 
-                            b.uncurated_fields = dict(blinded_uncurated_fields)
+                            # b = None
+                            # errors.append(
+                            #         {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
                     else:
                         orig_data = ctabs[index]
                         # try:
