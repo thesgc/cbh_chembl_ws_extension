@@ -97,7 +97,6 @@ import dateutil.parser
 from cbh_chembl_ws_extension.parser import parse_pandas_record, parse_sdf_record, apply_json_patch
 
 
-
 # from tastypie.utils.mime import build_content_type
 def build_content_type(format, encoding='utf-8'):
     """
@@ -717,7 +716,7 @@ class CBHCompoundBatchResource(ModelResource):
         error_locs = []
 
         #a[0] holds the generated inchis. a[1] holds all of the error and warning information (if any)
-        print(a[1])
+        #print(a[1])
         errorparts = a[1].split("\nError")
         if(len(errorparts) > 1):
             for i, errorp in enumerate(errorparts):
@@ -729,8 +728,8 @@ class CBHCompoundBatchResource(ModelResource):
                     #convert to number, put this number in an errors list
                     error_locs.append(error_loc)
 
-        print(error_locs)
-        print(len(batches_with_structures))
+        #print(error_locs)
+        #print(len(batches_with_structures))
         err_batches = []
         #for the errors found, remove from non-error lists and flag as erroring
         for error_no in error_locs:
@@ -770,8 +769,8 @@ class CBHCompoundBatchResource(ModelResource):
         already_found = set([])
         duplicates = set([])
         
-        print(inchis)
-        print(error_locs)
+        #print(inchis)
+        #print(error_locs)
         for i, batch in enumerate(batches_with_structures):
             if (str(i+1) in error_locs):
                 batch.standard_inchi = None
@@ -1011,24 +1010,47 @@ class CBHCompoundBatchResource(ModelResource):
                     if mol is None:
                         #b = None
                         #b = Chem.MolFromMolBlock(ctabs[index])
-                        b = readstring('mol', ctabs[index])
-                        blinded_uncurated_fields = b.data
-                        print(blinded_uncurated_fields)
-                        if b == None:
-                            #try pybel to get the fields?
-                            print('mol is none')
-                            errors.append(
-                                {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
-                        else:
-                            # errors.append(
-                            #     {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
+                        print(ctabs[index])
+                        try:
+                            b = readstring('sdf', ctabs[index])
+                            blinded_uncurated_fields = b.data
+                            print('openbabel doesnt error')
+                            print(blinded_uncurated_fields)
+                            if b == None:
+                                #try pybel to get the fields?
+                                print('mol is none')
+                                errors.append(
+                                    {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
+                            else:
+                                # errors.append(
+                                #     {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
+                                b = None
+                                b = CBHCompoundBatch.objects.blinded(
+                                    project=bundle.data["project"])
+                                b.warnings["parseError"] = "true"
+                                b.properties["action"] = "Ignore"
+
+                                b.uncurated_fields = dict(blinded_uncurated_fields)
+                        except Exception, e:
+                            #use a regular expression to pull properties out of the ctab for now
+                            pns = re.findall(r'> *<(\w+)>',ctabs[index]);
+                            pns2 = re.findall(r'> <\w+>\s*(.+)\n',ctabs[index]);
+                            #print('pns below')
+                            #print(pns)
+                            #print(pns2)
+                            blinded_uncurated_fields = {}
+                            for idx, val in enumerate(pns):
+                                blinded_uncurated_fields[val] = pns2[idx]
                             b = None
                             b = CBHCompoundBatch.objects.blinded(
                                 project=bundle.data["project"])
                             b.warnings["parseError"] = "true"
                             b.properties["action"] = "Ignore"
+                            b.uncurated_fields = blinded_uncurated_fields
 
-                            b.uncurated_fields = dict(blinded_uncurated_fields)
+                            # b = None
+                            # errors.append(
+                            #         {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
                     else:
                         orig_data = ctabs[index]
                         # try:
