@@ -281,7 +281,8 @@ class CBHCompoundBatchResource(ModelResource):
             #uox_ids = list(MoleculeDictionary.objects.filter(**filters).values_list("chembl_id", flat=True)[0:20])
             uox_ids = list(
                 elasticsearch_client.get_autocomplete(pids, prefix, 'chemblId'))
-            bundle.data = [{"value": uox, "label": uox} for uox in uox_ids]
+            blinded_ids = list(elasticsearch_client.get_autocomplete(pids, prefix, 'blindedBatchId'))
+            bundle.data = [{"value": uox, "label": uox} for uox in uox_ids + blinded_ids]
             serialized = json.dumps(bundle.data)
         else:
             serialized = "[]"
@@ -1465,9 +1466,10 @@ class CBHCompoundBatchResource(ModelResource):
             modified_query["bool"]["must"] += [rq]
 
         if uoxs:
+            #check for either chemblid field or blindedbatchid field
             tq = {"terms": {"chemblId.raw" : uoxs.split(",")}}
-            modified_query["bool"]["must"] += [tq]
-
+            tq2 = {"terms": {"blindedBatchId.raw" : uoxs.split(",")}}
+            modified_query["bool"]["must"] += {"bool": {"should" : [tq, tq2]}}
         
 
         pids = self._meta.authorization.project_ids(request)
@@ -1480,6 +1482,7 @@ class CBHCompoundBatchResource(ModelResource):
             "filter": modified_query,
             "sort": json.loads(get_data.get("sorts", '[{"id": {"order": "desc"}}]'))
         }
+
         custom_fields__kv_any = request.GET.get("search_custom_fields__kv_any", "")
         if custom_fields__kv_any:
             custom_q = elasticsearch_client.get_custom_fields_query_from_string(custom_fields__kv_any)
