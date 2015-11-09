@@ -1472,7 +1472,7 @@ class CBHCompoundBatchResource(ModelResource):
             #check for either chemblid field or blindedbatchid field
             tq = {"terms": {"chemblId.raw" : uoxs.split(",")}}
             tq2 = {"terms": {"blindedBatchId.raw" : uoxs.split(",")}}
-            modified_query["bool"]["must"] += {"bool": {"should" : [tq, tq2]}}
+            modified_query["bool"]["must"] += [{"bool": {"should" : [tq, tq2]}}]
         
 
         pids = self._meta.authorization.project_ids(request)
