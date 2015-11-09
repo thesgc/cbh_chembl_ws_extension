@@ -122,18 +122,20 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
         #                           'must': {'prefix': { 'custom_field_list.name.raw':  single_field } }
         #                       }
         #                     })
-    body = {
-        'query': {
-            'bool': {
-                'must': must_list
-            },
-            'filtered': {
+    must_list.append({
+        'filtered': {
                 'filter' : {"bool":
                                    {"should": [{"term": {"properties.archived": "false"}},
                                                {"missing": {"field": "properties.archived"}}]}
                                    },
             }
+        } )
 
+    body = {
+        'query': {
+            'bool': {
+                'must': must_list
+            },
         },
         'aggs': {
             'autocomplete': {
