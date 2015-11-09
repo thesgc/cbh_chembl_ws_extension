@@ -1521,7 +1521,7 @@ class CBHCompoundBatchResource(ModelResource):
         return bundledata
 
     def get_object_list(self, request):
-        return super(CBHCompoundBatchResource, self).get_object_list(request).prefetch_related(Prefetch("related_molregno__compoundproperties")).prefetch_related(Prefetch("project"))
+        return super(CBHCompoundBatchResource, self).get_object_list(request)
 
 
 def deepgetattr(obj, attr, ex):
