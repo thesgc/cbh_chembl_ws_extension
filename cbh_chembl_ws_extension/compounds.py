@@ -327,13 +327,16 @@ class CBHCompoundBatchResource(ModelResource):
     def reindex_elasticsearch(self, request, **kwargs):
         desired_format = self.determine_format(request)
         batches = self.get_object_list(request)
+        print batches.count()
         # we only want to store certain fields in the search index
         batch_dicts = self.batches_to_es_ready(
             batches, request, non_chem_data_only=True)
+        print len(batches)
         # reindex compound data
         index_name = elasticsearch_client.get_main_index_name()
         es_reindex = elasticsearch_client.create_temporary_index(
             batch_dicts, request, index_name)
+        print len(es_reindex["items"])
         return HttpResponse(content=json.dumps({"data": es_reindex}), content_type=build_content_type(desired_format))
 
     def reindex_compound(self, request, **kwargs):
