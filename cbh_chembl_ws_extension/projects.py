@@ -131,7 +131,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
 
                                     'disableSuccessState': True,
 
-                    # 'validationMessage': {'default': 'Please select projects to view other fields.'}
+                    'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
                 },
                 
 

@@ -147,9 +147,8 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
 def create_temporary_index(batches, request, index_name):
     es = elasticsearch.Elasticsearch()
     t = time.time()
-    store_type = "memory"
-    if len(batches) > 100:
-        store_type = "niofs"
+    store_type = "niofs"
+
     create_body = {
         "settings": {
             "index.store.type": store_type

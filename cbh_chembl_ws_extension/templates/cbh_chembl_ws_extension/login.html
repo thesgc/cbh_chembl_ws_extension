@@ -107,19 +107,20 @@
           <small>Currently in beta testing</small></h2>
           <p>We need your help to test this application so please <a href="mailto:info@chembiohub.ox.ac.uk?subject=ChemReg Issue">let us know</a> about any bugs you find (or suggestions for future features).</p>
           <p>Please use this service to register small molecules you are synthesising or using.</p>
-          <p>{% if password_login %}Simply enter your account details in the box. You will find these in an email from <a href="mailto:info@chembiohub.ox.ac.uk">info@chembiohub.ox.ac.uk</a>.  If you haven’t heard from us – drop us a line and we will create an account for you.</p>{% endif %} 
+          <p>Simply enter your account details in the box. You will find these in an email from <a href="mailto:info@chembiohub.ox.ac.uk">info@chembiohub.ox.ac.uk</a>.  If you haven’t heard from us – drop us a line and we will create an account for you.</p>
             {% if webauth_login %}Simply click the button below to log in via webauth.{% endif %}
            
 
         </div>
-        
+        {% if webauth_login %}
+<p><a role="button" href="webauth" value="Sign in with webauth" class="btn btn-primary" > Sign in with Webauth</a></p> <p><a href="https://webauth.ox.ac.uk/logout" role="button" class="btn btn-danger">Log out of Webauth entirely</a></p>
+{% endif %}
     </div>
 
     <div class="col-xs-12">
-            
-{% if password_login %}
+      
       <form class="form-horizontal mt" method="post">
-            <label>{% if logout %}Logged out, log in again below{% else %}Please login {% endif %}</label>
+            <label>{% if logout %}Logged out, log in again below{% else %}Alternatively, if you are an administrator with a password, login  here {% endif %}</label>
 {% csrf_token %}
           <fieldset><div id="div_id_username" class="form-group"><label for="id_username" class="control-label  requiredField">
                       Username<span class="asteriskField">*</span></label><div class="controls "><input class="textinput textInput form-control" id="id_username" maxlength="254" name="username" type="text"> </div></div>
@@ -127,12 +128,22 @@
                       Password<span class="asteriskField">*</span></label><div class="controls "><input class="textinput textInput form-control" id="id_password" name="password" type="password"> </div></div>
                   </fieldset>
                       <div class="form-actions"><input type="submit" name="save" value="Sign in" class="btn btn-primary" id="submit-id-save"> </div>
+                      {% if form.errors %}
+    {% for field in form %}
+        {% for error in field.errors %}
+            <div class="alert alert-error">
+                <strong>{{ error|escape }}</strong>
+            </div>
+        {% endfor %}
+    {% endfor %}
+    {% for error in form.non_field_errors %}
+        <div class="alert alert-error">
+            <strong>{{ error|escape }}</strong>
+        </div>
+    {% endfor %}
+{% endif %}
       </form>
-{% endif %}
 
-{% if webauth_login %}
-<p><a role="button" href="webauth" value="Sign in with webauth" class="btn btn-primary" > Sign in with Webauth</a></p> <p><a href="https://webauth.ox.ac.uk/logout" role="button" class="btn btn-danger">Log out of Webauth entirely</a></p>
-{% endif %}
   </div>
 </div>
   <div class="row">
