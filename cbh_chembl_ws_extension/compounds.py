@@ -107,7 +107,7 @@ class CBHCompoundBatchResource(ModelResource):
                       ('compoundproperties.acd_most_apka', 'acdAcidicPka'),
                       ('compoundproperties.acd_most_bpka', 'acdBasicPka'),
                       ('compoundproperties.full_molformula', 'fullMolformula'),
-                      ('project.project_key', 'projectKey')]
+                      ]
 
         csv_fieldnames = [('chembl_id', 'UOX ID'),
                           ('pref_name', 'Preferred Name'),
@@ -1446,7 +1446,10 @@ class CBHCompoundBatchResource(ModelResource):
 
         projkeys = request.GET.get("project__project_key__in", "")
         if projkeys:
-            pq = {"terms": {"projectKey.raw": projkeys.split(",")}}
+            crp = ChemregProjectResource()
+            uri = crp.get_resource_uri()
+            proj_ids = Project.objects.filter(project_key__in=projkeys.split(",")).values_list("pk", flat=True)
+            pq = {"terms": {"project.raw": ["%s/%d" % (uri, pid) for pid in proj_ids]}}
             modified_query["bool"]["must"] += [pq]
 
         if dateend or datestart:
