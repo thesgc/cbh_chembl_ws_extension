@@ -107,6 +107,12 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
                              'custom_field_list.value.raw':  search_regex}}
                          ],
         }, })
+
+
+    must_list.append({"bool":
+                                   {"should": [{"term": {"properties.archived": "false"}},
+                                               {"missing": {"field": "properties.archived"}}]}
+                                   })
     if (custom_fields and single_field):
         # create a bool must term which is the custom field identifier
         #cust_str = 'custom_fields.value.raw' % (single_field)
