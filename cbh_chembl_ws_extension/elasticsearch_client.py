@@ -139,7 +139,7 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
         'filter' : {"bool":
                                    {"should": [{"term": {"properties.archived": "false"}},
                                                {"missing": {"field": "properties.archived"}}]}
-                                   }
+                                   },
         'size': 0,
     }
 
