@@ -54,6 +54,7 @@ from django.db.models import Prefetch
 import dateutil.parser
 from cbh_chembl_ws_extension.parser import parse_pandas_record, parse_sdf_record, apply_json_patch
 # from tastypie.utils.mime import build_content_type
+from cbh_core_ws.resources import SimpleResourceURIField, UserResource
 
 
 def build_content_type(format, encoding='utf-8'):
@@ -69,7 +70,7 @@ class CBHCompoundBatchResource(ModelResource):
     project = fields.ForeignKey(
         ChemregProjectResource, 'project', blank=False, null=False)
     substructure_smarts = ""
-
+    creator = SimpleResourceURIField(UserResource, 'created_by_id', null=True, readonly=True)
 
     class Meta:
         filtering = {
@@ -1450,7 +1451,7 @@ class CBHCompoundBatchResource(ModelResource):
             uri = crp.get_resource_uri()
             proj_ids = Project.objects.filter(project_key__in=projkeys.split(",")).values_list("pk", flat=True)
             pq = {"terms": {"project.raw": ["%s/%d" % (uri, pid) for pid in proj_ids]}}
-            modified_query["bool"]["must"] += [pq]
+            modified_query["bool"]["must"] += [pq,]
 
         if dateend or datestart:
             rq = {
@@ -1466,7 +1467,7 @@ class CBHCompoundBatchResource(ModelResource):
             if datestart:
                 rq["range"]["created"]["gte"] = datestart
             # rq["range"]["created"]["format"] = "yyyy/MM/dd HH:mm:ss"
-            modified_query["bool"]["must"] += [rq]
+            modified_query["bool"]["must"] += [rq,]
 
         if uoxs:
             #check for either chemblid field or blindedbatchid field
@@ -1474,7 +1475,10 @@ class CBHCompoundBatchResource(ModelResource):
             tq2 = {"terms": {"blindedBatchId.raw" : uoxs.split(",")}}
             modified_query["bool"]["must"] += [{"bool": {"should" : [tq, tq2]}}]
         
-
+        creator = request.GET.get("creator", None)
+        if creator:
+            tq = {"terms": {"creator.raw": [cr for cr in creator.split(",")]}}
+            modified_query["bool"]["must"] += [tq,]
         pids = self._meta.authorization.project_ids(request)
         pq = elasticsearch_client.get_project_uri_terms(pids)
         modified_query["bool"]["must"] += pq
