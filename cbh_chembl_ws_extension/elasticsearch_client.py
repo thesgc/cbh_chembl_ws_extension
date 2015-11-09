@@ -216,7 +216,7 @@ def create_temporary_index(batches, request, index_name):
         })
         bulk_items.append(item)
     # Data is not refreshed!
-    es.bulk(body=bulk_items, refresh=True)
+    return es.bulk(body=bulk_items, refresh=True)
 
 
 def get_project_index_name(project):
