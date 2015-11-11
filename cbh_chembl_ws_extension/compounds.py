@@ -441,7 +441,7 @@ class CBHCompoundBatchResource(ModelResource):
         return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
 
     def save_related(self, bundle):
-
+        
         bundle.obj.generate_structure_and_dictionary()
 
     def alter_deserialized_list_data(self, request, deserialized):
