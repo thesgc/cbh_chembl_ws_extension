@@ -203,6 +203,21 @@ class ChemregProjectResource(CachedResource, ModelResource):
                                 "taggingTokens": "",
                                 },
                 },
+                {
+                    'key': 'archived',
+                    'style': {'selected': 'btn-success',
+                              'unselected': 'btn-default'},
+                        'htmlClass': 'col-md-4 col-xs-6',
+                    'type': 'radiobuttons',
+                    'disableSuccessState': True,
+                    'feedback': False,
+                    'titleMap': [
+                        {'value': 'false',
+                                  'name': 'Normal mode'},
+                        {'value': 'true',
+                                  'name': 'Archive mode'},]
+                                 
+                },
 
             ],
             'schema': {'required': [], 'type': 'object', 'properties': {
@@ -510,6 +525,12 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'items': [],
                     'placeholder': 'Choose column and value...',
                     'title': 'Filter by project data values:',
+                },
+                'archived': {
+                    'title': 'Enable/disable archive mode',
+                    'type': 'string',
+                    'enum': ['true', 'false'],
+                    'default': 'false',
                 },
 
             }},

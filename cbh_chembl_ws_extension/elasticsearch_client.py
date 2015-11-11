@@ -176,13 +176,13 @@ def create_temporary_index(batches, request, index_name):
                         "match": "ctab|std_ctab|canonical_smiles|original_smiles",
                         "match_mapping_type": "string",
                         "mapping": {
-                            "type": "string", "store": "no", "include_in_all": False
+                            "type": "string", "store": "no", "include_in_all": False, "index" : "no"
                         }
                     }
                 },
                 {
                     "uncurated_fields": {
-                        "match": "uncuratedFields.*",
+                        "match": "uncuratedFields.*|image|bigimage",
                         "match_mapping_type": "string",
                         "mapping": {
                             "type": "string", "index": "no", "include_in_all": False
