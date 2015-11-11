@@ -329,17 +329,25 @@ class CBHCompoundBatchResource(ModelResource):
     def reindex_elasticsearch(self, request, **kwargs):
         desired_format = self.determine_format(request)
         batches = self.get_object_list(request)
-        print batches.count()
         # we only want to store certain fields in the search index
-        batch_dicts = self.batches_to_es_ready(
-            batches, request, non_chem_data_only=True)
-        print len(batches)
-        # reindex compound data
-        index_name = elasticsearch_client.get_main_index_name()
-        es_reindex = elasticsearch_client.create_temporary_index(
-            batch_dicts, request, index_name)
-        print len(es_reindex["items"])
-        return HttpResponse(content=json.dumps({"data": es_reindex}), content_type=build_content_type(desired_format))
+        from django.core.paginator import Paginator
+        paginator = Paginator(batches, 1000) # chunks of 1000
+
+        for page in range(1, paginator.num_pages +1):
+            bs = paginator.page(page).object_list:
+            batch_dicts = self.batches_to_es_ready(
+                bs, request, non_chem_data_only=True)
+            # reindex compound data
+            index_name = elasticsearch_client.get_main_index_name()
+            es_reindex = elasticsearch_client.create_temporary_index(
+                batch_dicts, request, index_name)
+            print len(es_reindex["items"])
+            # here you can do what you want with the row
+            
+            print "done page %d of %d" % (page ,paginator.num_pages)
+
+       
+        return HttpResponse(content="test", content_type=build_content_type(desired_format))
 
     def reindex_compound(self, request, **kwargs):
         # call this when we need to re-index a compound record which has had
