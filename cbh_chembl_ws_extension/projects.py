@@ -110,7 +110,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                 },
                 
                 {
-                     'key': 'creator',
+                     'key': 'creator_uri',
                  'htmlClass': 'col-md-6 col-xs-6',
                     'placeholder': 'Select users to search',
                     'feedback': False,
@@ -227,7 +227,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     
                 },
 
-                'creator': {
+                'creator_uri': {
                     'type': 'array',
                     'format': 'uiselect',
                        'title': 'Compound batch created by',
