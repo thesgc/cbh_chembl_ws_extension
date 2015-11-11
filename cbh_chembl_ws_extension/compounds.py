@@ -1473,7 +1473,7 @@ class CBHCompoundBatchResource(ModelResource):
             tq2 = {"terms": {"blindedBatchId.raw" : uoxs.split(",")}}
             modified_query["bool"]["must"] += [{"bool": {"should" : [tq, tq2]}}]
         
-        creator = request.GET.get("creator", None)
+        creator = request.GET.get("creator_uri", None)
         if creator:
             tq = {"terms": {"creator.raw": [cr for cr in creator.split(",")]}}
             modified_query["bool"]["must"] += [tq,]
