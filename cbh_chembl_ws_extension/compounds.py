@@ -1084,7 +1084,7 @@ class CBHCompoundBatchResource(ModelResource):
 
                 #need to adapt this so that an inventory project has the limit raised to 5000
                 proj = bundle.data["project"]
-                if len(df.index) > 10000:
+                if len(df.index) > 2000:
                     raise BadRequest("file_too_large")
                 #read the smiles string value out of here, when we know which column it is.
                 row_iterator = df.iterrows()
