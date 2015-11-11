@@ -74,7 +74,8 @@ class ChemregProjectResource(CachedResource, ModelResource):
 
     def get_searchform(self, bundle, searchfield_items):
         '''Note that the form here is expected to have the UOx id as the first item'''
-
+        ur = UserResource()
+        uri = ur.get_resource_uri()
         return {
             'cf_form': [{
                 'htmlClass': 'col-sm-10',
@@ -108,19 +109,13 @@ class ChemregProjectResource(CachedResource, ModelResource):
                                                                  'api_name': settings.WEBSERVICES_NAME})}},
                 },
                 
-                # {
-                #      'key': 'created_by',
-                #  'htmlClass': 'col-md-4 col-xs-6',
-                #     'placeholder': 'Select users to search',
-                #     'feedback': False,
-
-
-                # },
                 {
-                    'key': 'multiple_batch_id',
-                    'htmlClass': 'col-md-4 col-xs-6',
-                    'disableSuccessState': True,
+                     'key': 'creator',
+                 'htmlClass': 'col-md-4 col-xs-6',
+                    'placeholder': 'Select users to search',
                     'feedback': False,
+
+
                 },
                 {
                     'key': 'project__project_key__in',
@@ -133,6 +128,13 @@ class ChemregProjectResource(CachedResource, ModelResource):
 
                     'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
                 },
+                {
+                    'key': 'multiple_batch_id',
+                    'htmlClass': 'col-md-4 col-xs-6',
+                    'disableSuccessState': True,
+                    'feedback': False,
+                },
+                
                 
 
                 {
@@ -210,7 +212,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     
                 },
 
-                'created_by': {
+                'creator': {
                     'type': 'array',
                     'format': 'uiselect',
                        'title': 'Compound batch created by',
@@ -220,7 +222,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                         'placeholder': 'Search user who created the batch',
                         'options': {'searchDescriptions': False},
                         'items':  sorted([
-                            {'label': user.first_name + " " + user.last_name + ""+ user.username + "", "value" : str(user.id) } 
+                            {'label': user.first_name + " " + user.last_name + ""+ user.username + "", "value" : uri + '/' + str(user.id) } 
                             for user in User.objects.exclude(pk=-1)
                         ], key=lambda k: k['label'])
                 },

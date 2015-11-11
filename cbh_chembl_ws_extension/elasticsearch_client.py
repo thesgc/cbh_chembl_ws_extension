@@ -107,6 +107,8 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
                              'custom_field_list.value.raw':  search_regex}}
                          ],
         }, })
+
+
     if (custom_fields and single_field):
         # create a bool must term which is the custom field identifier
         #cust_str = 'custom_fields.value.raw' % (single_field)
@@ -120,11 +122,20 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
         #                           'must': {'prefix': { 'custom_field_list.name.raw':  single_field } }
         #                       }
         #                     })
+    must_list.append({
+        'filtered': {
+                'filter' : {"bool":
+                                   {"should": [{"term": {"properties.archived": "false"}},
+                                               {"missing": {"field": "properties.archived"}}]}
+                                   },
+            }
+        } )
+
     body = {
         'query': {
             'bool': {
                 'must': must_list
-            }
+            },
         },
         'aggs': {
             'autocomplete': {
@@ -134,6 +145,7 @@ def get_autocomplete(projects, search_term, field, custom_fields=None, single_fi
                           }
             }
         },
+        
         'size': 0,
     }
 
@@ -160,11 +172,20 @@ def create_temporary_index(batches, request, index_name):
                 
 
                 "dynamic_templates": [{
-                    "string_fields": {
+                    "ignored_fields": {
                         "match": "ctab|std_ctab|canonical_smiles|original_smiles",
                         "match_mapping_type": "string",
                         "mapping": {
                             "type": "string", "store": "no", "include_in_all": False
+                        }
+                    }
+                },
+                {
+                    "uncurated_fields": {
+                        "match": "uncuratedFields.*",
+                        "match_mapping_type": "string",
+                        "mapping": {
+                            "type": "string", "index": "no", "include_in_all": False
                         }
                     }
                 },
@@ -207,7 +228,7 @@ def create_temporary_index(batches, request, index_name):
         })
         bulk_items.append(item)
     # Data is not refreshed!
-    es.bulk(body=bulk_items, refresh=True)
+    return es.bulk(body=bulk_items, refresh=True)
 
 
 def get_project_index_name(project):

@@ -54,6 +54,7 @@ from django.db.models import Prefetch
 import dateutil.parser
 from cbh_chembl_ws_extension.parser import parse_pandas_record, parse_sdf_record, apply_json_patch
 # from tastypie.utils.mime import build_content_type
+from cbh_core_ws.resources import SimpleResourceURIField, UserResource
 
 
 def build_content_type(format, encoding='utf-8'):
@@ -69,7 +70,7 @@ class CBHCompoundBatchResource(ModelResource):
     project = fields.ForeignKey(
         ChemregProjectResource, 'project', blank=False, null=False)
     substructure_smarts = ""
-
+    creator = SimpleResourceURIField(UserResource, 'created_by_id', null=True, readonly=True)
 
     class Meta:
         filtering = {
@@ -107,7 +108,7 @@ class CBHCompoundBatchResource(ModelResource):
                       ('compoundproperties.acd_most_apka', 'acdAcidicPka'),
                       ('compoundproperties.acd_most_bpka', 'acdBasicPka'),
                       ('compoundproperties.full_molformula', 'fullMolformula'),
-                      ('project.project_key', 'projectKey')]
+                      ]
 
         csv_fieldnames = [('chembl_id', 'UOX ID'),
                           ('pref_name', 'Preferred Name'),
@@ -281,7 +282,8 @@ class CBHCompoundBatchResource(ModelResource):
             #uox_ids = list(MoleculeDictionary.objects.filter(**filters).values_list("chembl_id", flat=True)[0:20])
             uox_ids = list(
                 elasticsearch_client.get_autocomplete(pids, prefix, 'chemblId'))
-            bundle.data = [{"value": uox, "label": uox} for uox in uox_ids]
+            blinded_ids = list(elasticsearch_client.get_autocomplete(pids, prefix, 'blindedBatchId'))
+            bundle.data = [{"value": uox, "label": uox} for uox in uox_ids + blinded_ids]
             serialized = json.dumps(bundle.data)
         else:
             serialized = "[]"
@@ -327,13 +329,16 @@ class CBHCompoundBatchResource(ModelResource):
     def reindex_elasticsearch(self, request, **kwargs):
         desired_format = self.determine_format(request)
         batches = self.get_object_list(request)
+        print batches.count()
         # we only want to store certain fields in the search index
         batch_dicts = self.batches_to_es_ready(
             batches, request, non_chem_data_only=True)
+        print len(batches)
         # reindex compound data
         index_name = elasticsearch_client.get_main_index_name()
         es_reindex = elasticsearch_client.create_temporary_index(
             batch_dicts, request, index_name)
+        print len(es_reindex["items"])
         return HttpResponse(content=json.dumps({"data": es_reindex}), content_type=build_content_type(desired_format))
 
     def reindex_compound(self, request, **kwargs):
@@ -1440,8 +1445,11 @@ class CBHCompoundBatchResource(ModelResource):
 
         projkeys = request.GET.get("project__project_key__in", "")
         if projkeys:
-            pq = {"terms": {"projectKey.raw": projkeys.split(",")}}
-            modified_query["bool"]["must"] += [pq]
+            crp = ChemregProjectResource()
+            uri = crp.get_resource_uri()
+            proj_ids = Project.objects.filter(project_key__in=projkeys.split(",")).values_list("pk", flat=True)
+            pq = {"terms": {"project.raw": ["%s/%d" % (uri, pid) for pid in proj_ids]}}
+            modified_query["bool"]["must"] += [pq,]
 
         if dateend or datestart:
             rq = {
@@ -1457,14 +1465,18 @@ class CBHCompoundBatchResource(ModelResource):
             if datestart:
                 rq["range"]["created"]["gte"] = datestart
             # rq["range"]["created"]["format"] = "yyyy/MM/dd HH:mm:ss"
-            modified_query["bool"]["must"] += [rq]
+            modified_query["bool"]["must"] += [rq,]
 
         if uoxs:
+            #check for either chemblid field or blindedbatchid field
             tq = {"terms": {"chemblId.raw" : uoxs.split(",")}}
-            modified_query["bool"]["must"] += [tq]
-
+            tq2 = {"terms": {"blindedBatchId.raw" : uoxs.split(",")}}
+            modified_query["bool"]["must"] += [{"bool": {"should" : [tq, tq2]}}]
         
-
+        creator = request.GET.get("creator", None)
+        if creator:
+            tq = {"terms": {"creator.raw": [cr for cr in creator.split(",")]}}
+            modified_query["bool"]["must"] += [tq,]
         pids = self._meta.authorization.project_ids(request)
         pq = elasticsearch_client.get_project_uri_terms(pids)
         modified_query["bool"]["must"] += pq
@@ -1475,6 +1487,7 @@ class CBHCompoundBatchResource(ModelResource):
             "filter": modified_query,
             "sort": json.loads(get_data.get("sorts", '[{"id": {"order": "desc"}}]'))
         }
+
         custom_fields__kv_any = request.GET.get("search_custom_fields__kv_any", "")
         if custom_fields__kv_any:
             custom_q = elasticsearch_client.get_custom_fields_query_from_string(custom_fields__kv_any)
@@ -1519,7 +1532,7 @@ class CBHCompoundBatchResource(ModelResource):
         return bundledata
 
     def get_object_list(self, request):
-        return super(CBHCompoundBatchResource, self).get_object_list(request).prefetch_related(Prefetch("related_molregno__compoundproperties")).prefetch_related(Prefetch("project"))
+        return super(CBHCompoundBatchResource, self).get_object_list(request)
 
 
 def deepgetattr(obj, attr, ex):
