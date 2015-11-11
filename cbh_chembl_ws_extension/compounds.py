@@ -959,7 +959,7 @@ class CBHCompoundBatchResource(ModelResource):
                 # read in the file
                 suppl = Chem.ForwardSDMolSupplier(correct_file.file)
                 mols = [mo for mo in suppl]
-                if(len(mols) > 10000):
+                if(len(mols) > 1000):
                     raise BadRequest("file_too_large")
                 # read the headers from the first molecule
 
@@ -995,11 +995,9 @@ class CBHCompoundBatchResource(ModelResource):
                                 b.uncurated_fields = dict(blinded_uncurated_fields)
                         except Exception, e:
                             #use a regular expression to pull properties out of the ctab for now
-                            pns = re.findall(r'> *<(\w+)>',ctabs[index]);
-                            pns2 = re.findall(r'> <\w+>\s*(.+)\n',ctabs[index]);
-                            #print('pns below')
-                            #print(pns)
-                            #print(pns2)
+                            pns = re.findall(r'> *<(.+)>',ctabs[index]);
+                            pns2 = re.findall(r'> *<.+> *\S*\n(.+)\n',ctabs[index]);
+                            
                             blinded_uncurated_fields = {}
                             for idx, val in enumerate(pns):
                                 blinded_uncurated_fields[val] = pns2[idx]
