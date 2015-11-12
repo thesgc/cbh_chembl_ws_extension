@@ -1040,7 +1040,7 @@ class CBHCompoundBatchResource(ModelResource):
                     df = pd.read_excel(correct_file.file)
                 except IndexError:
                     raise BadRequest("no_headers")
-                if len(df.index) > 10000:
+                if len(df.index) > 2000:
                     raise BadRequest("file_too_large")
                 # read the smiles string value out of here, when we know which
                 # column it is.
