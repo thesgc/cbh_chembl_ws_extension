@@ -334,7 +334,7 @@ class CBHCompoundBatchResource(ModelResource):
         paginator = Paginator(batches, 1000) # chunks of 1000
 
         for page in range(1, paginator.num_pages +1):
-            bs = paginator.page(page).object_list:
+            bs = paginator.page(page).object_list
             batch_dicts = self.batches_to_es_ready(
                 bs, request, non_chem_data_only=True)
             # reindex compound data
