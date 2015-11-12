@@ -101,7 +101,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'title': '%s ID' % settings.ID_PREFIX,
                     'placeholder': 'Search multiple IDs',
                     'feedback': False,
-                        'htmlClass': 'col-md-4 col-xs-6',
+                        'htmlClass': 'col-md-6 col-xs-6',
 
                     'options': {'refreshDelay': 0,
                                 'async': {'url': reverse('api_get_elasticsearch_ids',
@@ -110,8 +110,8 @@ class ChemregProjectResource(CachedResource, ModelResource):
                 },
                 
                 {
-                     'key': 'creator',
-                 'htmlClass': 'col-md-4 col-xs-6',
+                     'key': 'creator_uri',
+                 'htmlClass': 'col-md-6 col-xs-6',
                     'placeholder': 'Select users to search',
                     'feedback': False,
 
@@ -120,7 +120,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                 {
                     'key': 'project__project_key__in',
                     'placeholder': 'Select projects to search',
-                     'htmlClass': 'col-md-4 col-xs-6',
+                     'htmlClass': 'col-md-6 col-xs-6',
                     'feedback': False,
                     'description': 'Search for projects in order to limit the choice of fields on show.',
 
@@ -130,7 +130,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                 },
                 {
                     'key': 'multiple_batch_id',
-                    'htmlClass': 'col-md-4 col-xs-6',
+                    'htmlClass': 'col-md-6 col-xs-6',
                     'disableSuccessState': True,
                     'feedback': False,
                 },
@@ -141,7 +141,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'key': 'dateStart',
                     'type': 'datepicker',
                     'minDate': '2004-01-01',
-                    'htmlClass': 'col-md-4 col-xs-6',
+                    'htmlClass': 'col-md-6 col-xs-6',
                     'disableSuccessState': True,
                     'feedback': False,
                     'pickadate': {
@@ -153,7 +153,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'key': 'dateEnd',
                     'type': 'datepicker',
                     'minDate': '2004-01-01',
-                        'htmlClass': 'col-md-4 col-xs-6',
+                        'htmlClass': 'col-md-6 col-xs-6',
                     'disableSuccessState': True,
                     'feedback': False,
                     'pickadate': {'selectYears': True,
@@ -161,7 +161,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                 },
                 
                 {
-                    'htmlClass': 'col-md-4 col-xs-6',
+                    'htmlClass': 'col-md-6 col-xs-6',
                     'disableSuccessState': True,
                     'feedback': False,
                     'key': 'functional_group',
@@ -172,14 +172,14 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'placeholder': 'Search SMILES or SMARTS string',
                     'append': 'today',
                     'feedback': False,
-                    'htmlClass': 'col-md-4 col-xs-6',
+                    'htmlClass': 'col-md-6 col-xs-6',
                     'disableSuccessState': True,
                 },
                 {
                     'key': 'substruc',
                     'style': {'selected': 'btn-success',
                               'unselected': 'btn-default'},
-                        'htmlClass': 'col-md-4 col-xs-6',
+                        'htmlClass': 'col-md-6 col-xs-6',
                     'type': 'radiobuttons',
                     'disableSuccessState': True,
                     'feedback': False,
@@ -189,7 +189,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                                   'name': 'Exact Match'}],
                 },
                 {
-                    'htmlClass': 'col-md-4 col-xs-6',
+                    'htmlClass': 'col-md-6 col-xs-6',
                     'key': 'search_custom_fields__kv_any',
                     'disableSuccessState': True,
                     'help': 'Searching using this filter will bring back results that match an OR pattern within the same data category, with AND across data categories, i.e. results which contain this item within category a OR that item within category a AND that item within category b.',
@@ -207,7 +207,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'key': 'archived',
                     'style': {'selected': 'btn-success',
                               'unselected': 'btn-default'},
-                        'htmlClass': 'col-md-4 col-xs-6',
+                        'htmlClass': 'col-md-6 col-xs-6',
                     'type': 'radiobuttons',
                     'disableSuccessState': True,
                     'feedback': False,
@@ -227,13 +227,13 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     
                 },
 
-                'creator': {
+                'creator_uri': {
                     'type': 'array',
                     'format': 'uiselect',
                        'title': 'Compound batch created by',
                         'type': 'array',
                         'format': 'uiselect',
-                        'htmlClass': 'col-md-4 col-xs-6',
+                        'htmlClass': 'col-md-6 col-xs-6',
                         'placeholder': 'Search user who created the batch',
                         'options': {'searchDescriptions': False},
                         'items':  sorted([
