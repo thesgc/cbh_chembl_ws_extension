@@ -122,10 +122,8 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'placeholder': 'Select projects to search',
                      'htmlClass': 'col-md-6 col-xs-6',
                     'feedback': False,
-                    'description': 'Search for projects in order to limit the choice of fields on show.',
-
-                                    'disableSuccessState': True,
-
+                    'description': 'Search for projects in order to limit the choice of fields on show. Select a single project if you want to edit data.',
+                    'disableSuccessState': True,
                     'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
                 },
                 {
@@ -198,9 +196,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                                 'async': {'url': reverse('api_get_elasticsearch_autocomplete',
                                                          kwargs={'resource_name': 'cbh_compound_batches',
                                                                  'api_name': settings.WEBSERVICES_NAME})},
-                                "tagging": "tagFunction",
-                                "taggingLabel": "(in any field)",
-                                "taggingTokens": "",
+                                
                                 },
                 },
                 {
