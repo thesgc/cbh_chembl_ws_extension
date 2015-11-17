@@ -117,7 +117,7 @@ class XLSXSerializer(Serializer):
         return output.getvalue()
 
 
-SDF_TEMPLATE = ">  <{name}>\n{value}\n\n"
+SDF_TEMPLATE = u">  <{name}>\n{value}\n\n"
 
 
 class SDFSerializer(Serializer):
@@ -139,6 +139,7 @@ class SDFSerializer(Serializer):
         index = 0
         options = options or {}
         exp_json = json.loads(data.get('export', []))
+        
         df = pd.DataFrame(exp_json)
         df.fillna('', inplace=True)
         cols = df.columns.tolist()
@@ -155,7 +156,6 @@ class SDFSerializer(Serializer):
 
         row_iterator = df.iterrows()
         headers = list(df)
-
         mol_strings = []
         for index, row in row_iterator:
             # Simple string based SDF formatter
@@ -164,11 +164,16 @@ class SDFSerializer(Serializer):
             properties = []
             for field in headers:
                 if field != "ctab":
-                    properties.append(
-                        SDF_TEMPLATE.format(
-                            **{"name": str(field), "value": str(row[field])}
+                    try:
+                        properties.append(
+                            SDF_TEMPLATE.format(
+                                **{"name": unicode(field), "value": unicode(row[field])}
+                            )
                         )
-                    )
+                    except Exception as e:
+                        import traceback
+                        import sys
+                        print(traceback.format_exception(*sys.exc_info()))
             mol_strings.append("".join([mol_str, "END\n"] + properties))
         return "$$$$\n".join(mol_strings) + "$$$$"
 
@@ -265,8 +270,16 @@ class CamelCaseJSONSerializer(Serializer):
         return underscored_data
 
 
-class CBHCompoundBatchSerializer(CamelCaseJSONSerializer, XLSXSerializer, SDFSerializer):
-    pass
+class CBHCompoundBatchSerializer(CamelCaseJSONSerializer, SDFSerializer, XLSXSerializer):
+    formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv', 'xlsx', 'sdf']
+    content_types = {'json': 'application/json',
+                     'jsonp': 'text/javascript',
+                     'xml': 'application/xml',
+                     'yaml': 'text/yaml',
+                     'html': 'text/html',
+                     'csv': 'text/csv',
+                     'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                     'sdf': 'chemical/x-mdl-sdfile'}
 
 
 def convert_query(data):
