@@ -1488,13 +1488,32 @@ class CBHCompoundBatchResource(ModelResource):
         pids = self._meta.authorization.project_ids(request)
         pq = elasticsearch_client.get_project_uri_terms(pids)
         modified_query["bool"]["must"] += pq
+
+        
+
+
         es_request = {
             "version": True,
             "from": get_data.get("offset", 0),
             "size": get_data.get("limit", 50),
-            "filter": modified_query,
+            "query" : {"bool": 
+                {"must":
+                    [
+                        {"filtered" : {"filter" : modified_query}}
+                    ]
+                }
+            },
             "sort": json.loads(get_data.get("sorts", '[{"id": {"order": "desc"}}]'))
         }
+
+        prefix = request.GET.get("custom__field__startswith", -1)
+        if prefix != -1:
+            #Here the request is being used to get the custom field values
+            search_filter, aggs = elasticsearch_client.get_cf_aggregation(prefix, 'custom_field_list.aggregation')
+            modified_query["bool"]["must"] += [search_filter]
+            es_request["aggs"] = aggs
+            es_request["size"] = 0
+
 
         custom_fields__kv_any = request.GET.get("search_custom_fields__kv_any", "")
         if custom_fields__kv_any:
@@ -1503,14 +1522,15 @@ class CBHCompoundBatchResource(ModelResource):
 
         textsearch = request.GET.get("textsearch", None)
         if textsearch:
-             es_request["query"] = {
+            #textsearch is a query not a filter
+            es_request["query"]["bool"]["must"] += [{
                     "multi_match" :
                     { 
                         "type": "phrase_prefix", 
                         "fields": ["custom_field_list.value",] , 
                         "query" : textsearch
                     }
-                }
+                }]
         multiple_batch_id = request.GET.get("multiple_batch_id", None)
         if multiple_batch_id:
             modified_query["bool"]["must"] += [{"term": {"multiple_batch_id" : multiple_batch_id}}]
@@ -1519,8 +1539,16 @@ class CBHCompoundBatchResource(ModelResource):
         es_serializer = CBHCompoundBatchElasticSearchSerializer()
         es_serializer.convert_query(es_request)
         bundledata = elasticsearch_client.get(index, es_request, {})
+        if prefix != -1:
+            data = [{"value": uox, "label": self.labelify_aggregate(
+            uox)} for uox in bundledata["aggregations"]]
+            serialized = json.dumps(data)
+            rc = HttpResponse(
+                content=serialized )
+            return rc
+
         bundledata["objects"] = [
-            es_serializer.to_python_ready_data(d) for d in bundledata["objects"]]
+                es_serializer.to_python_ready_data(d) for d in bundledata["objects"]]
         return self.create_response(request, bundledata)
 
     def get_cached_temporary_batch_data(self, multi_batch_id, get_data, request, bundledata={}):

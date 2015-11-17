@@ -193,7 +193,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                     'help': 'Searching using this filter will bring back results that match an OR pattern within the same data category, with AND across data categories, i.e. results which contain this item within category a OR that item within category a AND that item within category b.',
                     'feedback': False,
                     'options': {'refreshDelay': 0,
-                                'async': {'url': reverse('api_get_elasticsearch_autocomplete',
+                                'async': {'url': reverse('api_get_list_elasticsearch',
                                                          kwargs={'resource_name': 'cbh_compound_batches',
                                                                  'api_name': settings.WEBSERVICES_NAME})},
                                 
@@ -233,7 +233,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                         'placeholder': 'Search user who created the batch',
                         'options': {'searchDescriptions': False},
                         'items':  sorted([
-                            {'label': user.first_name + " " + user.last_name + ""+ user.username + "", "value" : uri + '/' + str(user.id) } 
+                            {'label': user.first_name + " " + user.last_name , "value" : uri + '/' + str(user.id) } if user.first_name  else {'label': user.username , "value" : uri + '/' + str(user.id) }
                             for user in User.objects.exclude(pk=-1)
                         ], key=lambda k: k['label'])
                 },

@@ -58,6 +58,10 @@ def get(index_name, es_request_body, bundledata):
 
     bundledata["meta"] = {"totalCount": result["hits"]["total"]}
     bundledata["objects"] = data
+    if result.get("aggregations", None):
+        bundledata["aggregations"] = [res["key"]
+            for res in result["aggregations"]["autocomplete"]["buckets"]]
+
     return bundledata
 
 def get_project_uri_terms(project_id_list):
@@ -80,10 +84,37 @@ def get_custom_fields_query_from_string(cf_string):
         project_terms.append({"term": 
                 {"customFields.%s.raw" % splitted[0] : splitted[1]}}
                 )
-        print project_terms
     return {'bool': {
             'should': project_terms,
                 }, }
+
+
+
+def get_cf_aggregation(search_term, field):
+    search_regex = '.*%s.*|.*%s.*|.*%s.*|.*%s.*' % (
+        search_term.title(), search_term, search_term.upper(), search_term.lower())
+    field_to_search = '%s.raw' % (field)
+
+    search_filter =  {'bool': {
+            'should': [
+                         {'prefix': {
+                             'custom_field_list.searchable_name.raw':  search_term.lower()}},
+                         {'regexp': {
+                             'custom_field_list.value.raw':  search_regex}}
+                         ],
+        }, }
+
+    aggs = {
+            'autocomplete': {
+                'terms': {'field': field_to_search,
+                          'size': 300,
+                          'include': str(search_regex)
+                          }
+            }
+        }
+    return (search_filter, aggs)
+
+
 
 def get_autocomplete(projects, search_term, field, custom_fields=None, single_field=None):
     project_terms = get_project_uri_terms(projects)
