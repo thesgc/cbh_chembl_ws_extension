@@ -65,8 +65,8 @@ def flatten_dict(d, base=None):
     return new_dict
 
 
-class XLSSerializer(Serializer):
-    def to_xls(self, data, options=None):
+class XLSXSerializer(Serializer):
+    def to_xlsx(self, data, options=None):
         '''write excel file here'''
         output = cStringIO.StringIO()
 
@@ -123,14 +123,14 @@ SDF_TEMPLATE = ">  <{name}>\n{value}\n\n"
 class SDFSerializer(Serializer):
 
     '''For exporting query sets as SD/Mol files'''
-    formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv', 'xls', 'sdf']
+    formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv', 'xlsx', 'sdf']
     content_types = {'json': 'application/json',
                      'jsonp': 'text/javascript',
                      'xml': 'application/xml',
                      'yaml': 'text/yaml',
                      'html': 'text/html',
                      'csv': 'text/csv',
-                     'xls': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                     'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                      'sdf': 'chemical/x-mdl-sdfile'}
 
     def to_sdf(self, data, options=None):
@@ -265,7 +265,7 @@ class CamelCaseJSONSerializer(Serializer):
         return underscored_data
 
 
-class CBHCompoundBatchSerializer(CamelCaseJSONSerializer, XLSSerializer, SDFSerializer):
+class CBHCompoundBatchSerializer(CamelCaseJSONSerializer, XLSXSerializer, SDFSerializer):
     pass
 
 
