@@ -980,15 +980,11 @@ class CBHCompoundBatchResource(ModelResource):
                     if mol is None:
                         #b = None
                         #b = Chem.MolFromMolBlock(ctabs[index])
-                        print(ctabs[index])
                         try:
                             b = readstring('sdf', ctabs[index])
                             blinded_uncurated_fields = b.data
-                            print('openbabel doesnt error')
-                            print(blinded_uncurated_fields)
                             if b == None:
                                 #try pybel to get the fields?
-                                print('mol is none')
                                 errors.append(
                                     {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
                             else:
