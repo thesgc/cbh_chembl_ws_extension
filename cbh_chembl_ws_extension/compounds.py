@@ -1557,7 +1557,6 @@ class CBHCompoundBatchResource(ModelResource):
         index = elasticsearch_client.get_temp_index_name(
             request, multi_batch_id)
         es_serializer = CBHCompoundBatchElasticSearchSerializer()
-        es_serializer.convert_query(es_request)
         bundledata = elasticsearch_client.get(index, es_request, bundledata)
         bundledata["objects"] = [
             es_serializer.to_python_ready_data(d) for d in bundledata["objects"]]
