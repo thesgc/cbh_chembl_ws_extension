@@ -90,19 +90,28 @@ def get_custom_fields_query_from_string(cf_string):
 
 
 
-def get_cf_aggregation(search_term, field):
+def get_cf_aggregation(search_term, field, single_field):
     search_regex = '.*%s.*|.*%s.*|.*%s.*|.*%s.*' % (
         search_term.title(), search_term, search_term.upper(), search_term.lower())
     field_to_search = '%s.raw' % (field)
-
-    search_filter =  {'bool': {
-            'should': [
-                         {'prefix': {
-                             'custom_field_list.searchable_name.raw':  search_term.lower()}},
+    should_filter = [
+                         
                          {'regexp': {
                              'custom_field_list.value.raw':  search_regex}}
-                         ],
-        }, }
+                         ]
+    if single_field:
+        #We limit the search to a single field
+        search_regex = '^%s.*' % (single_field, )
+    else:
+        #We search only 
+        should_filter += [{'prefix': {
+                             'custom_field_list.searchable_name.raw':  search_term.lower()}}]
+
+
+    search_filter =  {'bool': {
+            'should': should_filter
+                    }, 
+                    }
 
     aggs = {
             'autocomplete': {

@@ -1,12 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from tastypie.resources import ModelResource, ALL_WITH_RELATIONS
+from tastypie.resources import ModelResource, ALL_WITH_RELATIONS, ALL
 from django.conf import settings
 from django.conf.urls import url
 from django.http import HttpResponse
 from tastypie import fields
-from cbh_core_model.models import Project
+from cbh_core_model.models import Project, PinnedCustomField, CustomFieldConfig
+from cbh_core_ws.serializers import CustomFieldXLSSerializer
 from cbh_core_ws.resources import UserResource
+from tastypie.authorization  import Authorization
 from cbh_core_ws.authorization import ProjectListAuthorization
 from tastypie.authentication import SessionAuthentication
 from tastypie.paginator import Paginator
@@ -16,7 +18,6 @@ import time
 from django.core.urlresolvers import reverse
 from cbh_core_ws.serializers import CustomFieldsSerializer
 from django.db.models import Prefetch
-from cbh_core_ws.cache import CachedResource
 from cbh_core_ws.resources import ProjectTypeResource, \
     CustomFieldConfigResource
 from django.contrib.auth.models import User
@@ -31,11 +32,294 @@ def build_content_type(format, encoding='utf-8'):
     return '%s; charset=%s' % (format, encoding)
 
 
-class ChemregProjectResource(CachedResource, ModelResource):
+class ChemRegDataPointProjectFieldResource(ModelResource):
+
+    """Provides the schema information about a field that is required by front end apps"""
+
+    edit_form = fields.DictField(
+        null=True, blank=False,  help_text=None)
+    edit_schema = fields.DictField(
+        null=True, blank=False,  help_text=None)
+ 
+    class Meta:
+        queryset = PinnedCustomField.objects.all()
+        always_return_data = True
+        resource_name = 'cbh_chemreg_datapoint_fields'
+        include_resource_uri = True
+        allowed_methods = ['get', 'post', 'patch', 'put']
+        default_format = 'application/json'
+        authentication = SessionAuthentication()
+        authorization = Authorization()
+        level = None
+        description = {'api_dispatch_detail' : '''
+Provides information about the data types present in the flexible schema of the datapoint table
+For each field a set of attributes are returned:
+
+hide_form/schema - an angular schema form element that can be used to hide this column from view
+edit_form /schema - an angular schema form element that can be used to edit this field 
+
+assuming it is edited as part of a larger data form classification object
+- To change the key of the json schema then change the get_namespace method
+
+filter_form/schema - an angular schema form element that can be used to hide this filter this field
+
+exclude_form /schema an angular schema form element that can be used to hide this exclude values from this field
+
+sort_form /schema an angular schema form element that can be used to hide this exclude values from this field
+
+Things still to be implemented:
+
+actions form - would be used for mapping functions etc
+autocomplete urls
+        ''',
+
+                       'api_dispatch_list' : '''
+Provides information about the data types present in the flexible schema of the datapoint table
+For each field a set of attributes are returned:
+
+hide_form/schema - an angular schema form element that can be used to hide this column from view
+edit_form /schema - an angular schema form element that can be used to edit this field 
+
+assuming it is edited as part of a larger data form classification object
+- To change the key of the json schema then change the get_namespace method
+
+filter_form/schema - an angular schema form element that can be used to hide this filter this field
+
+exclude_form /schema an angular schema form element that can be used to hide this exclude values from this field
+
+sort_form /schema an angular schema form element that can be used to hide this exclude values from this field
+
+Things still to be implemented:
+
+actions form - would be used for mapping functions etc
+autocomplete urls
+        '''
+         }
+
+
+
+    def is_authenticated(self, request):
+        """
+        Handles checking if the user is authenticated and dealing with
+        unauthenticated users.
+
+        Mostly a hook, this uses class assigned to ``authentication`` from
+        ``Resource._meta``.
+        """
+        # Authenticate the request as needed.
+        return True
+
+
+    def save(self, bundle, skip_errors=False):
+        if bundle.via_uri:
+            return bundle
+
+        self.is_valid(bundle)
+
+        if bundle.errors and not skip_errors:
+            raise ImmediateHttpResponse(response=self.error_response(bundle.request, bundle.errors))
+
+        # Check if they're authorized.
+        # if bundle.obj.pk:
+        #     self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
+        # else:
+        #     self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
+
+        # Save FKs just in case.
+        self.save_related(bundle)
+
+        # Save the main object.
+        obj_id = self.create_identifier(bundle.obj)
+       
+        if obj_id not in bundle.objects_saved or bundle.obj._state.adding:
+            bundle.obj.save()
+            bundle.objects_saved.add(obj_id)
+
+        # Now pick up the M2M bits.
+        m2m_bundle = self.hydrate_m2m(bundle)
+        self.save_m2m(m2m_bundle)
+        return bundle
+
+    def get_schema(self, request, **kwargs):
+        """
+        Returns a serialized form of the schema of the resource.
+        Calls ``build_schema`` to generate the data. This method only responds
+        to HTTP GET.
+        Should return a HttpResponse (200 OK).
+        """
+        # self.method_check(request, allowed=['get'])
+        # self.is_authenticated(request)
+        # self.throttle_check(request)
+        # self.log_throttled_access(request)
+        # bundle = self.build_bundle(request=request)
+        # self.authorized_read_detail(self.get_object_list(bundle.request), bundle)
+        return self.create_response(request, self.build_schema())
+
+    def get_namespace(self, bundle):
+        '''
+            Hook to return the dotted path to this field based on the level and the name of the field
+            The level name is formatted in the dehydrate method of the DataFormConfigResource
+        '''
+        return "{level}.project_data.%s" % (bundle.obj.get_space_replaced_name)
+
+    def get_namespace_for_action_key(self, bundle, action_type):
+        return action_type
+
+
+    def dehydrate_edit_form(self, bundle):
+        '''  Slightly different implementation of this        '''
+        if bundle.request.GET.get("empty", False):
+            return {}
+        data = bundle.obj.field_values[1]
+        data["key"] = bundle.obj.name
+        if bundle.obj.UISELECTTAG in bundle.obj.field_type:
+            data['options'] = {'refreshDelay': 0,
+                                'async': {'url': "%s" % reverse('api_get_list_elasticsearch',
+                                                         kwargs={'resource_name': 'cbh_compound_batches',
+                                                                 'api_name': settings.WEBSERVICES_NAME})}
+                                
+                                }
+        return {"form": [data]}
+
+    def dehydrate_edit_schema(self, bundle):
+        '''          '''
+        if bundle.request.GET.get("empty", False):
+            return {}
+        return {"properties": {bundle.obj.name: bundle.obj.field_values[0]}}
+
+
+    def authorized_update_detail(self, object_list, bundle):
+        """
+        Handles checking of permissions to see if the user has authorization
+        to PUT this resource.
+        """
+
+        return True
+
+    def authorized_create_detail(self, object_list, bundle):
+        """
+        Handles checking of permissions to see if the user has authorization
+        to PUT this resource.
+        """
+
+        return True
+
+class ChemRegCustomFieldConfigResource(ModelResource):
+
+    '''Return only the project type and custom field config name as returning the full field list would be '''
+    data_type = fields.ForeignKey("cbh_core_ws.resources.DataTypeResource",
+                                  'data_type', readonly=True, null=True, blank=False, default=None, full=True)
+    project_data_fields = fields.ToManyField(ChemRegDataPointProjectFieldResource, lambda bundle: PinnedCustomField.objects.filter(
+        custom_field_config_id=bundle.obj.id
+    ).select_related("custom_field_config__project"), readonly=True, null=True, blank=False, default=None, full=True)
+    created_by = fields.ForeignKey(
+        "cbh_core_ws.resources.UserResource", 'created_by')
+
+    class Meta:
+        object_class = CustomFieldConfig
+        queryset = CustomFieldConfig.objects.select_related(
+            "created_by", "data_type",)
+        excludes = ("schemaform")
+        include_resource_uri = False
+        resource_name = 'cbh_chemreg_custom_field_config'
+        authentication = SessionAuthentication()
+        authorization = Authorization()
+        include_resource_uri = True
+        default_format = 'application/json'
+        serializer = CustomFieldXLSSerializer()
+        # serializer = Serializer()
+        filtering = {"id": ALL}
+        allowed_methods = ['get', 'post', 'put', 'patch']
+        description = {'api_dispatch_detail' : '''
+Provides data about a single level of a data form config
+
+data_type: A string to describe what "sort" of data this is (fields will generally be the same as other objects of this data type but that is up to the curator)
+project_data_fields:
+The fields that are in this particular custom field config:
+    Provides information about the data types present in the flexible schema of the datapoint table
+    For each field a set of attributes are returned:
+
+    hide_form/schema - an angular schema form element that can be used to hide this column from view
+    edit_form /schema - an angular schema form element that can be used to edit this field 
+
+    assuming it is edited as part of a larger data form classification object
+    - To change the key of the json schema then change the get_namespace method
+
+    filter_form/schema - an angular schema form element that can be used to hide this filter this field
+    
+    exclude_form /schema an angular schema form element that can be used to hide this exclude values from this field
+   
+    sort_form /schema an angular schema form element that can be used to hide this exclude values from this field
+   
+   Things still to be implemented:
+
+    actions form - would be used for mapping functions etc
+    autocomplete urls
+        ''',
+
+                       'api_dispatch_list' : '''
+Provides data about a single level of a data form config
+
+data_type: A string to describe what "sort" of data this is (fields will generally be the same as other objects of this data type but that is up to the curator)
+project_data_fields:
+The fields that are in this particular custom field config:
+    Provides information about the data types present in the flexible schema of the datapoint table
+    For each field a set of attributes are returned:
+
+    hide_form/schema - an angular schema form element that can be used to hide this column from view
+    edit_form /schema - an angular schema form element that can be used to edit this field 
+
+    assuming it is edited as part of a larger data form classification object
+    - To change the key of the json schema then change the get_namespace method
+
+    filter_form/schema - an angular schema form element that can be used to hide this filter this field
+    
+    exclude_form /schema an angular schema form element that can be used to hide this exclude values from this field
+   
+    sort_form /schema an angular schema form element that can be used to hide this exclude values from this field
+   
+   Things still to be implemented:
+
+    actions form - would be used for mapping functions etc
+    autocomplete urls
+        '''
+                       }
+
+    def hydrate_created_by(self, bundle):
+        user = get_user_model().objects.get(pk=bundle.request.user.pk)
+        bundle.obj.created_by = user
+
+        return bundle
+
+    def get_schema(self, request, **kwargs):
+        """
+        Returns a serialized form of the schema of the resource.
+        Calls ``build_schema`` to generate the data. This method only responds
+        to HTTP GET.
+        Should return a HttpResponse (200 OK).
+        """
+        return self.create_response(request, self.build_schema())
+
+    def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
+        """
+        Extracts the common "which-format/serialize/return-response" cycle.
+        Mostly a useful shortcut/hook.
+        """
+
+        desired_format = self.determine_format(request)
+        serialized = self.serialize(request, data, desired_format)
+        rc = response_class(content=serialized, content_type=build_content_type(
+            desired_format), **response_kwargs)
+
+        if(desired_format == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
+            rc['Content-Disposition'] = 'attachment; filename=project_data_explanation.xlsx'
+        return rc
+
+class ChemregProjectResource( ModelResource):
 
     project_type = fields.ForeignKey(
         ProjectTypeResource, 'project_type', blank=False, null=False, full=True)
-    custom_field_config = fields.ForeignKey(CustomFieldConfigResource,
+    custom_field_config = fields.ForeignKey(ChemRegCustomFieldConfigResource,
                                             'custom_field_config', blank=False, null=False, full=True)
     valid_cache_get_keys = ['format', 'limit', 'project_key',
                             'schemaform']
@@ -72,7 +356,7 @@ class ChemregProjectResource(CachedResource, ModelResource):
                      self).get_object_list(request).prefetch_related(Prefetch('custom_field_config'
                                                                               ))
 
-    def get_searchform(self, bundle, searchfield_items):
+    def get_searchform(self, bundle):
         '''Note that the form here is expected to have the UOx id as the first item'''
         ur = UserResource()
         uri = ur.get_resource_uri()
@@ -552,116 +836,31 @@ class ChemregProjectResource(CachedResource, ModelResource):
             searchfield_items = []
 
             for bun in bundle['objects']:
-                schemaform = \
-                    self.get_schema_form(bun.obj.custom_field_config,
-                                         bun.obj.project_key,
-                                         searchfield_items=searchfield_items,
-                                         searchfields=searchfields)
-                bun.data['schemaform'] = schemaform
+               
                 bun.data['editor'] = bun.obj.id in editor_projects
 
             bundle['searchform'] = self.get_searchform(bundle,
-                                                       searchfield_items)
+                                                       )
 
-        if self.determine_format(request) \
-                == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' \
-                or request.GET.get('format') == 'xls':
+        # if self.determine_format(request) \
+        #         == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' \
+        #         or request.GET.get('format') == 'xls':
 
-            cfr_string = \
-                self.get_object_list(request).filter(id=request.GET.get('project_key'
-                                                                        ))[0].custom_field_config.schemaform
-            cfr_json = json.loads(cfr_string)
-            bundle['custom_field_config'] = cfr_json['form']
+        #     cfr_string = \
+        #         self.get_object_list(request).filter(id=request.GET.get('project_key'
+        #                                                                 ))[0].custom_field_config.schemaform
+        #     cfr_json = json.loads(cfr_string)
+        #     bundle['custom_field_config'] = cfr_json['form']
 
         return bundle
 
-    def get_schema_form(
-        self,
-        custom_field_config,
-        project_key,
-        searchfield_items=[],
-        searchfields=set([]),
-    ):
-        fields = []
-
-        for f in custom_field_config.pinned_custom_field.all():
-            d = self.get_field_values(f, project_key)
-            fields.append(d)
-            for item in d[4]:
-                if item['value'] not in searchfields:
-                    searchfields.add(item['value'])
-                    searchfield_items.append(item)
-        schemaform = {'schema': {'type': 'object',
-                                 'properties': dict((field[0], field[1])
-                                                    for field in fields), 'required': []},
-                      'form': [(field[0] if not field[3] else field[3])
-                               for field in fields]}
-        return schemaform
-
-    def get_field_values(self, obj, projectKey):
-        data = \
-            copy.deepcopy(obj.FIELD_TYPE_CHOICES[obj.field_type]['data'
-                                                                 ])
-
-        data['title'] = obj.name
-        data['placeholder'] = obj.description
-        data['friendly_field_type'] = \
-            obj.FIELD_TYPE_CHOICES[obj.field_type]['name']
-
-        form = {}
-        form['field_type'] = obj.field_type
-        form['position'] = obj.position
-        form['key'] = obj.name
-        form['title'] = obj.name
-        form['placeholder'] = obj.description
-        form['allowed_values'] = obj.allowed_values
-        form['part_of_blinded_key'] = obj.part_of_blinded_key
-        searchitems = []
-        if obj.UISELECT in data.get('format', ''):
-            allowed_items = obj.get_allowed_items(projectKey)
-            data['items'] = allowed_items[0]
-            searchitems = allowed_items[1]
-
-            # if we have a uiselect field with no description, make the placeholder say "Choose..."
-            # if obj.description == None:
-
-            form['placeholder'] = 'Choose...'
-            form['help'] = obj.description
-        else:
-
-            # form["helpdirectivename"] = "info-box"
-            # form["helpdirectiveparams"] = "freetext='%s'" % (obj.description)
-            # form["helpDirectiveClasses"] = "pull-right info-box"
-            # #form["title"] = "%s<info-box freetext='%s'></info-box>" % (obj.name, obj.description)
-
-            allowed_items = obj.get_allowed_items(projectKey)
-            searchitems = allowed_items[1]
-
-        maxdate = time.strftime('%Y-%m-%d')
-        if data.get('format', False) == obj.DATE:
-            form.update({
-                'minDate': '2000-01-01',
-                'maxDate': maxdate,
-                'type': 'datepicker',
-                'format': 'yyyy-mm-dd',
-                'pickadate': {'selectYears': True,
-                              'selectMonths': True},
-            })
-        else:
-
-            for item in ['options']:
-                stuff = data.pop(item, None)
-                if stuff:
-                    form[item] = stuff
-        return (obj.name, data, obj.required, form, searchitems)
-
+   
     def create_response(
         self,
         request,
         data,
         response_class=HttpResponse,
-        **response_kwargs
-    ):
+        **response_kwargs ):
         """
         Extracts the common "which-format/serialize/return-response" cycle.
         Mostly a useful shortcut/hook.

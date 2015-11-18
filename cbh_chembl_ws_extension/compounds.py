@@ -320,7 +320,7 @@ class CBHCompoundBatchResource(ModelResource):
         label = agg
         # if this is for a single field or custom field, we don't need to show
         # the facet name
-        if(len(splits) > 1 and single_field == None):
+        if(len(splits) > 1 and single_field is None):
             label = '%s: %s' % (splits[0], splits[1])
         elif(len(splits) > 1):
             label = splits[1]
@@ -1505,7 +1505,9 @@ class CBHCompoundBatchResource(ModelResource):
         prefix = request.GET.get("custom__field__startswith", -1)
         if prefix != -1:
             #Here the request is being used to get the custom field values
-            search_filter, aggs = elasticsearch_client.get_cf_aggregation(prefix, 'custom_field_list.aggregation')
+            custom_field = request.GET.get("custom_field", None)
+
+            search_filter, aggs = elasticsearch_client.get_cf_aggregation(prefix, 'custom_field_list.aggregation', custom_field)
             modified_query["bool"]["must"] += [search_filter]
             es_request["aggs"] = aggs
             es_request["size"] = 0
@@ -1537,7 +1539,10 @@ class CBHCompoundBatchResource(ModelResource):
         bundledata = elasticsearch_client.get(index, es_request, {})
         if prefix != -1:
             data = [{"value": uox, "label": self.labelify_aggregate(
-            uox)} for uox in bundledata["aggregations"]]
+            uox, single_field=custom_field), } for uox in bundledata["aggregations"]]
+            if custom_field:
+                for item in data:
+                    item["value"] = item["label"]
             serialized = json.dumps(data)
             rc = HttpResponse(
                 content=serialized )
