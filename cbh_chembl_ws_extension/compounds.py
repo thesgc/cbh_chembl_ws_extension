@@ -528,7 +528,7 @@ class CBHCompoundBatchResource(ModelResource):
             self.authorized_create_detail(
                 self.get_object_list(bundle.request), bundle)
         id = bundle.data["multiplebatch"]
-        mb = CBHCompoundMultipleBatch.objects.get(pk=id)
+        mb = CBHCompoundMultipleBatch.objects.get(pk=id).reverse()
         project = Serializer().serialize(mb)
         limit = 500
         offset = 0
