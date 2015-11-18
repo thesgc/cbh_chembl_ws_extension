@@ -32,7 +32,7 @@ try:
 except AttributeError:
     WS_DEBUG = False
 from cbh_core_ws.authorization import ProjectAuthorization
-from cbh_chembl_ws_extension.projects import ChemregProjectResource
+from cbh_chembl_ws_extension.projects import ChemregProjectResource, ChemRegCustomFieldConfigResource
 from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer, CBHCompoundBatchElasticSearchSerializer, get_key_from_field_name
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
@@ -1113,9 +1113,10 @@ class CBHCompoundBatchResource(ModelResource):
 
         bundle.data["fileerrors"] = errors
         bundle.data["automapped"] = 0
-        cfr = ChemregProjectResource()
-        schemaform = cfr.get_schema_form(
-            bundle.data["project"].custom_field_config, "")
+        cfr = ChemRegCustomFieldConfigResource()
+        jsondata = json.loads(cfr.get_detail(request,
+            pk=bundle.data["project"].custom_field_config_id).content)
+        schemaform = [field["edit_form"]["form"][0] for field in jsondata["project_data_fields"]]
         if not bundle.data.get("headers", None):
             bundle.data["headers"] = []
             for header in headers:
@@ -1127,7 +1128,7 @@ class CBHCompoundBatchResource(ModelResource):
                     if automapped_structure:
                         automapped = True
                 else:
-                    form = copy.deepcopy(schemaform["form"])
+                    form = copy.deepcopy(schemaform)
                     copyto = ""
                     max_score = 0
                     for form_item in form:
