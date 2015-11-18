@@ -528,7 +528,7 @@ class CBHCompoundBatchResource(ModelResource):
             self.authorized_create_detail(
                 self.get_object_list(bundle.request), bundle)
         id = bundle.data["multiplebatch"]
-        mb = CBHCompoundMultipleBatch.objects.get(pk=id).reverse()
+        mb = CBHCompoundMultipleBatch.objects.get(pk=id)
         project = Serializer().serialize(mb)
         limit = 500
         offset = 0
@@ -1558,7 +1558,7 @@ class CBHCompoundBatchResource(ModelResource):
             "from": get_data.get("offset", 0),
             "size": get_data.get("limit", 50),
             "filter": json.loads(get_data.get("query", '{ "match_all" : {}}')),
-            "sort": json.loads(get_data.get("sorts", '[{"id": {"order": "asc"}}]'))
+            "sort": json.loads(get_data.get("sorts", '[{"id": {"order": "desc"}}]'))
         }
         index = elasticsearch_client.get_temp_index_name(
             request, multi_batch_id)
