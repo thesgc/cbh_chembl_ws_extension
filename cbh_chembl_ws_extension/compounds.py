@@ -1138,7 +1138,7 @@ class CBHCompoundBatchResource(ModelResource):
                             matched_item = form_item
                             copyto = matched_item["key"]
                             automapped = True
-                            if(matched_item["field_type"] == "uiselecttags"):
+                            if(matched_item.get("field_type", "") == "uiselecttags"):
                                 operations.append(
                                     {"op": "split", "path": "/uncurated_fields/" + header})
                                 operations.append(
