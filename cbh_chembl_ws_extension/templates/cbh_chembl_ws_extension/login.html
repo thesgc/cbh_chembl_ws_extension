@@ -120,7 +120,8 @@
     <div class="col-xs-12">
       
       <form class="form-horizontal mt" method="post">
-            <label>{% if logout %}Logged out, log in again below{% else %}Alternatively, if you are an administrator with a password, login  here {% endif %}</label>
+            <label>{% if logout %}Logged out, log in again below
+              {% elif webauth_login %}Alternatively, if you are an administrator with a password, login  here {% endif %}</label>
 {% csrf_token %}
           <fieldset><div id="div_id_username" class="form-group"><label for="id_username" class="control-label  requiredField">
                       Username<span class="asteriskField">*</span></label><div class="controls "><input class="textinput textInput form-control" id="id_username" maxlength="254" name="username" type="text"> </div></div>
