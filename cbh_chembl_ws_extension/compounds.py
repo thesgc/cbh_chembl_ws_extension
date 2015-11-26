@@ -801,6 +801,8 @@ class CBHCompoundBatchResource(ModelResource):
             "duplicateoverlaps"] = len(duplicate_overlaps)
         bundle.data["compoundstats"]["duplicatenew"] = len(duplicate_new)
         bundle.data["multiplebatch"] = multi_batch.pk
+
+        
         fifty_batches_for_first_page = self.set_cached_temporary_batches(
             batches, multi_batch.id, request)
         multi_batch.uploaded_data = bundle.data
