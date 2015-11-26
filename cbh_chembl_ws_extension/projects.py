@@ -324,7 +324,7 @@ class ChemregProjectResource( ModelResource):
     valid_cache_get_keys = ['format', 'limit', 'project_key',
                             'schemaform']
     
-    #assays_configured = fields.BooleanField(default=True)
+    assays_configured = fields.BooleanField(default=False)
 
     class Meta:
 
@@ -343,8 +343,8 @@ class ChemregProjectResource( ModelResource):
         filtering = {'project_key': ALL_WITH_RELATIONS}
 
     
-    # def dehydrate_assays_configured(self, bundle):
-    #     bundle.ob
+    def dehydrate_assays_configured(self, bundle):
+        return bundle.obj.enabled_forms.count() > 0
 
     def get_object_list(self, request):
         return super(ChemregProjectResource,
