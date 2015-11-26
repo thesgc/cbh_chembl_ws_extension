@@ -323,6 +323,7 @@ class ChemregProjectResource( ModelResource):
                                             'custom_field_config', blank=False, null=False, full=True)
     valid_cache_get_keys = ['format', 'limit', 'project_key',
                             'schemaform']
+    #assays_configured = fields.BooleanField(default=True)
 
     class Meta:
 
@@ -339,6 +340,9 @@ class ChemregProjectResource( ModelResource):
 
         serializer = CustomFieldsSerializer()
         filtering = {'project_key': ALL_WITH_RELATIONS}
+
+    # def dehydrate_assays_configured(self, bundle):
+    #     bundle.ob
 
     def get_object_list(self, request):
         return super(ChemregProjectResource,
