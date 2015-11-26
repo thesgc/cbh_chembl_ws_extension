@@ -831,7 +831,7 @@ class CBHCompoundBatchResource(ModelResource):
             id, request.GET, request, bundledata=to_be_serialized)
         index_name = elasticsearch_client.get_temp_index_name(request, id)
         elasticsearch_client.get_action_totals(index_name, to_be_serialized)
-        # to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
+        to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized, permanent_data=False)
         return self.create_response(request, to_be_serialized)
 
     def post_validate_list(self, request, **kwargs):
@@ -1166,7 +1166,7 @@ class CBHCompoundBatchResource(ModelResource):
 
         return self.validate_multi_batch(multiple_batch, bundle, request, batches)
 
-    def alter_list_data_to_serialize(self, request, data):
+    def alter_list_data_to_serialize(self, request, data, permanent_data=True):
         '''use the request type to determine which fields should be limited for file download,
            add extra fields if needed (eg images) and enumerate the custom fields into the 
            rest of the calculated fields'''
@@ -1175,7 +1175,7 @@ class CBHCompoundBatchResource(ModelResource):
                 ctab = b.data["properties"][
                     "substructureMatch"] = self.substructure_smarts
         if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or request.GET.get("format") == "sdf" or self.determine_format(request) == 'chemical/x-mdl-sdfile'):
-
+            print "format"
             ordered_cust_fields = PinnedCustomField.objects.filter(custom_field_config__project__project_key__in=request.GET.get(
                 "project__project_key__in", "").split(",")).order_by("custom_field_config__project__id", "position").values("name", "field_type")
             seen = set()
@@ -1183,43 +1183,55 @@ class CBHCompoundBatchResource(ModelResource):
                 "name"] not in seen and not seen.add(x["name"])]
             df_data = []
             ordered_cust_fields = []
-            projects = set([])
+            # projects = set([])
             uncurated_field_names = set()
             for index, b in enumerate(data["objects"]):
                 # remove items which are not listed as being kept
+                try:
+                    olddata = b.data
+                except AttributeError:
+                    olddata = b
                 new_data = {}
-                projects.add(b.obj.project_id)
-                for k, v in b.data.iteritems():
+                # projects.add(b.obj.project_id)
+                for k, v in olddata.iteritems():
                     for name, display_name in self.Meta.fields_to_keep.iteritems():
                         if k == name:
                             new_data[display_name] = v
                 # we need sd format exported results to retain stereochemistry
                 # - use mol instaed of smiles
-                if(self.determine_format(request) == 'chemical/x-mdl-sdfile' or request.GET.get("format") == "sdf"):
-                    new_data['ctab'] = b.data['ctab']
+                print "processing"
+                if(request.GET.get("format") == "sdf"):
+                    new_data['ctab'] = olddata['ctab']
+                elif (self.determine_format(request) == 'chemical/x-mdl-sdfile' ):
+                    new_data['ctab'] = olddata['ctab']
                 # dummy
                 # not every row has a value for every custom field
-                for item in deduplicated_cfs:
-                    cf_value = b.data["custom_fields"].get(item["name"], "")
-                    if item["field_type"] == PinnedCustomField.UISELECTTAGS:
-                        if isinstance(cf_value, basestring):
-                            try:
-                                cf_value = json.loads(cf_value).join(",")
-                            except:
-                                pass
-                        elif isinstance(cf_value, list):
-                            cf_value = cf_value.join(",")
-                    new_data[item["name"]] = cf_value
+
+                if permanent_data:
+                    for item in deduplicated_cfs:
+                        cf_value = olddata["custom_fields"].get(item["name"], "")
+                        if item["field_type"] == PinnedCustomField.UISELECTTAGS:
+                            if isinstance(cf_value, basestring):
+                                try:
+                                    cf_value = json.loads(cf_value).join(",")
+                                except:
+                                    pass
+                            elif isinstance(cf_value, list):
+                                cf_value = cf_value.join(",")
+                        new_data[item["name"]] = cf_value
 
                 # now remove custom_fields
+
                 del(new_data['custom_fields'])
-                for field, value in b.data['uncurated_fields'].iteritems():
+                for field, value in olddata['uncurated_fields'].iteritems():
                     new_data[field] = value
                     uncurated_field_names.add(field)
-
                 # #now remove custom_fields
                 # del(new_data['uncurated_fields'])
-                b.data = new_data
+                try:
+                    b.data = new_data
+                except AttributeError:
+                    pass
                 df_data.append(new_data)
             df = pd.DataFrame(df_data)
             data['export'] = df.to_json()

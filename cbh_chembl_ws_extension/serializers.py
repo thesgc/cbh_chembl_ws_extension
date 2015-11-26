@@ -17,6 +17,7 @@ from cbh_core_ws.resources import get_field_name_from_key
 from cbh_core_ws.resources import get_key_from_field_name
 from cbh_core_ws import parser as coreparser
 
+from tastypie.exceptions import ImmediateHttpResponse, BadRequest
 
 def flatten_dict(d, base=None):
     """Converts a dictionary of dictionaries or lists into a simple
@@ -69,10 +70,15 @@ class XLSXSerializer(Serializer):
     def to_xlsx(self, data, options=None):
         '''write excel file here'''
         output = cStringIO.StringIO()
-
+        
         # make a pandas dataframe from the data here
         # then export as xls or to xlsxwriter
         data = self.to_simple(data, {})
+        try:
+            if data.get("traceback", False):
+                raise ImmediateHttpResponse(BadRequest(json.dumps(data.data)))
+        except AttributeError:
+            pass
         exp_json = json.loads(data.get('export', []))
         ordered_fields = [
             'UOx ID', 'SMILES', 'Added By',  'Std InChi', 'Mol Weight', 'alogp']
@@ -121,7 +127,7 @@ SDF_TEMPLATE = u">  <{name}>\n{value}\n\n"
 
 
 class SDFSerializer(Serializer):
-
+    
     '''For exporting query sets as SD/Mol files'''
     formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv', 'xlsx', 'sdf']
     content_types = {'json': 'application/json',
@@ -135,6 +141,12 @@ class SDFSerializer(Serializer):
 
     def to_sdf(self, data, options=None):
         '''Convert to SDF'''
+        data = self.to_simple(data, {})
+        try:
+            if data.get("traceback", False):
+                raise ImmediateHttpResponse(BadRequest(json.dumps(data.data)))
+        except AttributeError:
+            pass
         mols = []
         index = 0
         options = options or {}
