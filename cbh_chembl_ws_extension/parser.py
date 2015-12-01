@@ -124,6 +124,24 @@ def parse_pandas_record(headers, obj, destination_field, row, fielderrors, heade
     setattr(obj, destination_field, custom_fields)
 
 
+
+def get_uncurated_fields_from_file(correct_file, fielderrors):
+    data = correct_file.file.read()
+    data = data.replace("\r\n", "\n").replace("\r", "\n")
+    ctabs = data.split("$$$$")
+    uncurated = []
+    for ctab in ctabs:
+        pns = re.findall(r'> *<(.+)>',ctabs[index]);
+        pns2 = re.findall(r'> *<.+> *\S*\n(.+)\n',ctabs[index]);
+            
+        blinded_uncurated_fields = {}
+        for idx, hdr in enumerate(pns):
+            value = pns2[idx]
+            blinded_uncurated_fields[hdr] = unicode(value)
+            test_specific_parse_errors(hdr,value, fielderrors)
+        uncurated.append(blinded_uncurated_fields)
+    return uncurated
+
 def test_specific_parse_errors(hdr, value, fielderrors):
     if hdr not in fielderrors["stringdate"]:
         try:
