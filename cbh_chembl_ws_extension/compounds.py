@@ -557,11 +557,13 @@ class CBHCompoundBatchResource(ModelResource):
                 batch.obj.created_by = request.user.username
                 batch.obj.created_by_id = request.user.id
                 batch.obj.id = None
+                batch.obj.multiple_batch_id = id
                 batch.obj.generate_structure_and_dictionary()
 
                 batch.multi_batch_id = id
                 bundle.data["saved"] += 1
                 to_be_saved.append(batch.obj)
+        self.alter_batch_data_after_save(self, to_be_saved, mb.uploaded_file.file)
         elasticsearch_client.delete_index(
             elasticsearch_client.get_temp_index_name(request, mb.id))
         batch_dicts = self.batches_to_es_ready(to_be_saved, request)
@@ -572,6 +574,10 @@ class CBHCompoundBatchResource(ModelResource):
         # and should update any existing records in there? That might be in
         # another method
         return self.create_response(request, bundle, response_class=http.HttpCreated)
+
+    def alter_batch_data_after_save(batch_list, multiple_batch):
+        pass
+
 
     def delete_index(self, request, **kwargs):
         deserialized = self.deserialize(request, request.body, format=request.META.get(
@@ -884,6 +890,9 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["headers"] = []
         return self.validate_multi_batch(multiple_batch, bundle, request, batches)
 
+    def preprocess_sdf_file(self, file_obj):
+        pass
+
     def post_validate_files(self, request, **kwargs):
 
         automapped_structure = False
@@ -967,38 +976,28 @@ class CBHCompoundBatchResource(ModelResource):
         else:
             if (correct_file.extension == ".sdf"):
                 # read in the file
-                self.preprocess_file(correct_file.file)
+                self.preprocess_sdf_file(correct_file.file)
                 suppl = Chem.ForwardSDMolSupplier(correct_file.file)
                 mols = [mo for mo in suppl]
-                if(len(mols) > 1000):
+                if(len(mols) > 10000):
                     raise BadRequest("file_too_large")
                 # read the headers from the first molecule
 
                 headers = get_all_sdf_headers(correct_file.file.name)
-                data = correct_file.file.read()
-                data = data.replace("\r\n", "\n").replace("\r", "\n")
-                ctabs = data.split("$$$$")
                 
+                uncurated = parser.get_uncurated_fields_from_file(correct_file, fielderrors)
                 for index, mol in enumerate(mols):
                     if mol is None:
-
-                        pns = re.findall(r'> *<(.+)>',ctabs[index]);
-                        pns2 = re.findall(r'> *<.+> *\S*\n(.+)\n',ctabs[index]);
-                        
-                        blinded_uncurated_fields = {}
-                        for idx, val in enumerate(pns):
-                            blinded_uncurated_fields[val] = pns2[idx]
                         b = None
                         b = CBHCompoundBatch.objects.blinded(
                             project=bundle.data["project"])
                         b.warnings["parseError"] = "true"
                         b.properties["action"] = "Ignore"
 
-                        b.uncurated_fields = blinded_uncurated_fields
+                        b.uncurated_fields = uncurated[index]
                         errors.append(
                                 {"index": index+1,  "message": "No structure found"})
                     else:
-                        orig_data = ctabs[index]
                         # try:
                         try:
                             b = CBHCompoundBatch.objects.from_rd_mol(
@@ -1008,8 +1007,7 @@ class CBHCompoundBatchResource(ModelResource):
                                 {"index": index+1,  "message": str(e)})
                             b = None
                         
-                        parse_sdf_record(
-                                headers, b, "uncurated_fields", mol, fielderrors)
+                        b.uncurated_fields = uncurated[index]
 
                     batches.append(b)
 
