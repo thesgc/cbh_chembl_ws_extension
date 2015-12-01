@@ -525,7 +525,7 @@ class ChemregProjectResource( ModelResource):
                         'items':  sorted([
                             {'label': user.first_name + " " + user.last_name , "value" : uri + '/' + str(user.id) } if user.first_name  else {'label': user.username , "value" : uri + '/' + str(user.id) }
                             for user in User.objects.exclude(pk=-1)
-                        ], key=lambda k: k['label'])
+                        ], key=lambda k: k['label'].lower())
                 },
                 
                 'multiple_batch_id': {'title': 'Upload ID',
