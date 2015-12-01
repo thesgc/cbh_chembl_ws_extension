@@ -967,6 +967,7 @@ class CBHCompoundBatchResource(ModelResource):
         else:
             if (correct_file.extension == ".sdf"):
                 # read in the file
+                self.preprocess_file(correct_file.file)
                 suppl = Chem.ForwardSDMolSupplier(correct_file.file)
                 mols = [mo for mo in suppl]
                 if(len(mols) > 1000):
@@ -980,43 +981,22 @@ class CBHCompoundBatchResource(ModelResource):
                 
                 for index, mol in enumerate(mols):
                     if mol is None:
-                        #b = None
-                        #b = Chem.MolFromMolBlock(ctabs[index])
-                        try:
-                            b = readstring('sdf', ctabs[index])
-                            blinded_uncurated_fields = b.data
-                            if b == None:
-                                #try pybel to get the fields?
-                                errors.append(
-                                    {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
-                            else:
-                                # errors.append(
-                                #     {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
-                                b = None
-                                b = CBHCompoundBatch.objects.blinded(
-                                    project=bundle.data["project"])
-                                b.warnings["parseError"] = "true"
-                                b.properties["action"] = "Ignore"
 
-                                b.uncurated_fields = dict(blinded_uncurated_fields)
-                        except Exception, e:
-                            #use a regular expression to pull properties out of the ctab for now
-                            pns = re.findall(r'> *<(.+)>',ctabs[index]);
-                            pns2 = re.findall(r'> *<.+> *\S*\n(.+)\n',ctabs[index]);
-                            
-                            blinded_uncurated_fields = {}
-                            for idx, val in enumerate(pns):
-                                blinded_uncurated_fields[val] = pns2[idx]
-                            b = None
-                            b = CBHCompoundBatch.objects.blinded(
-                                project=bundle.data["project"])
-                            b.warnings["parseError"] = "true"
-                            b.properties["action"] = "Ignore"
-                            b.uncurated_fields = blinded_uncurated_fields
+                        pns = re.findall(r'> *<(.+)>',ctabs[index]);
+                        pns2 = re.findall(r'> *<.+> *\S*\n(.+)\n',ctabs[index]);
+                        
+                        blinded_uncurated_fields = {}
+                        for idx, val in enumerate(pns):
+                            blinded_uncurated_fields[val] = pns2[idx]
+                        b = None
+                        b = CBHCompoundBatch.objects.blinded(
+                            project=bundle.data["project"])
+                        b.warnings["parseError"] = "true"
+                        b.properties["action"] = "Ignore"
 
-                            # b = None
-                            # errors.append(
-                            #         {"index": index+1, "message": "Invalid valency or other error parsing this molecule"})
+                        b.uncurated_fields = blinded_uncurated_fields
+                        errors.append(
+                                {"index": index+1,  "message": "No structure found"})
                     else:
                         orig_data = ctabs[index]
                         # try:
@@ -1027,10 +1007,8 @@ class CBHCompoundBatchResource(ModelResource):
                             errors.append(
                                 {"index": index+1,  "message": str(e)})
                             b = None
-                        if b and dict(b.uncurated_fields) == {}:
-                            # Only rebuild the uncurated fields if this has not
-                            # been done before
-                            parse_sdf_record(
+                        
+                        parse_sdf_record(
                                 headers, b, "uncurated_fields", mol, fielderrors)
 
                     batches.append(b)
