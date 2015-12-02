@@ -4,6 +4,7 @@ from cbh_core_ws.resources import Login, Logout
 from django.conf import settings
 from flowjs import urls as flow
 from django.contrib import admin
+from django.contrib.auth.views import password_change, password_change_done, password_reset, password_reset_done, password_reset_complete, password_reset_confirm
 
 
 from tastypie.api import Api
@@ -42,6 +43,19 @@ urlpatterns = patterns('',
                            [0], Login.as_view(), name="login"),
                        url(r'^%s/logout' %
                            api_name, Logout.as_view(), name="logout"),
+                       #change password outside of admin
+                       url(r'^%s/password_change' %
+                           api_name, password_change, {'template_name': 'cbh_chembl_ws_extension/password_change.html'}, name="password_change"),
+                       url(r'^%s/password_change_done' %
+                           api_name, password_change_done, {'template_name': 'cbh_chembl_ws_extension/password_change_done.html'}, name="password_change_done"),
+                       url(r'^%s/password_reset' %
+                           api_name, password_reset, {'from_email': 'no-reply-chemreg@chembiohub.ox.ac.uk', 'template_name':'cbh_chembl_ws_extension/password_reset.html'}, name="password_reset"),
+                       url(r'^%s/reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})' %
+                           api_name, password_reset_confirm, {'template_name': 'cbh_chembl_ws_extension/password_reset_confirm.html'}, name="password_reset_confirm"),
+                       url(r'^%s/password_reset/done' %
+                           api_name, password_reset_done, {'template_name': 'cbh_chembl_ws_extension/password_reset_done.html'}, name="password_reset_done"),
+                       url(r'^%s/reset/done' %
+                           api_name, password_reset_complete, {'template_name': 'cbh_chembl_ws_extension/password_reset_complete.html'}, name="password_reset_complete"),
                        # adding this to allow configured upload URL within
                        # django-flowjs
                        url(r'^%s/flow/' % api_name, include(flow)),
