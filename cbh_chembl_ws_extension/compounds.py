@@ -52,7 +52,7 @@ from django.contrib.auth import get_user_model
 from rdkit.Chem.AllChem import Compute2DCoords
 from django.db.models import Prefetch
 import dateutil.parser
-from cbh_chembl_ws_extension.parser import parse_pandas_record, parse_sdf_record, apply_json_patch
+from cbh_chembl_ws_extension.parser import parse_pandas_record, parse_sdf_record, apply_json_patch, get_uncurated_fields_from_file
 # from tastypie.utils.mime import build_content_type
 from cbh_core_ws.resources import SimpleResourceURIField, UserResource
 
@@ -564,7 +564,6 @@ class CBHCompoundBatchResource(ModelResource):
                 bundle.data["saved"] += 1
                 to_be_saved.append(batch.obj)
         self.alter_batch_data_after_save(
-            self, 
             to_be_saved, 
             mb.uploaded_file.file
         )
@@ -579,7 +578,7 @@ class CBHCompoundBatchResource(ModelResource):
         # another method
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
-    def alter_batch_data_after_save(batch_list, multiple_batch):
+    def alter_batch_data_after_save(self, batch_list, python_file_object):
         pass
 
 
@@ -989,10 +988,9 @@ class CBHCompoundBatchResource(ModelResource):
 
                 headers = get_all_sdf_headers(correct_file.file.name)
                 
-                uncurated = parser.get_uncurated_fields_from_file(correct_file, fielderrors)
+                uncurated, ctabs = get_uncurated_fields_from_file(correct_file, fielderrors)
                 for index, mol in enumerate(mols):
                     if mol is None:
-                        b = None
                         b = CBHCompoundBatch.objects.blinded(
                             project=bundle.data["project"])
                         b.warnings["parseError"] = "true"
@@ -1002,15 +1000,17 @@ class CBHCompoundBatchResource(ModelResource):
                         errors.append(
                                 {"index": index+1,  "message": "No structure found"})
                     else:
-                        # try:
                         try:
                             b = CBHCompoundBatch.objects.from_rd_mol(
-                                mol, orig_ctab=orig_data, project=bundle.data["project"])
+                                mol, orig_ctab=ctabs[index], project=bundle.data["project"])
                         except Exception, e:
+                            b = CBHCompoundBatch.objects.blinded(
+                            project=bundle.data["project"])
+                            b.warnings["parseError"] = "true"
+                            b.properties["action"] = "Ignore"
                             errors.append(
-                                {"index": index+1,  "message": str(e)})
-                            b = None
-                        
+                                    {"index": index+1,  "message": str(e)})
+                       
                         b.uncurated_fields = uncurated[index]
 
                     batches.append(b)
