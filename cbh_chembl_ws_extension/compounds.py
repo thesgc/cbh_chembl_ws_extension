@@ -563,7 +563,11 @@ class CBHCompoundBatchResource(ModelResource):
                 batch.multi_batch_id = id
                 bundle.data["saved"] += 1
                 to_be_saved.append(batch.obj)
-        self.alter_batch_data_after_save(self, to_be_saved, mb.uploaded_file.file)
+        self.alter_batch_data_after_save(
+            self, 
+            to_be_saved, 
+            mb.uploaded_file.file
+        )
         elasticsearch_client.delete_index(
             elasticsearch_client.get_temp_index_name(request, mb.id))
         batch_dicts = self.batches_to_es_ready(to_be_saved, request)
@@ -1083,7 +1087,9 @@ class CBHCompoundBatchResource(ModelResource):
             else:
                 raise BadRequest("file_format_error")
         multiple_batch = CBHCompoundMultipleBatch.objects.create(
-            project=bundle.data["project"])
+                project=bundle.data["project"],
+                uploaded_file=correct_file
+            )
         for b in batches:
             if b:
                 b.multiple_batch_id = multiple_batch.pk
@@ -1475,22 +1481,19 @@ class CBHCompoundBatchResource(ModelResource):
         pids = self._meta.authorization.project_ids(request)
         pq = elasticsearch_client.get_project_uri_terms(pids)
         modified_query["bool"]["must"] += pq
-
-        
-
-
         es_request = {
             "version": True,
             "from": get_data.get("offset", 0),
             "size": get_data.get("limit", 50),
-            "query" : {"bool": 
-                {"must":
-                    [
-                        {"filtered" : {"filter" : modified_query}}
-                    ]
-                }
-            },
-            "sort": json.loads(get_data.get("sorts", '[{"id": {"order": "desc"}}]'))
+            "query" : 
+                { "bool": 
+                    {"must":
+                        [
+                            {"filtered" : {"filter" : modified_query}}
+                        ]
+                    }
+                },
+            "sort": json.loads(get_data.get("sorts", '[{"id": {"order": "desc", "unmapped_type" : "long"}}]'))
         }
 
         prefix = request.GET.get("custom__field__startswith", -1)
@@ -1540,7 +1543,8 @@ class CBHCompoundBatchResource(ModelResource):
             return rc
 
         bundledata["objects"] = [
-                es_serializer.to_python_ready_data(d) for d in bundledata["objects"]]
+                    es_serializer.to_python_ready_data(d) for d in bundledata["objects"]
+                ]
         return self.create_response(request, bundledata)
 
     def get_cached_temporary_batch_data(self, multi_batch_id, get_data, request, bundledata={}):
