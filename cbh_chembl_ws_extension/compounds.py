@@ -563,10 +563,12 @@ class CBHCompoundBatchResource(ModelResource):
                 batch.multi_batch_id = id
                 bundle.data["saved"] += 1
                 to_be_saved.append(batch.obj)
-        self.alter_batch_data_after_save(
-            to_be_saved, 
-            mb.uploaded_file.file
-        )
+        if(mb.uploaded_file):
+            if(mb.uploaded_file.extension == ".sdf"):
+                self.alter_batch_data_after_save(
+                    to_be_saved, 
+                    mb.uploaded_file.file
+                )
         elasticsearch_client.delete_index(
             elasticsearch_client.get_temp_index_name(request, mb.id))
         batch_dicts = self.batches_to_es_ready(to_be_saved, request)
