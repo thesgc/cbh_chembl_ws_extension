@@ -363,7 +363,8 @@ class ChemregProjectResource( ModelResource):
                                                                               ))
 
     def get_searchform(self, bundle):
-        '''Note that the form here is expected to have the UOx id as the first item'''
+        '''Note that the form here was expected to have the UOx id as the first item
+           PB edit - we are now looking it up by key in front end - UOX position no longer needs to be fixed'''
         ur = UserResource()
         uri = ur.get_resource_uri()
         return {
@@ -385,6 +386,73 @@ class ChemregProjectResource( ModelResource):
                               'placeholder': 'Filter project data',
                               'title': 'Project data values:',
                           }}},
+            'simple_form': [
+
+                {
+                    'key': 'creator_uri',
+                    'htmlClass': 'col-md-4 col-xs-6',
+                    'placeholder': 'Select users to search',
+                    'feedback': False,
+
+
+                },
+                {
+                    'key': 'project__project_key__in',
+                    'placeholder': 'Select projects to search',
+                    'htmlClass': 'col-md-4 col-xs-6',
+                    'feedback': False,
+                    'description': 'Search for projects in order to limit the choice of fields on show. Select a single project if you want to edit data.',
+                    'disableSuccessState': True,
+                    'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
+                },
+                {
+                    'htmlClass': 'col-md-4 col-xs-6',
+                    'key': 'search_custom_fields__kv_any',
+                    'disableSuccessState': True,
+                    'help': 'Searching using this filter will bring back results that match an OR pattern within the same data category, with AND across data categories, i.e. results which contain this item within category a OR that item within category a AND that item within category b.',
+                    'feedback': False,
+                    'options': {'refreshDelay': 0,
+                                'async': {'url': reverse('api_get_list_elasticsearch',
+                                                         kwargs={'resource_name': 'cbh_compound_batches',
+                                                                 'api_name': settings.WEBSERVICES_NAME})},
+                                
+                                },
+                },
+            ],
+            'simple_schema': {
+                          'required': [], 'type': 'object',
+                          'properties': {
+                                'search_custom_fields__kv_any': {
+                                  'type': 'array',
+                                  'format': 'uiselect',
+                                  'items': [],
+                                  'placeholder': 'Filter project data',
+                                  'title': 'Project data values:',
+                                },
+                                'creator_uri': {
+                                    'type': 'array',
+                                    'format': 'uiselect',
+                                       'title': 'Compound batch created by',
+                                        'type': 'array',
+                                        'format': 'uiselect',
+                                        'htmlClass': 'col-md-6 col-xs-6',
+                                        'placeholder': 'Search user who created the batch',
+                                        'options': {'searchDescriptions': False},
+                                        'items':  sorted([
+                                            {'label': user.first_name + " " + user.last_name , "value" : uri + '/' + str(user.id) } if user.first_name  else {'label': user.username , "value" : uri + '/' + str(user.id) }
+                                            for user in User.objects.exclude(pk=-1)
+                                        ], key=lambda k: k['label'].lower())
+                                },
+                                'project__project_key__in': {
+                                    'title': 'Project',
+                                    'type': 'array',
+                                    'format': 'uiselect',
+                                    'items': [{'label': p.obj.name,
+                                               'value': p.obj.project_key} for p in
+                                              bundle['objects']],
+                                },
+                          }},
+            
             'form': [
                 {
                     'key': 'related_molregno__chembl__chembl_id__in',
@@ -399,23 +467,23 @@ class ChemregProjectResource( ModelResource):
                                                                  'api_name': settings.WEBSERVICES_NAME})}},
                 },
                 
-                {
-                     'key': 'creator_uri',
-                 'htmlClass': 'col-md-6 col-xs-6',
-                    'placeholder': 'Select users to search',
-                    'feedback': False,
+                # {
+                #      'key': 'creator_uri',
+                #  'htmlClass': 'col-md-6 col-xs-6',
+                #     'placeholder': 'Select users to search',
+                #     'feedback': False,
 
 
-                },
-                {
-                    'key': 'project__project_key__in',
-                    'placeholder': 'Select projects to search',
-                     'htmlClass': 'col-md-6 col-xs-6',
-                    'feedback': False,
-                    'description': 'Search for projects in order to limit the choice of fields on show. Select a single project if you want to edit data.',
-                    'disableSuccessState': True,
-                    'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
-                },
+                # },
+                # {
+                #     'key': 'project__project_key__in',
+                #     'placeholder': 'Select projects to search',
+                #      'htmlClass': 'col-md-6 col-xs-6',
+                #     'feedback': False,
+                #     'description': 'Search for projects in order to limit the choice of fields on show. Select a single project if you want to edit data.',
+                #     'disableSuccessState': True,
+                #     'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
+                # },
                 {
                     'key': 'multiple_batch_id',
                     'htmlClass': 'col-md-6 col-xs-6',
@@ -476,19 +544,19 @@ class ChemregProjectResource( ModelResource):
                                  {'value': 'flexmatch',
                                   'name': 'Exact Match'}],
                 },
-                {
-                    'htmlClass': 'col-md-6 col-xs-6',
-                    'key': 'search_custom_fields__kv_any',
-                    'disableSuccessState': True,
-                    'help': 'Searching using this filter will bring back results that match an OR pattern within the same data category, with AND across data categories, i.e. results which contain this item within category a OR that item within category a AND that item within category b.',
-                    'feedback': False,
-                    'options': {'refreshDelay': 0,
-                                'async': {'url': reverse('api_get_list_elasticsearch',
-                                                         kwargs={'resource_name': 'cbh_compound_batches',
-                                                                 'api_name': settings.WEBSERVICES_NAME})},
+                # {
+                #     'htmlClass': 'col-md-6 col-xs-6',
+                #     'key': 'search_custom_fields__kv_any',
+                #     'disableSuccessState': True,
+                #     'help': 'Searching using this filter will bring back results that match an OR pattern within the same data category, with AND across data categories, i.e. results which contain this item within category a OR that item within category a AND that item within category b.',
+                #     'feedback': False,
+                #     'options': {'refreshDelay': 0,
+                #                 'async': {'url': reverse('api_get_list_elasticsearch',
+                #                                          kwargs={'resource_name': 'cbh_compound_batches',
+                #                                                  'api_name': settings.WEBSERVICES_NAME})},
                                 
-                                },
-                },
+                #                 },
+                # },
                 {
                     'key': 'archived',
                     'style': {'selected': 'btn-success',
@@ -513,31 +581,31 @@ class ChemregProjectResource( ModelResource):
                     
                 },
 
-                'creator_uri': {
-                    'type': 'array',
-                    'format': 'uiselect',
-                       'title': 'Compound batch created by',
-                        'type': 'array',
-                        'format': 'uiselect',
-                        'htmlClass': 'col-md-6 col-xs-6',
-                        'placeholder': 'Search user who created the batch',
-                        'options': {'searchDescriptions': False},
-                        'items':  sorted([
-                            {'label': user.first_name + " " + user.last_name , "value" : uri + '/' + str(user.id) } if user.first_name  else {'label': user.username , "value" : uri + '/' + str(user.id) }
-                            for user in User.objects.exclude(pk=-1)
-                        ], key=lambda k: k['label'].lower())
-                },
+                # 'creator_uri': {
+                #     'type': 'array',
+                #     'format': 'uiselect',
+                #        'title': 'Compound batch created by',
+                #         'type': 'array',
+                #         'format': 'uiselect',
+                #         'htmlClass': 'col-md-6 col-xs-6',
+                #         'placeholder': 'Search user who created the batch',
+                #         'options': {'searchDescriptions': False},
+                #         'items':  sorted([
+                #             {'label': user.first_name + " " + user.last_name , "value" : uri + '/' + str(user.id) } if user.first_name  else {'label': user.username , "value" : uri + '/' + str(user.id) }
+                #             for user in User.objects.exclude(pk=-1)
+                #         ], key=lambda k: k['label'].lower())
+                # },
                 
                 'multiple_batch_id': {'title': 'Upload ID',
                                       'type': 'string'},
-                'project__project_key__in': {
-                    'title': 'Project',
-                    'type': 'array',
-                    'format': 'uiselect',
-                    'items': [{'label': p.obj.name,
-                               'value': p.obj.project_key} for p in
-                              bundle['objects']],
-                },
+                # 'project__project_key__in': {
+                #     'title': 'Project',
+                #     'type': 'array',
+                #     'format': 'uiselect',
+                #     'items': [{'label': p.obj.name,
+                #                'value': p.obj.project_key} for p in
+                #               bundle['objects']],
+                # },
                 'functional_group': {
                     'title': 'Functional Group',
                     'type': 'string',
