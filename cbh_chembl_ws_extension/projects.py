@@ -834,6 +834,7 @@ class ChemregProjectResource( ModelResource):
 
         editor_projects = \
             self._meta.authorization.editor_projects(request)
+
         for bun in bundle['objects']:
             bun.data['editor'] = bun.obj.id in editor_projects
 
@@ -841,23 +842,9 @@ class ChemregProjectResource( ModelResource):
             searchfields = set([])
             searchfield_items = []
 
-            for bun in bundle['objects']:
-               
-                bun.data['editor'] = bun.obj.id in editor_projects
 
             bundle['searchform'] = self.get_searchform(bundle,
                                                        )
-
-        # if self.determine_format(request) \
-        #         == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' \
-        #         or request.GET.get('format') == 'xls':
-
-        #     cfr_string = \
-        #         self.get_object_list(request).filter(id=request.GET.get('project_key'
-        #                                                                 ))[0].custom_field_config.schemaform
-        #     cfr_json = json.loads(cfr_string)
-        #     bundle['custom_field_config'] = cfr_json['form']
-
         return bundle
 
    
