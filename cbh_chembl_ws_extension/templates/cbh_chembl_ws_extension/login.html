@@ -17,22 +17,17 @@
     <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
     <!-- build:css(.) styles/vendor.css -->
     <!-- bower:css -->
-    <link rel='stylesheet' href="bower_components/chembiohub-theme/css/main.css" />
     <link rel='stylesheet' href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" />
-    <link rel='stylesheet' href="bower_components/angular-grid/ng-grid.css" />
+    <link rel='stylesheet' href="{{site_prefix}}bower_components/angular-grid/ng-grid.css" />
     <!-- endbower -->
     <!-- endbuild -->
     <!-- build:css(.) styles/main.css -->
-        <link rel='stylesheet' href="bower_components/chembiohub-theme/css/main.css" />
+        <link rel='stylesheet' href="{{site_prefix}}bower_components/chembiohub-theme/css/main.css" />
 
-    <link rel="stylesheet" href="bower_components/chembiohub-theme/css/cbh-template-header.css">
-    <link rel="stylesheet" href="bower_components/chembiohub-theme/css/font.css">
-    <link rel="stylesheet" href="styles/chemreg-specific.css">
+    <link rel="stylesheet" href="{{site_prefix}}bower_components/chembiohub-theme/css/cbh-template-header.css">
+    <link rel="stylesheet" href="{{site_prefix}}bower_components/chembiohub-theme/css/font.css">
+    <link rel="stylesheet" href="{{site_prefix}}styles/chemreg-specific.css">
 
-
-    <link rel="stylesheet" href="bower_components/chemdoodle/install/ChemDoodleWeb.css">
-    <link rel="stylesheet" href="bower_componentschemdoodle/install/uis/jquery-ui-1.10.3.custom.css">
-    <!-- endbuild -->    <!-- Chemdoodle sketcher css -->
 
 
 
@@ -65,7 +60,7 @@
         
       </div>
       <div class="col-xs-4" id="slogan">
-        <h2 class="text-center" style="padding-top:5px;"><a href="https://chembiohub.ox.ac.uk" target="_blank"><img src="bower_components/chembiohub-theme/img/CBH_2_2_LowRes.png" style="height:45px"></a>  ChemReg <small><sup>beta</sup></small></h2>
+        <h2 class="text-center" style="padding-top:5px;"><a href="https://chembiohub.ox.ac.uk" target="_blank"><img src="{{site_prefix}}bower_components/chembiohub-theme/img/CBH_2_2_LowRes.png" style="height:45px"></a>  ChemReg <small><sup>beta</sup></small></h2>
       </div>
       <div class="col-xs-3">
         <!-- Login and top level nav -->
@@ -153,15 +148,15 @@
           <h2><small>ChemReg is built using:</small></h2>
         </div>
         <div class="col-xs-6 col-sm-3">
-          <a href="https://www.djangoproject.com/" onclick="return !window.open(this.href);"><img src="bower_components/chembiohub-theme/img/django.png" alt="Django Framework" title="Django Framework"></a>
+          <a href="https://www.djangoproject.com/" onclick="return !window.open(this.href);"><img src="{{site_prefix}}bower_components/chembiohub-theme/img/django.png" alt="Django Framework" title="Django Framework"></a>
         </div>
         <div class="col-xs-6 col-sm-3">
-          <a href="https://www.ebi.ac.uk/chembl/ws" onclick="return !window.open(this.href);"><img src="bower_components/chembiohub-theme/img/chembl.png" alt="ChEMBL" title="ChEMBL"></a>
+          <a href="https://www.ebi.ac.uk/chembl/ws" onclick="return !window.open(this.href);"><img src="{{site_prefix}}bower_components/chembiohub-theme/img/chembl.png" alt="ChEMBL" title="ChEMBL"></a>
         </div>
         <div class="col-xs-6 col-sm-3">
-          <a href="https://angularjs.org/" onclick="return !window.open(this.href);"><img src="bower_components/chembiohub-theme/img/angular.png" alt="AngularJS framework" title="AngularJS framework"></a>
+          <a href="https://angularjs.org/" onclick="return !window.open(this.href);"><img src="{{site_prefix}}bower_components/chembiohub-theme/img/angular.png" alt="AngularJS framework" title="AngularJS framework"></a>
         </div><div class="col-xs-6 col-sm-3">
-          <a href="https://github.com/" onclick="return !window.open(this.href);"><img src="bower_components/chembiohub-theme/img/github.png" alt="GitHub" title="GitHub"></a>
+          <a href="https://anaconda.org/" onclick="return !window.open(this.href);"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/cd/Anaconda_Logo.png/200px-Anaconda_Logo.png" alt="Anaconda" title="Anaconda"></a>
         </div>
         
       </div>
