@@ -537,7 +537,7 @@ class CBHCompoundBatchResource(ModelResource):
         while hasMoreData:
 
             bundles = self.get_cached_temporary_batch_data(
-                mb.id,  {"limit": limit, "offset": offset}, request)
+                mb.id,  {"limit": limit, "offset": offset, "sorts": '[{"id": {"order": "desc"}}]'}, request)
             for d in bundles["objects"]:
                 self.patch_dict(d, copy.deepcopy(bundle.data["headers"]))
             set_of_batches = self.get_cached_temporary_batches(
@@ -818,7 +818,7 @@ class CBHCompoundBatchResource(ModelResource):
             batches, multi_batch.id, request)
         multi_batch.uploaded_data = bundle.data
         multi_batch.save()
-        bundle.data["objects"] = fifty_batches_for_first_page
+        #bundle.data["objects"] = fifty_batches_for_first_page
         index_name = elasticsearch_client.get_temp_index_name(
             request, multi_batch.id)
         elasticsearch_client.get_action_totals(index_name, bundle.data)
@@ -1330,7 +1330,6 @@ class CBHCompoundBatchResource(ModelResource):
         elasticsearch_client.create_temporary_index(
             batch_dicts, request, index_name)
         # Now get rid of my ES preparation again
-        return [es_serializer.to_python_ready_data(d) for d in batch_dicts[0:10]]
 
     def get_cached_temporary_batches(self, bundles, request, bundledata={}):
         fakeobj = CBHCompoundBatch(project=bundledata["project"], id=10)
@@ -1554,7 +1553,7 @@ class CBHCompoundBatchResource(ModelResource):
             "from": get_data.get("offset", 0),
             "size": get_data.get("limit", 50),
             "filter": json.loads(get_data.get("query", '{ "match_all" : {}}')),
-            "sort": json.loads(get_data.get("sorts", '[{"id": {"order": "desc"}}]'))
+            "sort": json.loads(get_data.get("sorts", '[{"id": {"order": "asc"}}]'))
         }
         index = elasticsearch_client.get_temp_index_name(
             request, multi_batch_id)
