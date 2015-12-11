@@ -567,7 +567,8 @@ class CBHCompoundBatchResource(ModelResource):
             if(mb.uploaded_file.extension == ".sdf"):
                 self.alter_batch_data_after_save(
                     to_be_saved, 
-                    mb.uploaded_file.file
+                    mb.uploaded_file.file,
+                    request,
                 )
         elasticsearch_client.delete_index(
             elasticsearch_client.get_temp_index_name(request, mb.id))
@@ -580,7 +581,7 @@ class CBHCompoundBatchResource(ModelResource):
         # another method
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
-    def alter_batch_data_after_save(self, batch_list, python_file_object):
+    def alter_batch_data_after_save(self, batch_list, python_file_object,request):
         pass
 
 
@@ -895,7 +896,7 @@ class CBHCompoundBatchResource(ModelResource):
         bundle.data["headers"] = []
         return self.validate_multi_batch(multiple_batch, bundle, request, batches)
 
-    def preprocess_sdf_file(self, file_obj):
+    def preprocess_sdf_file(self, file_obj, request):
         pass
 
     def post_validate_files(self, request, **kwargs):
@@ -981,7 +982,7 @@ class CBHCompoundBatchResource(ModelResource):
         else:
             if (correct_file.extension == ".sdf"):
                 # read in the file
-                self.preprocess_sdf_file(correct_file.file)
+                self.preprocess_sdf_file(correct_file.file, request)
                 suppl = Chem.ForwardSDMolSupplier(correct_file.file)
                 mols = [mo for mo in suppl]
                 if(len(mols) > 10000):
