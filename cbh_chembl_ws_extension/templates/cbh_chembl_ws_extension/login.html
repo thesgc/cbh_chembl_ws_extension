@@ -10,6 +10,7 @@
                       Password<span class="asteriskField">*</span></label><div class="controls "><input class="textinput textInput form-control" id="id_password" name="password" type="password"> </div></div>
                   </fieldset>
                       <div class="form-actions"><input type="submit" name="save" value="Sign in" class="btn btn-primary" id="submit-id-save"> </div>
+                      
                       {% if form.errors %}
     {% for field in form %}
         {% for error in field.errors %}
