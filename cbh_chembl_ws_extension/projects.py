@@ -899,20 +899,24 @@ class ChemregProjectResource( ModelResource):
                                           request=request)
         userbundle = userres.full_dehydrate(userbundle)
         bundle['user'] = userbundle.data
-
-        editor_projects = \
-            self._meta.authorization.editor_projects(request)
-
-        for bun in bundle['objects']:
-            bun.data['editor'] = bun.obj.id in editor_projects
+        self._meta.authorization.alter_project_data_for_permissions(bundle, request)
 
         if request.GET.get('schemaform', None):
             searchfields = set([])
             searchfield_items = []
+            bundle['searchform'] = self.get_searchform(bundle, )
+        return bundle
 
 
-            bundle['searchform'] = self.get_searchform(bundle,
-                                                       )
+    def alter_detail_data_to_serialize(self, request, bundle):
+        userres = UserResource()
+        userbundle = userres.build_bundle(obj=request.user,
+                                          request=request)
+        userbundle = userres.full_dehydrate(userbundle)
+        bundle['user'] = userbundle.data
+
+        self._meta.authorization.alter_project_data_for_permissions(bundle)
+                          
         return bundle
 
    
