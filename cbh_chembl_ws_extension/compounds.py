@@ -1156,10 +1156,10 @@ class CBHCompoundBatchResource(ModelResource):
         '''use the request type to determine which fields should be limited for file download,
            add extra fields if needed (eg images) and enumerate the custom fields into the 
            rest of the calculated fields'''
-        if request.GET("substructure_smarts", False):
+        if request.GET.get("substructure_smarts", False):
             for index, b in enumerate(data["objects"]):
                 ctab = b.data["properties"][
-                    "substructureMatch"] = self.substructure_smarts
+                    "substructureMatch"] = request.GET.get("substructure_smarts")
         if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or request.GET.get("format") == "sdf" or self.determine_format(request) == 'chemical/x-mdl-sdfile'):
             ordered_cust_fields = PinnedCustomField.objects.filter(custom_field_config__project__project_key__in=request.GET.get(
                 "project__project_key__in", "").split(",")).order_by("custom_field_config__project__id", "position").values("name", "field_type")
