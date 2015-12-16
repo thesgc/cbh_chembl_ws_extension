@@ -69,7 +69,6 @@ def build_content_type(format, encoding='utf-8'):
 class CBHCompoundBatchResource(ModelResource):
     project = fields.ForeignKey(
         ChemregProjectResource, 'project', blank=False, null=False)
-    substructure_smarts = ""
     creator = SimpleResourceURIField(UserResource, 'created_by_id', null=True, readonly=True)
 
     class Meta:
@@ -165,8 +164,9 @@ class CBHCompoundBatchResource(ModelResource):
         pr = request.GET.get("project__project_key__in", None)
         if pr == "":
             applicable_filters.pop("project__project_key__in")
-
-        self.substructure_smarts = ""
+        #copy reques.GET so we can pass things in it
+        request.GET = request.GET.copy()
+        smiles = ""
         ws = request.GET.get("with_substructure", None)
         st = request.GET.get("similar_to", None)
         fm = request.GET.get("flexmatch", None)
@@ -190,6 +190,7 @@ class CBHCompoundBatchResource(ModelResource):
         eb = request.GET.get("excludeBlanks")
         if eb:
             print("exclude blanks")
+        request.GET["substructure_smarts"] = smiles
         # else:
         #    cms = CompoundMols.objects.all()
         # To be generalised
@@ -1155,12 +1156,11 @@ class CBHCompoundBatchResource(ModelResource):
         '''use the request type to determine which fields should be limited for file download,
            add extra fields if needed (eg images) and enumerate the custom fields into the 
            rest of the calculated fields'''
-        if self.substructure_smarts:
+        if request.GET("substructure_smarts", False):
             for index, b in enumerate(data["objects"]):
                 ctab = b.data["properties"][
                     "substructureMatch"] = self.substructure_smarts
         if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or request.GET.get("format") == "sdf" or self.determine_format(request) == 'chemical/x-mdl-sdfile'):
-            print "format"
             ordered_cust_fields = PinnedCustomField.objects.filter(custom_field_config__project__project_key__in=request.GET.get(
                 "project__project_key__in", "").split(",")).order_by("custom_field_config__project__id", "position").values("name", "field_type")
             seen = set()
