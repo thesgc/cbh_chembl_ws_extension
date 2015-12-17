@@ -498,6 +498,8 @@ class CBHCompoundBatchResource(ModelResource):
                 self.wrap_view('post_validate'), name="api_validate_compound_batch"),
             url(r"^(?P<resource_name>%s)/validate_list/$" % self._meta.resource_name,
                 self.wrap_view('post_validate_list'), name="api_validate_compound_list"),
+            url(r"^(?P<resource_name>%s)/validate_drawn/$" % self._meta.resource_name,
+                self.wrap_view('post_validate_drawn'), name="api_validate_compound_drawn"),
             url(r"^(?P<resource_name>%s)/multi_batch_save/$" % self._meta.resource_name,
                 self.wrap_view('multi_batch_save'), name="multi_batch_save"),
             url(r"^(?P<resource_name>%s)/multi_batch_custom_fields/$" % self._meta.resource_name,
@@ -538,8 +540,10 @@ class CBHCompoundBatchResource(ModelResource):
 
             bundles = self.get_cached_temporary_batch_data(
                 mb.id,  {"limit": limit, "offset": offset, "sorts": '[{"id": {"order": "desc"}}]'}, request)
-            for d in bundles["objects"]:
-                self.patch_dict(d, copy.deepcopy(bundle.data["headers"]))
+            #allowing setting of headers to be fale during saving of drawn molecule
+            if bundle.data["headers"]:
+                for d in bundles["objects"]:
+                    self.patch_dict(d, copy.deepcopy(bundle.data["headers"]))
             set_of_batches = self.get_cached_temporary_batches(
                 bundles, request,  bundledata=bundle.data)
             batches.extend(set_of_batches["objects"])
@@ -894,6 +898,73 @@ class CBHCompoundBatchResource(ModelResource):
 
         bundle.data["current_batch"] = multiple_batch.pk
         bundle.data["headers"] = []
+        return self.validate_multi_batch(multiple_batch, bundle, request, batches)
+
+    def post_validate_drawn(self, request, **kwargs):
+        """
+        Turn a drawn molfile via chemdoodle into a processable rdkit mol to be used by the rest of the architecture
+        """
+        deserialized = self.deserialize(request, request.body, format=request.META.get(
+            'CONTENT_TYPE', 'application/json'))
+
+        deserialized = self.alter_deserialized_detail_data(
+            request, deserialized)
+        bundle = self.build_bundle(
+            data=dict_strip_unicode_keys(deserialized), request=request)
+        if bundle.obj.pk:
+            self.authorized_update_detail(
+                self.get_object_list(bundle.request), bundle)
+        else:
+            self.authorized_create_detail(
+                self.get_object_list(bundle.request), bundle)
+        #now get the SDfile from the request
+        ctab = bundle.data.get('sketch', '')
+        # first assume ctab
+        # allmols = [(obj, Chem.MolFromSmiles(str(obj))) for obj in objects]
+        # we need to make allmols a single-entry list in order to use the rst of the architecture
+
+        mol = Chem.MolFromMolBlock(ctab)
+        #for each of the supplied custom fields, use set prop to replicate how this would be if it was an sd file.
+        prj_data_fields = bundle.data.get('custom_fields',{})
+        sup_data_fields = bundle.data.get('supplementary_fields',[])
+        if(mol):
+            for k1, v1 in prj_data_fields.iteritems():
+                if(isinstance(v1, list)):
+                    v1str = ""
+                    for item in v1:
+                        v1str = v1str + ", " + item.encode('ascii', 'ignore')
+                    mol.SetProp(k1.encode('ascii', 'ignore'), v1str)
+                else:
+                    mol.SetProp(k1.encode('ascii', 'ignore'), v1.encode('ascii', 'ignore'))
+
+            for field in sup_data_fields:
+                mol.SetProp(field['name'].encode('ascii', 'ignore'), field['value'].encode('ascii', 'ignore'))
+        
+        allmols = [ mol ]
+        errors = []
+        batches = []
+        multiple_batch = CBHCompoundMultipleBatch.objects.create(
+            project=bundle.data["project"])
+        try:
+            b = CBHCompoundBatch.objects.from_rd_mol(
+                mol, project=bundle.data["project"])
+            batches.append(b)
+        except Exception, e:
+            b = CBHCompoundBatch.objects.blinded(
+                            project=bundle.data["project"])
+            b.warnings["parseError"] = "true"
+            b.properties["action"] = "Ignore"
+            errors.append(
+                    {"message": str(e)})
+        b.custom_fields = prj_data_fields
+        b.uncurated_fields = {}
+        #iterate the supplementary fields
+        for field in sup_data_fields:
+            b.uncurated_fields[field['name'].encode('ascii', 'ignore')] = field['value'].encode('ascii', 'ignore')
+        batches.append(b)
+        bundle.data["current_batch"] = multiple_batch.pk
+        bundle.data["errors"] = errors
+        bundle.data["headers"] = False
         return self.validate_multi_batch(multiple_batch, bundle, request, batches)
 
     def preprocess_sdf_file(self, file_obj, request):
