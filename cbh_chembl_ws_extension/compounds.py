@@ -935,6 +935,10 @@ class CBHCompoundBatchResource(ModelResource):
                     for item in v1:
                         v1str = v1str + ", " + item.encode('ascii', 'ignore')
                     mol.SetProp(k1.encode('ascii', 'ignore'), v1str)
+                #not a unicode string? Don't try and ascii encode the result, 
+                #just add it as a value converted to a string (which SetProp expects)
+                elif(isinstance(v1, basestring) != True):
+                    mol.SetProp(k1.encode('ascii', 'ignore'), str(v1))
                 else:
                     mol.SetProp(k1.encode('ascii', 'ignore'), v1.encode('ascii', 'ignore'))
 
