@@ -79,7 +79,9 @@ class XLSXSerializer(Serializer):
                 raise ImmediateHttpResponse(BadRequest(json.dumps(data.data)))
         except AttributeError:
             pass
-        exp_json = json.loads(data.get('export', []))
+        exp_json = json.loads(data.get('export', None))
+        if exp_json is None:
+             raise ImmediateHttpResponse(BadRequest("Data not preformatted correctly for the Serializer: %s" % json.dumps(data)))
         ordered_fields = [
             'UOx ID', 'SMILES', 'Added By',  'Std InChi', 'Mol Weight', 'alogp']
         headers = data.get('headers', {})

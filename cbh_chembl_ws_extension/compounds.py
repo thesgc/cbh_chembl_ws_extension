@@ -574,6 +574,7 @@ class CBHCompoundBatchResource(ModelResource):
                     to_be_saved, 
                     mb.uploaded_file.file,
                     request,
+                    mb
                 )
         elasticsearch_client.delete_index(
             elasticsearch_client.get_temp_index_name(request, mb.id))
@@ -581,12 +582,16 @@ class CBHCompoundBatchResource(ModelResource):
         index_name = elasticsearch_client.get_main_index_name()
         elasticsearch_client.create_temporary_index(
             batch_dicts, request, index_name)
+        self.after_save_and_index_hook(request, id)
         # this needs to be the main elasticsearch compound index
         # and should update any existing records in there? That might be in
         # another method
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
-    def alter_batch_data_after_save(self, batch_list, python_file_object,request):
+    def after_save_and_index_hook(self, request, multi_batch_id):
+        pass
+
+    def alter_batch_data_after_save(self, batch_list, python_file_object,request, multi_batch):
         pass
 
 
@@ -840,8 +845,12 @@ class CBHCompoundBatchResource(ModelResource):
         bundle = self.build_bundle(request=request)
 
         # self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
-        id = request.GET.get("current_batch")
-        mb = CBHCompoundMultipleBatch.objects.get(pk=id)
+        if(kwargs.get("multi_batch", None)):
+            mb = kwargs.get("multi_batch")
+            id = mb.id
+        else:
+            id = request.GET.get("current_batch")
+            mb = CBHCompoundMultipleBatch.objects.get(pk=id)
 
         to_be_serialized = mb.uploaded_data
         to_be_serialized = self.get_cached_temporary_batch_data(
@@ -1235,7 +1244,7 @@ class CBHCompoundBatchResource(ModelResource):
             for index, b in enumerate(data["objects"]):
                 ctab = b.data["properties"][
                     "substructureMatch"] = request.GET.get("substructure_smarts")
-        if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or request.GET.get("format") == "sdf" or self.determine_format(request) == 'chemical/x-mdl-sdfile'):
+        if(self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or request.GET.get("format") == "xlsx"  or request.GET.get("format") == "sdf" or self.determine_format(request) == 'chemical/x-mdl-sdfile'):
             ordered_cust_fields = PinnedCustomField.objects.filter(custom_field_config__project__project_key__in=request.GET.get(
                 "project__project_key__in", "").split(",")).order_by("custom_field_config__project__id", "position").values("name", "field_type")
             seen = set()
@@ -1572,7 +1581,7 @@ class CBHCompoundBatchResource(ModelResource):
                 },
             "sort": json.loads(get_data.get("sorts", '[{"id": {"order": "desc", "unmapped_type" : "long"}}]'))
         }
-
+        print es_request
         prefix = request.GET.get("custom__field__startswith", -1)
         if prefix != -1:
             #Here the request is being used to get the custom field values
@@ -1622,6 +1631,8 @@ class CBHCompoundBatchResource(ModelResource):
         bundledata["objects"] = [
                     es_serializer.to_python_ready_data(d) for d in bundledata["objects"]
                 ]
+        bundledata = self.alter_list_data_to_serialize(request, bundledata)
+
         return self.create_response(request, bundledata)
 
     def get_cached_temporary_batch_data(self, multi_batch_id, get_data, request, bundledata={}):
