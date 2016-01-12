@@ -286,7 +286,7 @@ The fields that are in this particular custom field config:
                        }
 
     def hydrate_created_by(self, bundle):
-        user = get_user_model().objects.get(pk=bundle.request.user.pk)
+        user = User.objects.get(pk=bundle.request.user.pk)
         bundle.obj.created_by = user
 
         return bundle
@@ -331,7 +331,7 @@ class ChemregProjectResource( ModelResource):
         queryset = Project.objects.all()
         authentication = SessionAuthentication()
         paginator_class = Paginator
-        allowed_methods = ['get']
+        allowed_methods = ['get', 'post', 'patch', 'put']
         resource_name = 'cbh_projects'
         authorization = ProjectListAuthorization()
         include_resource_uri = False
@@ -342,7 +342,8 @@ class ChemregProjectResource( ModelResource):
         serializer = CustomFieldsSerializer()
         filtering = {'project_key': ALL_WITH_RELATIONS}
 
-    
+
+
     def dehydrate_assays_configured(self, bundle):
         return bundle.obj.enabled_forms.count() > 0
 
@@ -913,9 +914,9 @@ class ChemregProjectResource( ModelResource):
         userbundle = userres.build_bundle(obj=request.user,
                                           request=request)
         userbundle = userres.full_dehydrate(userbundle)
-        bundle['user'] = userbundle.data
+        bundle.data['user'] = userbundle.data
 
-        self._meta.authorization.alter_project_data_for_permissions(bundle)
+        self._meta.authorization.alter_project_data_for_permissions(bundle, request)
                           
         return bundle
 
