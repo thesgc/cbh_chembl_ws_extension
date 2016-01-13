@@ -19,7 +19,7 @@ from django.core.urlresolvers import reverse
 from cbh_core_ws.serializers import CustomFieldsSerializer
 from django.db.models import Prefetch
 from cbh_core_ws.resources import ProjectTypeResource, \
-    CustomFieldConfigResource
+    CustomFieldConfigResource, UserHydrate
 from django.contrib.auth.models import User
 
 def build_content_type(format, encoding='utf-8'):
