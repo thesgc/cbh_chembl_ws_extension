@@ -204,7 +204,7 @@ autocomplete urls
 
         return True
 
-class ChemRegCustomFieldConfigResource(ModelResource):
+class ChemRegCustomFieldConfigResource(UserHydrate, ModelResource):
 
     '''Return only the project type and custom field config name as returning the full field list would be '''
     data_type = fields.ForeignKey("cbh_core_ws.resources.DataTypeResource",
@@ -285,11 +285,7 @@ The fields that are in this particular custom field config:
         '''
                        }
 
-    def hydrate_created_by(self, bundle):
-        user = User.objects.get(pk=bundle.request.user.pk)
-        bundle.obj.created_by = user
 
-        return bundle
 
     def get_schema(self, request, **kwargs):
         """
@@ -315,7 +311,11 @@ The fields that are in this particular custom field config:
             rc['Content-Disposition'] = 'attachment; filename=project_data_explanation.xlsx'
         return rc
 
-class ChemregProjectResource( ModelResource):
+
+
+
+
+class ChemregProjectResource(UserHydrate, ModelResource):
 
     project_type = fields.ForeignKey(
         ProjectTypeResource, 'project_type', blank=False, null=False, full=True)
@@ -325,6 +325,8 @@ class ChemregProjectResource( ModelResource):
                             'schemaform']
     
     assays_configured = fields.BooleanField(default=False)
+    created_by = fields.ForeignKey(
+        "cbh_core_ws.resources.UserResource", 'created_by')
 
     class Meta:
 
@@ -336,9 +338,6 @@ class ChemregProjectResource( ModelResource):
         authorization = ProjectListAuthorization()
         include_resource_uri = False
         default_format = 'application/json'
-
-        # serializer = Serializer()
-
         serializer = CustomFieldsSerializer()
         filtering = {'project_key': ALL_WITH_RELATIONS}
 

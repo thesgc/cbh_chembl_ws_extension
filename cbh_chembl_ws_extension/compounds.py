@@ -54,7 +54,7 @@ from django.db.models import Prefetch
 import dateutil.parser
 from cbh_chembl_ws_extension.parser import parse_pandas_record, parse_sdf_record, apply_json_patch, get_uncurated_fields_from_file
 # from tastypie.utils.mime import build_content_type
-from cbh_core_ws.resources import SimpleResourceURIField, UserResource
+from cbh_core_ws.resources import SimpleResourceURIField, UserResource, UserHydrate
 
 
 def build_content_type(format, encoding='utf-8'):

@@ -5,7 +5,7 @@ from cbh_core_model.models import Project
 
 from django.contrib.admin import ModelAdmin
 
-
+from cbh_core_ws.admin import CreatedByAdmin
 
 class ChemregProject(Project):
 
@@ -13,7 +13,10 @@ class ChemregProject(Project):
         proxy = True
 
 
-class ProjectAdmin(ModelAdmin):
+
+
+
+class ProjectAdmin(CreatedByAdmin, ModelAdmin):
     prepopulated_fields = {"project_key": ("name",)}
     list_display = ('name', 'project_key', 'created', 'project_type')
     search_fields = ('name',)
@@ -22,9 +25,6 @@ class ProjectAdmin(ModelAdmin):
     exclude = ["created_by"]
     actions = ['reindex']
 
-    def save_model(self, request, obj, form, change):
-        obj.created_by = request.user
-        obj.save()
 
     def reindex(self, request, queryset):
         from cbh_chembl_ws_extension.compounds import CBHCompoundBatchResource
