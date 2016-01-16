@@ -257,18 +257,20 @@ def create_temporary_index(batches, request, index_name):
         ignore=400)
 
     bulk_items = []
-    for item in batches:
-        bulk_items.append({
-            "index":
-            {
-                "_id": str(item["id"]),
-                "_index": index_name,
-                "_type": "batches"
-            }
-        })
-        bulk_items.append(item)
-    # Data is not refreshed!
-    return es.bulk(body=bulk_items, refresh=True)
+    if len(batches) > 0:
+        for item in batches:
+            bulk_items.append({
+                "index":
+                {
+                    "_id": str(item["id"]),
+                    "_index": index_name,
+                    "_type": "batches"
+                }
+            })
+            bulk_items.append(item)
+        # Data is not refreshed!
+        return es.bulk(body=bulk_items, refresh=True)
+    return {}
 
 
 def get_project_index_name(project):
