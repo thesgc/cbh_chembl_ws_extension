@@ -342,7 +342,6 @@ class CBHCompoundBatchResource(ModelResource):
             index_name = elasticsearch_client.get_main_index_name()
             es_reindex = elasticsearch_client.create_temporary_index(
                 batch_dicts, request, index_name)
-            print len(es_reindex["items"])
             # here you can do what you want with the row
             
             print "done page %d of %d" % (page ,paginator.num_pages)
