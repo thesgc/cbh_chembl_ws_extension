@@ -21,14 +21,18 @@ try:
 except AttributeError:
     api_name = DEFAULT_API_NAME
 
-
+from cbh_core_ws.resources import ProjectTypeResource
 from cbh_chembl_id_generator.resources import CBHPluginResource
+
 api = Api(api_name=api_name)
+api.register(ProjectTypeResource())
 
 api.register(CBHCompoundBatchResource())
 api.register(CBHCompoundMultipleBatchResource())
 api.register(CBHCompoundBatchUpload())
 api.register(UserResource())
+api.register(ChemRegDataPointProjectFieldResource())
+api.register(ChemRegCustomFieldConfigResource())
 api.register(ChemregProjectResource())
 api.register(SkinningResource())
 api.register(CBHPluginResource())

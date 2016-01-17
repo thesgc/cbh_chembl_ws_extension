@@ -21,6 +21,8 @@ from django.db.models import Prefetch
 from cbh_core_ws.resources import ProjectTypeResource, \
     CustomFieldConfigResource, UserHydrate
 from django.contrib.auth.models import User
+from django.template.defaultfilters import slugify 
+import six
 
 def build_content_type(format, encoding='utf-8'):
     """
@@ -208,10 +210,9 @@ class ChemRegCustomFieldConfigResource(UserHydrate, ModelResource):
 
     '''Return only the project type and custom field config name as returning the full field list would be '''
     data_type = fields.ForeignKey("cbh_core_ws.resources.DataTypeResource",
-                                  'data_type', readonly=True, null=True, blank=False, default=None, full=True)
-    project_data_fields = fields.ToManyField(ChemRegDataPointProjectFieldResource, lambda bundle: PinnedCustomField.objects.filter(
-        custom_field_config_id=bundle.obj.id
-    ).select_related("custom_field_config__project"), readonly=True, null=True, blank=False, default=None, full=True)
+                                  'data_type',  null=True, blank=False, default=None, full=True)
+    project_data_fields = fields.ToManyField(ChemRegDataPointProjectFieldResource, 
+        attribute="pinned_custom_field",null=True, blank=False, default=None, full=True)
     created_by = fields.ForeignKey(
         "cbh_core_ws.resources.UserResource", 'created_by')
 
@@ -220,7 +221,7 @@ class ChemRegCustomFieldConfigResource(UserHydrate, ModelResource):
         queryset = CustomFieldConfig.objects.select_related(
             "created_by", "data_type",)
         excludes = ("schemaform")
-        include_resource_uri = False
+        include_resource_uri = True
         resource_name = 'cbh_chemreg_custom_field_config'
         authentication = SessionAuthentication()
         authorization = Authorization()
@@ -286,6 +287,13 @@ The fields that are in this particular custom field config:
                        }
 
 
+    def hydrate_project_data_fields(self, bundle):
+        """Add the position number to the related bundle"""
+        for index, item in enumerate(bundle.data["project_data_fields"]):
+            if hasattr(item, 'obj'):
+                item.obj.position = index
+        return bundle
+
 
     def get_schema(self, request, **kwargs):
         """
@@ -336,12 +344,16 @@ class ChemregProjectResource(UserHydrate, ModelResource):
         allowed_methods = ['get', 'post', 'patch', 'put']
         resource_name = 'cbh_projects'
         authorization = ProjectListAuthorization()
-        include_resource_uri = False
+        include_resource_uri = True
         default_format = 'application/json'
         serializer = CustomFieldsSerializer()
         filtering = {'project_key': ALL_WITH_RELATIONS}
 
 
+    def hydrate_project_key(self, bundle):
+        if not bundle.obj.id:
+            bundle.obj.project_key = slugify(bundle.data["name"])
+        return bundle
 
     def dehydrate_assays_configured(self, bundle):
         return bundle.obj.enabled_forms.count() > 0
@@ -467,23 +479,7 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                                                                  'api_name': settings.WEBSERVICES_NAME})}},
                 },
                 
-                # {
-                #      'key': 'creator_uri',
-                #  'htmlClass': 'col-md-6 col-xs-6',
-                #     'placeholder': 'Select users to search',
-                #     'feedback': False,
 
-
-                # },
-                # {
-                #     'key': 'project__project_key__in',
-                #     'placeholder': 'Select projects to search',
-                #      'htmlClass': 'col-md-6 col-xs-6',
-                #     'feedback': False,
-                #     'description': 'Search for projects in order to limit the choice of fields on show. Select a single project if you want to edit data.',
-                #     'disableSuccessState': True,
-                #     'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
-                # },
                 {
                     'key': 'multiple_batch_id',
                     'htmlClass': 'col-md-6 col-xs-6',
@@ -544,19 +540,7 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                                  {'value': 'flexmatch',
                                   'name': 'Exact Match'}],
                 },
-                # {
-                #     'htmlClass': 'col-md-6 col-xs-6',
-                #     'key': 'search_custom_fields__kv_any',
-                #     'disableSuccessState': True,
-                #     'help': 'Searching using this filter will bring back results that match an OR pattern within the same data category, with AND across data categories, i.e. results which contain this item within category a OR that item within category a AND that item within category b.',
-                #     'feedback': False,
-                #     'options': {'refreshDelay': 0,
-                #                 'async': {'url': reverse('api_get_list_elasticsearch',
-                #                                          kwargs={'resource_name': 'cbh_compound_batches',
-                #                                                  'api_name': settings.WEBSERVICES_NAME})},
-                                
-                #                 },
-                # },
+
                 {
                     'key': 'archived',
                     'style': {'selected': 'btn-success',
@@ -581,31 +565,11 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                     
                 },
 
-                # 'creator_uri': {
-                #     'type': 'array',
-                #     'format': 'uiselect',
-                #        'title': 'Compound batch created by',
-                #         'type': 'array',
-                #         'format': 'uiselect',
-                #         'htmlClass': 'col-md-6 col-xs-6',
-                #         'placeholder': 'Search user who created the batch',
-                #         'options': {'searchDescriptions': False},
-                #         'items':  sorted([
-                #             {'label': user.first_name + " " + user.last_name , "value" : uri + '/' + str(user.id) } if user.first_name  else {'label': user.username , "value" : uri + '/' + str(user.id) }
-                #             for user in User.objects.exclude(pk=-1)
-                #         ], key=lambda k: k['label'].lower())
-                # },
+          
                 
                 'multiple_batch_id': {'title': 'Upload ID',
                                       'type': 'string'},
-                # 'project__project_key__in': {
-                #     'title': 'Project',
-                #     'type': 'array',
-                #     'format': 'uiselect',
-                #     'items': [{'label': p.obj.name,
-                #                'value': p.obj.project_key} for p in
-                #               bundle['objects']],
-                # },
+
                 'functional_group': {
                     'title': 'Functional Group',
                     'type': 'string',
@@ -920,6 +884,9 @@ class ChemregProjectResource(UserHydrate, ModelResource):
         return bundle
 
    
+
+
+
     def create_response(
         self,
         request,
