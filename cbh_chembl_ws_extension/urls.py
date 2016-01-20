@@ -37,7 +37,7 @@ api.register(ChemregProjectResource())
 api.register(SkinningResource())
 api.register(CBHPluginResource())
 api.register(InvitationResource())
-api.register(PermissionService())
+api.register(ProjectPermissionResource())
 
 admin.autodiscover()
 
