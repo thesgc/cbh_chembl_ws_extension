@@ -24,7 +24,7 @@ def get_main_index_name():
 
 def delete_index(index_name):
     es = elasticsearch.Elasticsearch()
-    return es.indices.delete(index_name)
+    return es.indices.delete(index_name,  ignore=[400, 404])
 
 
 def get_action_totals(index_name,  bundledata):
