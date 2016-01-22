@@ -4,6 +4,7 @@ from tastypie.resources import ModelResource, ALL_WITH_RELATIONS, ALL
 from django.conf import settings
 from django.conf.urls import url
 from django.http import HttpResponse
+from tastypie.http import  HttpConflict
 from tastypie import fields
 from cbh_core_model.models import Project, PinnedCustomField, CustomFieldConfig
 from cbh_core_ws.serializers import CustomFieldXLSSerializer
@@ -12,6 +13,7 @@ from tastypie.authorization  import Authorization
 from cbh_core_ws.authorization import ProjectListAuthorization
 from tastypie.authentication import SessionAuthentication
 from tastypie.paginator import Paginator
+from tastypie.exceptions import ImmediateHttpResponse
 import json
 import copy
 import time
@@ -348,6 +350,7 @@ class ChemregProjectResource(UserHydrate, ModelResource):
         default_format = 'application/json'
         serializer = CustomFieldsSerializer()
         filtering = {'project_key': ALL_WITH_RELATIONS}
+        always_return_data=True
 
 
     def hydrate_project_key(self, bundle):
@@ -357,6 +360,27 @@ class ChemregProjectResource(UserHydrate, ModelResource):
 
     def dehydrate_assays_configured(self, bundle):
         return bundle.obj.enabled_forms.count() > 0
+
+    def save_related(self, bundle):
+        from django.db import IntegrityError
+        try:
+            return super(ChemregProjectResource, self).save_related(bundle)
+        except IntegrityError, e:
+            raise ImmediateHttpResponse(HttpConflict("Project with that name already exists"))
+
+
+
+
+    def post_list(self, request, **kwargs):
+        from django.db import IntegrityError
+        try:
+            return super(ChemregProjectResource, self).post_list(request, **kwargs)
+        except IntegrityError, e:
+            raise ImmediateHttpResponse(HttpConflict("Project with that name already exists"))
+
+
+
+
 
     def get_object_list(self, request):
         return super(ChemregProjectResource,
