@@ -23,7 +23,6 @@ from django.db.models import Prefetch
 from cbh_core_ws.resources import ProjectTypeResource, \
     CustomFieldConfigResource, UserHydrate
 from django.contrib.auth.models import User
-from django.template.defaultfilters import slugify 
 import six
 
 def build_content_type(format, encoding='utf-8'):
@@ -353,10 +352,7 @@ class ChemregProjectResource(UserHydrate, ModelResource):
         always_return_data=True
 
 
-    def hydrate_project_key(self, bundle):
-        if not bundle.obj.id:
-            bundle.obj.project_key = slugify(bundle.data["name"])
-        return bundle
+
 
     def dehydrate_assays_configured(self, bundle):
         return bundle.obj.enabled_forms.count() > 0
@@ -375,6 +371,23 @@ class ChemregProjectResource(UserHydrate, ModelResource):
         from django.db import IntegrityError
         try:
             return super(ChemregProjectResource, self).post_list(request, **kwargs)
+        except IntegrityError, e:
+            raise ImmediateHttpResponse(HttpConflict("Project with that name already exists"))
+
+
+    def patch_detail(self, request, **kwargs):
+        from django.db import IntegrityError
+        try:
+            return super(ChemregProjectResource, self).patch_detail(request, **kwargs)
+        except IntegrityError, e:
+            raise ImmediateHttpResponse(HttpConflict("Project with that name already exists"))
+
+
+
+    def patch_list(self, request, **kwargs):
+        from django.db import IntegrityError
+        try:
+            return super(ChemregProjectResource, self).patch_list(request, **kwargs)
         except IntegrityError, e:
             raise ImmediateHttpResponse(HttpConflict("Project with that name already exists"))
 
