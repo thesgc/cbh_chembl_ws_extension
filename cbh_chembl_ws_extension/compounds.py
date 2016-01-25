@@ -1221,6 +1221,9 @@ class CBHCompoundBatchResource(ModelResource):
                                 if(matched_item.get("format", "") == "date"):
                                     operations.append(
                                         {"op": "convertdate", "path": "/custom_fields/" + matched_item["key"]})
+                            #set the max score so less well matched content than this is ignored
+                            max_score = score
+
                 bundle.data["headers"].append({
                     "name": header,
                     "automapped": automapped,
