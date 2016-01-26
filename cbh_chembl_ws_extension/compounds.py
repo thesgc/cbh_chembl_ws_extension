@@ -1277,7 +1277,6 @@ class CBHCompoundBatchResource(ModelResource):
                     new_data['ctab'] = olddata['ctab']
                 # dummy
                 # not every row has a value for every custom field
-
                 if permanent_data:
                     for item in deduplicated_cfs:
                         cf_value = olddata["custom_fields"].get(item["name"], "")
