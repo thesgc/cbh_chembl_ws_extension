@@ -1221,6 +1221,9 @@ class CBHCompoundBatchResource(ModelResource):
                                 if(matched_item.get("format", "") == "date"):
                                     operations.append(
                                         {"op": "convertdate", "path": "/custom_fields/" + matched_item["key"]})
+                            #set the max score so less well matched content than this is ignored
+                            max_score = score
+
                 bundle.data["headers"].append({
                     "name": header,
                     "automapped": automapped,
@@ -1274,7 +1277,6 @@ class CBHCompoundBatchResource(ModelResource):
                     new_data['ctab'] = olddata['ctab']
                 # dummy
                 # not every row has a value for every custom field
-
                 if permanent_data:
                     for item in deduplicated_cfs:
                         cf_value = olddata["custom_fields"].get(item["name"], "")

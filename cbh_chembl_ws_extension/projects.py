@@ -4,6 +4,7 @@ from tastypie.resources import ModelResource, ALL_WITH_RELATIONS, ALL
 from django.conf import settings
 from django.conf.urls import url
 from django.http import HttpResponse
+from tastypie.http import  HttpConflict
 from tastypie import fields
 from cbh_core_model.models import Project, PinnedCustomField, CustomFieldConfig
 from cbh_core_ws.serializers import CustomFieldXLSSerializer
@@ -12,6 +13,7 @@ from tastypie.authorization  import Authorization
 from cbh_core_ws.authorization import ProjectListAuthorization
 from tastypie.authentication import SessionAuthentication
 from tastypie.paginator import Paginator
+from tastypie.exceptions import ImmediateHttpResponse
 import json
 import copy
 import time
@@ -21,7 +23,6 @@ from django.db.models import Prefetch
 from cbh_core_ws.resources import ProjectTypeResource, \
     CustomFieldConfigResource, UserHydrate
 from django.contrib.auth.models import User
-from django.template.defaultfilters import slugify 
 import six
 
 def build_content_type(format, encoding='utf-8'):
@@ -348,15 +349,51 @@ class ChemregProjectResource(UserHydrate, ModelResource):
         default_format = 'application/json'
         serializer = CustomFieldsSerializer()
         filtering = {'project_key': ALL_WITH_RELATIONS}
+        always_return_data=True
 
 
-    def hydrate_project_key(self, bundle):
-        if not bundle.obj.id:
-            bundle.obj.project_key = slugify(bundle.data["name"])
-        return bundle
+
 
     def dehydrate_assays_configured(self, bundle):
         return bundle.obj.enabled_forms.count() > 0
+
+    def save_related(self, bundle):
+        from django.db import IntegrityError
+        try:
+            return super(ChemregProjectResource, self).save_related(bundle)
+        except IntegrityError, e:
+            raise ImmediateHttpResponse(HttpConflict("Project with that name already exists"))
+
+
+
+
+    def post_list(self, request, **kwargs):
+        from django.db import IntegrityError
+        try:
+            return super(ChemregProjectResource, self).post_list(request, **kwargs)
+        except IntegrityError, e:
+            raise ImmediateHttpResponse(HttpConflict("Project with that name already exists"))
+
+
+    def patch_detail(self, request, **kwargs):
+        from django.db import IntegrityError
+        try:
+            return super(ChemregProjectResource, self).patch_detail(request, **kwargs)
+        except IntegrityError, e:
+            raise ImmediateHttpResponse(HttpConflict("Project with that name already exists"))
+
+
+
+    def patch_list(self, request, **kwargs):
+        from django.db import IntegrityError
+        try:
+            return super(ChemregProjectResource, self).patch_list(request, **kwargs)
+        except IntegrityError, e:
+            raise ImmediateHttpResponse(HttpConflict("Project with that name already exists"))
+
+
+
+
 
     def get_object_list(self, request):
         return super(ChemregProjectResource,

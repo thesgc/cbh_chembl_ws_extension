@@ -18,6 +18,7 @@ DEFAULT_API_NAME = 'chemblws'
 
 try:
     api_name = settings.WEBSERVICES_NAME
+    print api_name
 except AttributeError:
     api_name = DEFAULT_API_NAME
 
