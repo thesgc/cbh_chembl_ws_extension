@@ -95,7 +95,10 @@
   
   <div class="row">
 
-    <div class="col-xs-12">
+
+
+
+
       
         <div class="row mt">
           <h2 class="blue centered">Welcome to ChemBio Hub Platform<br>
@@ -104,19 +107,12 @@
            
 
         </div>
-        {% if webauth_login %}
-<p>If you have University of Oxford single sign-on access <a role="button" href="webauth" value="Sign in with webauth" class="btn btn-primary" > Sign in with Webauth</a></p>
-{% endif %}
-    </div>
 
-    <div class="col-xs-12">
-      {% block content %}
+{% block content %}
       {{ content }}
       {% endblock %}
+        
 
-
-  </div>
-</div>
   <div class="row">
     <div class="row centered">
         <div class="col-xs-12">
@@ -137,6 +133,7 @@
       </div>
   </div>
 </div>
+</div>
 
 
     <!-- Google Analytics: change UA-XXXXX-X to be your site's ID -->
@@ -153,8 +150,8 @@
    
 
     <!-- build:js(.) scripts/vendor.js -->
-   
-    <!--<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>-->
+    <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
   
 
     <!-- endbower -->
