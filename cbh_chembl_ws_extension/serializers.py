@@ -176,18 +176,24 @@ class SDFSerializer(Serializer):
         mols = []
         index = 0
         options = options or {}
-        exp_json = json.loads(data.get('export', []))
-        
+        try:
+            exp_json = json.loads(data.get('export', []))
+        except:
+            raise ImmediateHttpResponse(BadRequest(data))
+
         df = pd.DataFrame(exp_json)
         df.fillna('', inplace=True)
         cols = df.columns.tolist()
         # now for the list we have in the order we have it, move the columns by name
         # this way you end up with your core fields at the start and custom
         # fields at the end.
-        ordered_fields = ['UOx ID', 'SMILES', 'Known Drug', 'Added By',
-                          'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp']
+        ordered_fields = ['UOx ID', 'Project']
+        headers = data.get('headers', {})
+        ordered_fields += headers["custom_fields"]
+        ordered_fields += headers["uncurated_fields"]
         for idx, item in enumerate(ordered_fields):
             cols.insert(idx, cols.pop(cols.index(item)))
+
         # reindex the dataframe
         df = df.ix[:, cols]
         # pull data back out of dataframe to put into rdkit tools

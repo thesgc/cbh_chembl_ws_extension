@@ -1269,7 +1269,11 @@ class CBHCompoundBatchResource(ModelResource):
                     olddata = b.data
                 except AttributeError:
                     olddata = b
-                new_data = {"Structure Image": b.obj.image}
+                if self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or request.GET.get("format") == "xlsx":
+                    #Add the byte encoded image but only if this is an excel export
+                    new_data = {"Structure Image": b.obj.image}
+                else:
+                    new_data = {}
                 # projects.add(b.obj.project_id)
                 for k, v in olddata.iteritems():
                     for name, display_name in self.Meta.fields_to_keep.iteritems():
