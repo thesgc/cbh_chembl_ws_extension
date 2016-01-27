@@ -66,6 +66,8 @@ def build_content_type(format, encoding='utf-8'):
     return "%s; charset=%s" % (format, encoding)
 
 
+
+
 class CBHCompoundBatchResource(ModelResource):
     project = fields.ForeignKey(
         ChemregProjectResource, 'project', blank=False, null=False)
@@ -507,7 +509,18 @@ class CBHCompoundBatchResource(ModelResource):
             url(r"^(?P<resource_name>%s)/validate_files/$" % self._meta.resource_name,
                 self.wrap_view('post_validate_files'), name="api_compound_validate_files"),
             url(r"^(?P<resource_name>%s)/export_file/$" % self._meta.resource_name,
-                self.wrap_view('export_file'), name="api_compound_export_file"), ]
+                self.wrap_view('export_file'), name="api_compound_export_file"), 
+            url(r"^(?P<resource_name>%s)/get_saved_searches/$" % self._meta.resource_name,
+                self.wrap_view('get_saved_search'), name="api_compound_get_saved_searches"), 
+            url(r"^(?P<resource_name>%s)/post_saved_searches/$" % self._meta.resource_name,
+                self.wrap_view('post_saved_search'), name="api_compound_post_saved_searches"), ]
+
+
+    def get_saved_searches(self, request, **kwargs):
+        pass
+
+    def post_saved_searches(self, request, **kwargs):
+        pass
 
     def patch_dict(self, dictdata, headers):
         for header in headers:
@@ -1661,6 +1674,23 @@ def deepgetattr(obj, attr, ex):
         return reduce(getattr, attr.split('.'), obj)
     except:
         return ex
+
+class CBHSavedSearchResource(CBHCompoundBatchResource):
+    project = fields.ForeignKey(
+        ChemregProjectResource, 'project', blank=False, null=False, full=True)
+    class Meta:
+        always_return_data = True
+        queryset = CBHCompoundBatch.objects.all()
+        resource_name = 'cbh_saved_search'
+        authorization = ProjectAuthorization()
+        include_resource_uri = False
+        serializer = CBHCompoundBatchSerializer()
+        allowed_methods = ['get', 'post', 'put', 'patch']
+        default_format = 'application/json'
+        authentication = SessionAuthentication()
+        paginator_class = Paginator
+
+    
 
 
 class CBHCompoundMultipleBatchResource(ModelResource):
