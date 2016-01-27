@@ -51,6 +51,7 @@ def get_action_totals(index_name,  bundledata):
 
 def get(index_name, es_request_body, bundledata):
     es = elasticsearch.Elasticsearch()
+    print es_request_body
     result = es.search(index_name, body=es_request_body)
     data = []
     for hit in result["hits"]["hits"]:

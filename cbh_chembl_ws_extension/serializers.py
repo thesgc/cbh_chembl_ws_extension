@@ -265,6 +265,9 @@ class CamelCaseJSONSerializer(Serializer):
                                         pass
                                 value[k] = v
                         new_dict[new_key] = value
+                    elif new_key in ["projectfull"]:
+                        new_dict[key] = value
+
                     else:
                         new_dict[new_key] = camelize(value)
                 return new_dict

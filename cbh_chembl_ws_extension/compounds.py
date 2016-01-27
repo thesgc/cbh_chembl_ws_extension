@@ -72,8 +72,8 @@ class CBHCompoundBatchResource(ModelResource):
     project = fields.ForeignKey(
         ChemregProjectResource, 'project', blank=False, null=False)
     creator = SimpleResourceURIField(UserResource, 'created_by_id', null=True, readonly=True)
-    project_type = fields.ForeignKey(
-        "cbh_core_ws.resources.ProjectTypeResource", attribute=lambda bundle: bundle.obj.project_type , blank=False, null=False, full=True)
+    projectfull = fields.ForeignKey(
+         ChemregProjectResource, 'project', blank=False, null=False, full=True, readonly=True)
 
     class Meta:
         filtering = {
@@ -158,6 +158,7 @@ class CBHCompoundBatchResource(ModelResource):
         resource_name = 'cbh_compound_batches'
         authorization = ProjectAuthorization()
         include_resource_uri = False
+        always_return_data = True
         serializer = CBHCompoundBatchSerializer()
         allowed_methods = ['get', 'post', 'put', 'patch']
         default_format = 'application/json'
@@ -1382,10 +1383,11 @@ class CBHCompoundBatchResource(ModelResource):
                                             0], last_name=bundle.obj.created_by.split[" "][1])
                 except:
                     user = None
-        mynames = ["editable_by", "uncurated_fields",
+        mynames = [ "uncurated_fields","editable_by",
                    "warnings", "properties", "custom_fields", "errors"]
         for name in mynames:
             bundle.data[name] = json.loads(bundle.data[name])
+            
         #bundle.data["created_by"] = user.__dict__
         if user != None:
             if user.first_name:
@@ -1640,6 +1642,12 @@ class CBHCompoundBatchResource(ModelResource):
         if multiple_batch_id:
             modified_query["bool"]["must"] += [{"term": {"multiple_batch_id" : multiple_batch_id}}]
 
+        #If only saved searches are to be included then filter for them, otherwise filter for all but them. Note that elasticsearch looks for 1 in a boolean data type field
+        if kwargs.get("saved_search_projects_only", False):
+            print ("getting saved search only")
+            modified_query["bool"]["must"] += [{"term": {"projectfull.project_type.saved_search_project_type": "true" }}]
+        else:
+            modified_query["bool"]["must"] += [{"bool": {"must_not" :[{"term": {"projectfull.project_type.saved_search_project_type": "true" }}]}}]
         index = elasticsearch_client.get_main_index_name()
         es_serializer = CBHCompoundBatchElasticSearchSerializer()
         es_serializer.convert_query(es_request)
@@ -1690,10 +1698,17 @@ def deepgetattr(obj, attr, ex):
 
 class CBHSavedSearchResource(CBHCompoundBatchResource):
     project = fields.ForeignKey(
-        ChemregProjectResource, 'project', blank=False, null=False, full=True)
+        ChemregProjectResource, 'project', blank=False, null=False)
+
     class Meta(CBHCompoundBatchResource.Meta):
         resource_name = 'cbh_saved_search'
-      
+        es_index_name = "chemreg_chemical_index"
+
+
+    def get_list_elasticsearch(self, request, **kwargs):
+        return super(CBHSavedSearchResource, self).get_list_elasticsearch(request, saved_search_projects_only=True)
+
+
 
     
 
@@ -1701,9 +1716,6 @@ class CBHSavedSearchResource(CBHCompoundBatchResource):
 class CBHCompoundMultipleBatchResource(ModelResource):
     #comp_batch = fields.ForeignKey(CBHCompoundBatchResource, 'cbh_compound_batches', blank=False, null=False)
     #batches = fields.ToManyField(CBHCompoundBatchResource, 'batches', full=True)
-    project = fields.ForeignKey(
-        ChemregProjectResource, 'project', blank=False, null=False, full=True)
-
     class Meta:
         filtering = {
             "created_by": ALL_WITH_RELATIONS,
