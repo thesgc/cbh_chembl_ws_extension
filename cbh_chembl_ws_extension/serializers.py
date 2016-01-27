@@ -9,9 +9,9 @@ import json
 import pandas as pd
 
 
-
+import base64
 import copy
-
+import os
 
 from cbh_core_ws.resources import get_field_name_from_key
 from cbh_core_ws.resources import get_key_from_field_name
@@ -79,11 +79,15 @@ class XLSXSerializer(Serializer):
                 raise ImmediateHttpResponse(BadRequest(json.dumps(data.data)))
         except AttributeError:
             pass
-        exp_json = json.loads(data.get('export', None))
+        try:
+            exp_json = json.loads(data.get('export', None))
+        except:
+            raise ImmediateHttpResponse(BadRequest(data))
+
         if exp_json is None:
              raise ImmediateHttpResponse(BadRequest("Data not preformatted correctly for the Serializer: %s" % json.dumps(data)))
         ordered_fields = [
-            'UOx ID', 'SMILES', 'Added By',  'Std InChi', 'Mol Weight', 'alogp']
+           'Structure Image', 'UOx ID', 'Project']
         headers = data.get('headers', {})
         ordered_fields += headers["custom_fields"]
         ordered_fields += headers["uncurated_fields"]
@@ -111,6 +115,25 @@ class XLSXSerializer(Serializer):
         format = workbook.add_format()
         worksheet = writer.sheets['Sheet1']
         format.set_text_wrap()
+        format.set_align('vcenter')
+        files = []
+        for index, obj in enumerate(data["objects"]):
+            if len(obj.get("Structure Image", "")) > 10:
+                newindex = index + 2
+                cell_name = "A%d" % newindex
+                filename = '/tmp/' + obj["UOx ID"] +'.png'
+                with open(filename, 'wb') as f:
+                    f.write(base64.b64decode(obj.get("Structure Image")))
+                worksheet.set_row(newindex-1, 104, format)
+                worksheet.write_string(newindex-1, 0, "")
+                worksheet.insert_image(cell_name, filename, {"x_offset": 27, "y_offset": 10, "x_scale": 1.29245283, "y_scale": 1.330188679})
+                files.append(filename)
+            else:
+                worksheet.set_row(newindex-1, None, format)
+                
+
+
+
         # make the UOx ID and SMILES columns bigger
         # BUG - can't set column format until pandas 0.16
         # https://github.com/pydata/pandas/issues/9167
@@ -121,7 +144,8 @@ class XLSXSerializer(Serializer):
                 width = 15
             worksheet.set_column(index, index, width)
         writer.save()
-
+        for fi in files:
+            os.remove(fi)
         return output.getvalue()
 
 
@@ -152,18 +176,24 @@ class SDFSerializer(Serializer):
         mols = []
         index = 0
         options = options or {}
-        exp_json = json.loads(data.get('export', []))
-        
+        try:
+            exp_json = json.loads(data.get('export', []))
+        except:
+            raise ImmediateHttpResponse(BadRequest(data))
+
         df = pd.DataFrame(exp_json)
         df.fillna('', inplace=True)
         cols = df.columns.tolist()
         # now for the list we have in the order we have it, move the columns by name
         # this way you end up with your core fields at the start and custom
         # fields at the end.
-        ordered_fields = ['UOx ID', 'SMILES', 'Known Drug', 'Added By',
-                          'MedChem Friendly', 'Std InChi', 'Mol Weight', 'alogp']
+        ordered_fields = ['UOx ID', 'Project']
+        headers = data.get('headers', {})
+        ordered_fields += headers["custom_fields"]
+        ordered_fields += headers["uncurated_fields"]
         for idx, item in enumerate(ordered_fields):
             cols.insert(idx, cols.pop(cols.index(item)))
+
         # reindex the dataframe
         df = df.ix[:, cols]
         # pull data back out of dataframe to put into rdkit tools

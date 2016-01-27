@@ -1,8 +1,31 @@
 {% extends "cbh_chembl_ws_extension/cbh_template.html" %}
 {% block content %}
+<label>{% if logout %}Logged out, log in again below
+             {% endif %}</label>
+        <!--If the Oxford webauth login is enabled then show tabs - can be used for other logins too-->
+        {% if webauth_login %}
+<ul class="nav nav-tabs ">
+  <li class="active" ><a data-toggle="tab" href="#oxford">Oxford Login</a></li>
+  <li ><a data-toggle="tab"  href="#external">External Collaborator Login</a></li>
+
+</ul>
+           {% endif %}
+
+ <div class="{% if webauth_login %}tab-content{% endif %}">
+          {% if webauth_login %}
+        <div id="oxford" class="mt tab-pane fade in active">
+
+<p>If you have University of Oxford single sign-on access &nbsp;&nbsp;&nbsp;
+<a role="button" href="webauth" value="Sign in with webauth" class="btn btn-primary btn-lg mt" >Click here to sign in with Webauth</a></p>
+
+    </div>
+      {% endif %}
+
+    <div id="external" class="{% if webauth_login %}tab-pane fade{% endif %}">
+      
+
 <form class="form-horizontal mt" method="post">
-            <label>{% if logout %}Logged out, log in again below
-              {% elif webauth_login %}Alternatively, if you are an administrator with a password, login  here {% endif %}</label>
+            
 {% csrf_token %}
           <fieldset><div id="div_id_username" class="form-group"><label for="id_username" class="control-label  requiredField">
                       Username<span class="asteriskField">*</span></label><div class="controls "><input class="textinput textInput form-control" id="id_username" maxlength="254" name="username" type="text"> </div></div>
@@ -28,4 +51,11 @@
     {% endfor %}
 {% endif %}
       </form>
+
+  </div>
+</div>
+
+
+
+
 {% endblock %}

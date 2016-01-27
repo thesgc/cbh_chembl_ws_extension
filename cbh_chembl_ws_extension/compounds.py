@@ -55,7 +55,7 @@ import dateutil.parser
 from cbh_chembl_ws_extension.parser import parse_pandas_record, parse_sdf_record, apply_json_patch, get_uncurated_fields_from_file
 # from tastypie.utils.mime import build_content_type
 from cbh_core_ws.resources import SimpleResourceURIField, UserResource, UserHydrate
-
+import time
 
 def build_content_type(format, encoding='utf-8'):
     """
@@ -109,6 +109,9 @@ class CBHCompoundBatchResource(ModelResource):
                       ('compoundproperties.acd_most_apka', 'acdAcidicPka'),
                       ('compoundproperties.acd_most_bpka', 'acdBasicPka'),
                       ('compoundproperties.full_molformula', 'fullMolformula'),
+                      ('project.name', 'Project'),
+                        ('multiple_batch_id', 'Upload ID')
+
                       ]
 
         csv_fieldnames = [('chembl_id', 'UOX ID'),
@@ -125,18 +128,22 @@ class CBHCompoundBatchResource(ModelResource):
                           ('compoundproperties.num_ro5_violations',
                            'Rule of 5 violations'),
                           ('compoundproperties.rtb', 'Rotatable Bonds'),
-                          ('compoundproperties.mw_freebase', 'Mol Weight')]
-        fields_to_keep = {'chemblId': 'UOx ID',
+                          ('compoundproperties.mw_freebase', 'Mol Weight'),
+                          ('project.name', 'Project'),
+                        ('multiple_batch_id', 'Upload ID')
+
+                          ]
+        fields_to_keep = {
+                            'Project': 'Project',
+                            'chemblId': 'UOx ID',
                           'id': 'Batch ID',
                           'canonical_smiles': 'SMILES',
                           'created_by': 'Added By',
-                          'knownDrug': 'Known Drug',
-                          'medChemFriendly': 'MedChem Friendly',
                           'standard_inchi': 'Std InChi',
                           'molecularWeight': 'Mol Weight',
                           'molecularFormula': 'Mol Formula',
-                          'acdLogp': 'alogp',
-                          'custom_fields': 'custom_fields', }
+                          'custom_fields': 'custom_fields',
+                          'multiple_batch_id' : 'Upload ID' }
         ordrered_ftk = OrderedDict([('chemblId', 'UOx ID'),
                                     ('canonical_smiles', 'SMILES'),
                                     ('knownDrug', 'Known Drug'),
@@ -1275,12 +1282,17 @@ class CBHCompoundBatchResource(ModelResource):
                     olddata = b.data
                 except AttributeError:
                     olddata = b
-                new_data = {}
+                if self.determine_format(request) == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or request.GET.get("format") == "xlsx":
+                    #Add the byte encoded image but only if this is an excel export
+                    new_data = {"Structure Image": b.obj.image}
+                else:
+                    new_data = {}
                 # projects.add(b.obj.project_id)
                 for k, v in olddata.iteritems():
                     for name, display_name in self.Meta.fields_to_keep.iteritems():
                         if k == name:
                             new_data[display_name] = v
+
                 # we need sd format exported results to retain stereochemistry
                 # - use mol instaed of smiles
                 print "processing"
@@ -1337,9 +1349,9 @@ class CBHCompoundBatchResource(ModelResource):
         rc = response_class(content=serialized, content_type=build_content_type(
             desired_format), **response_kwargs)
         if(desired_format == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
-            rc['Content-Disposition'] = 'attachment; filename=export.xlsx'
+            rc['Content-Disposition'] = 'attachment; filename=export_from_chembiohub_chemreg%d.xlsx' % int(time.time())
         elif(desired_format == 'chemical/x-mdl-sdfile'):
-            rc['Content-Disposition'] = 'attachment; filename=export.sdf'
+            rc['Content-Disposition'] = 'attachment; filename=export_from_chembiohub_chemreg%d.sdf' % int(time.time())
         return rc
 
     def dehydrate(self, bundle):
@@ -1595,7 +1607,7 @@ class CBHCompoundBatchResource(ModelResource):
                 },
             "sort": json.loads(get_data.get("sorts", '[{"id": {"order": "desc", "unmapped_type" : "long"}}]'))
         }
-        print es_request
+
         prefix = request.GET.get("custom__field__startswith", -1)
         if prefix != -1:
             #Here the request is being used to get the custom field values

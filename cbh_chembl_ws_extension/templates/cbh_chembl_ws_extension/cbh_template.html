@@ -63,15 +63,7 @@
         <h2 class="text-center" style="padding-top:5px;"><a href="https://chembiohub.ox.ac.uk" target="_blank"><img src="https://chembiohub.ox.ac.uk/chembiohub-theme/img/CBH_2_2_LowRes.png" style="height:45px"></a>  Platform <small><sup>beta</sup></small></h2>
       </div>
       <div class="col-xs-3">
-        <!-- Login and top level nav -->
-          <!-- <div class="row pull-right">
-            <div style="padding-top:5px;">
-              <small>
-                <a href="/projects" style="color:white;vertical-align: text-top;">Projects</a> | <a href="#" style="color:white;vertical-align: text-top;">Search</a> | <a href="/#" style="color:white;vertical-align: text-top;">Help</a>&nbsp;
-              </small>
-            </div>
-          </div> -->
-        
+
       </div>
 
 
@@ -81,21 +73,16 @@
 </nav>
 
 
-    <!--[if lt IE 7]>
-      <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
-    <![endif]-->
-    <!-- Add your site or application content here -->
-    
-
-
-
 
 <div class="container-fluid">
       
   
   <div class="row">
 
-    <div class="col-xs-12">
+
+
+
+
       
         <div class="row mt">
           <h2 class="blue centered">Welcome to ChemBio Hub Platform<br>
@@ -104,19 +91,12 @@
            
 
         </div>
-        {% if webauth_login %}
-<p>If you have University of Oxford single sign-on access <a role="button" href="webauth" value="Sign in with webauth" class="btn btn-primary" > Sign in with Webauth</a></p>
-{% endif %}
-    </div>
 
-    <div class="col-xs-12">
-      {% block content %}
+{% block content %}
       {{ content }}
       {% endblock %}
+        
 
-
-  </div>
-</div>
   <div class="row">
     <div class="row centered">
         <div class="col-xs-12">
@@ -137,6 +117,7 @@
       </div>
   </div>
 </div>
+</div>
 
 
     <!-- Google Analytics: change UA-XXXXX-X to be your site's ID -->
@@ -153,8 +134,8 @@
    
 
     <!-- build:js(.) scripts/vendor.js -->
-   
-    <!--<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>-->
+    <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
   
 
     <!-- endbower -->
