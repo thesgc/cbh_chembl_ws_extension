@@ -72,6 +72,8 @@ class CBHCompoundBatchResource(ModelResource):
     project = fields.ForeignKey(
         ChemregProjectResource, 'project', blank=False, null=False)
     creator = SimpleResourceURIField(UserResource, 'created_by_id', null=True, readonly=True)
+    project_type = fields.ForeignKey(
+        "cbh_core_ws.resources.ProjectTypeResource", attribute=lambda bundle: bundle.obj.project_type , blank=False, null=False, full=True)
 
     class Meta:
         filtering = {
@@ -1027,7 +1029,6 @@ class CBHCompoundBatchResource(ModelResource):
         fielderrors["number"] = set([])
         fielderrors["integer"] = set([])
         structure_col = bundle.data.get("struccol", "")
-
         if (".cdx" in correct_file.extension):
             mols = [mol for mol in readfile(
                 str(correct_file.extension[1:]), str(correct_file.file.name), )]
@@ -1690,17 +1691,9 @@ def deepgetattr(obj, attr, ex):
 class CBHSavedSearchResource(CBHCompoundBatchResource):
     project = fields.ForeignKey(
         ChemregProjectResource, 'project', blank=False, null=False, full=True)
-    class Meta:
-        always_return_data = True
-        queryset = CBHCompoundBatch.objects.all()
+    class Meta(CBHCompoundBatchResource.Meta):
         resource_name = 'cbh_saved_search'
-        authorization = ProjectAuthorization()
-        include_resource_uri = False
-        serializer = CBHCompoundBatchSerializer()
-        allowed_methods = ['get', 'post', 'put', 'patch']
-        default_format = 'application/json'
-        authentication = SessionAuthentication()
-        paginator_class = Paginator
+      
 
     
 
