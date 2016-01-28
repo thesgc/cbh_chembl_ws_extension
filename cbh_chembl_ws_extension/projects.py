@@ -440,15 +440,15 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                           }}},
             #add a simple form for the save search interface to allow uiselect of projects and groups
             'savesearch_form': [
-                {
-                    'key': 'project__project_key__in',
-                    'placeholder': 'Select project',
-                    'htmlClass': 'col-xs-12',
-                    'feedback': False,
-                    #'description': 'Search for projects in order to limit the choice of fields on show. Select a single project if you want to edit data.',
-                    'disableSuccessState': True,
-                    #'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
-                },
+                # {
+                #     'key': 'project__project_key__in',
+                #     'placeholder': 'Select project',
+                #     'htmlClass': 'col-xs-12',
+                #     'feedback': False,
+                #     #'description': 'Search for projects in order to limit the choice of fields on show. Select a single project if you want to edit data.',
+                #     'disableSuccessState': True,
+                #     #'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
+                # },
                 {
                     'key': 'alias',
                     'placeholder': 'e.g. My Saved Search',
@@ -460,20 +460,21 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                 },
             ],
             'savesearch_schema': {'required': [], 'type': 'object',
-                          'properties': {'project__project_key__in': {
-                                    'title': 'Project',
-                                    'type': 'array',
-                                    'format': 'uiselect',
-                                    'items': [{'label': p.obj.name,
-                                               'value': p.obj.project_key} for p in
-                                              bundle['objects']],
-                                },
+                          'properties': {
+                              # 'project__project_key__in': {
+                              #           'title': 'Project',
+                              #           'type': 'array',
+                              #           'format': 'uiselect',
+                              #           'items': [{'label': p.obj.name,
+                              #                      'value': p.obj.project_key} for p in
+                              #                     bundle['objects']],
+                              #       },
                                 'alias': {
                                     'title': 'Save search as',
                                     'type': 'string',
                                     'default': '',
                                 },
-                            }},
+                        }},
             'simple_form': [
 
                 {
