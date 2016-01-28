@@ -453,28 +453,20 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                     'key': 'alias',
                     'placeholder': 'e.g. My Saved Search',
                     'htmlClass': 'col-xs-12',
-                    'feedback': False,
-                    #'description': 'Search for projects in order to limit the choice of fields on show. Select a single project if you want to edit data.',
-                    'disableSuccessState': True,
-                    #'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
+                    'validationMessage': 'Please add an alias for this search',
                 },
             ],
-            'savesearch_schema': {'required': [], 'type': 'object',
+            'savesearch_schema': {
+                          
+                          'type': 'object',
                           'properties': {
-                              # 'project__project_key__in': {
-                              #           'title': 'Project',
-                              #           'type': 'array',
-                              #           'format': 'uiselect',
-                              #           'items': [{'label': p.obj.name,
-                              #                      'value': p.obj.project_key} for p in
-                              #                     bundle['objects']],
-                              #       },
                                 'alias': {
-                                    'title': 'Save search as',
+                                    'title': 'Save search as...',
                                     'type': 'string',
-                                    'default': '',
                                 },
-                        }},
+                            },
+                            'required': ['alias'], 
+                        },
             'simple_form': [
 
                 {
