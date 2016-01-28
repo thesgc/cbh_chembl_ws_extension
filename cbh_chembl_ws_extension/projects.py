@@ -348,7 +348,10 @@ class ChemregProjectResource(UserHydrate, ModelResource):
         include_resource_uri = True
         default_format = 'application/json'
         serializer = CustomFieldsSerializer()
-        filtering = {'project_key': ALL_WITH_RELATIONS}
+        filtering = {
+            'project_key': ALL_WITH_RELATIONS,
+            'project_type': ALL_WITH_RELATIONS,
+        }
         always_return_data=True
 
 
