@@ -1288,7 +1288,7 @@ class CBHCompoundBatchResource(ModelResource):
                     #Add the byte encoded image but only if this is an excel export
                     new_data = {"Structure Image": b.obj.image}
                     except AttributeError:
-                        new_data = {"Structure Image": b.get("Structure Image")}
+                        new_data = {"Structure Image": b.get("Structure Image", "")}
                 else:
                     new_data = {}
                 # projects.add(b.obj.project_id)
