@@ -118,12 +118,22 @@ class XLSXSerializer(Serializer):
         format.set_align('vcenter')
         files = []
         for index, obj in enumerate(data["objects"]):
-            if len(obj.get("Structure Image", "")) > 10:
+            if len(obj.get(u"Structure Image", "")) > 10:
                 newindex = index + 2
                 cell_name = "A%d" % newindex
                 filename = '/tmp/' + obj["UOx ID"] +'.png'
                 with open(filename, 'wb') as f:
                     f.write(base64.b64decode(obj.get("Structure Image")))
+                worksheet.set_row(newindex-1, 104, format)
+                worksheet.write_string(newindex-1, 0, "")
+                worksheet.insert_image(cell_name, filename, {"x_offset": 27, "y_offset": 10, "x_scale": 1.29245283, "y_scale": 1.330188679})
+                files.append(filename)
+            elif len(obj.get(u"image", "")) > 10:
+                newindex = index + 2
+                cell_name = "A%d" % newindex
+                filename = '/tmp/' + obj["chemblId"] +'.png'
+                with open(filename, 'wb') as f:
+                    f.write(base64.b64decode(obj.get("image")))
                 worksheet.set_row(newindex-1, 104, format)
                 worksheet.write_string(newindex-1, 0, "")
                 worksheet.insert_image(cell_name, filename, {"x_offset": 27, "y_offset": 10, "x_scale": 1.29245283, "y_scale": 1.330188679})

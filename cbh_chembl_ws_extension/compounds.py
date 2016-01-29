@@ -592,10 +592,11 @@ class CBHCompoundBatchResource(ModelResource):
                 to_be_saved.append(batch.obj)
         if(mb.uploaded_file):
             if(mb.uploaded_file.extension == ".sdf"):
+                newreq = copy.copy(request)
                 self.alter_batch_data_after_save(
                     to_be_saved, 
                     mb.uploaded_file.file,
-                    request,
+                    newreq,
                     mb
                 )
         elasticsearch_client.delete_index(
@@ -1289,7 +1290,7 @@ class CBHCompoundBatchResource(ModelResource):
                     try:
                         new_data = {"Structure Image": b.obj.image}
                     except AttributeError:
-                        new_data = {"Structure Image": b.get("Structure Image", "")}
+                        new_data = {"Structure Image": b.get("image", "")}
                 else:
                     new_data = {}
                 # projects.add(b.obj.project_id)
@@ -1647,7 +1648,6 @@ class CBHCompoundBatchResource(ModelResource):
 
         #If only saved searches are to be included then filter for them, otherwise filter for all but them. Note that elasticsearch looks for 1 in a boolean data type field
         if kwargs.get("saved_search_projects_only", False):
-            print ("getting saved search only")
             modified_query["bool"]["must"] += [{"term": {"projectfull.project_type.saved_search_project_type": "true" }}]
         else:
             modified_query["bool"]["must"] += [{"bool": {"must_not" :[{"term": {"projectfull.project_type.saved_search_project_type": "true" }}]}}]
