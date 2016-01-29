@@ -404,7 +404,7 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                                                                               )).order_by('-modified')
 
     def prepend_urls(self):
-        return [url(r"^(?P<resource_name>%s)/custom_fields/$"
+        return [url(r"^(?P<resource_name>%s)/custom_fields/?$"
                     % self._meta.resource_name,
                     self.wrap_view('get_custom_fields'),
                     name='get_custom_fields')]

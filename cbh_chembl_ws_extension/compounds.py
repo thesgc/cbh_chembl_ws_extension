@@ -199,9 +199,6 @@ class CBHCompoundBatchResource(ModelResource):
         elif fm:
             smiles = self.convert_mol_string(fm)
             cms = CompoundMols.objects.flexmatch(smiles)
-        eb = request.GET.get("excludeBlanks")
-        if eb:
-            print("exclude blanks")
         request.GET["substructure_smarts"] = smiles
         # else:
         #    cms = CompoundMols.objects.all()
@@ -488,41 +485,41 @@ class CBHCompoundBatchResource(ModelResource):
 
     def prepend_urls(self):
         return [
-            url(r"^(?P<resource_name>%s)/delete_index/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/delete_index/?$" % self._meta.resource_name,
                 self.wrap_view('delete_index'), name="delete_index"),
-            url(r"^(?P<resource_name>%s)/update_temp_batches/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/update_temp_batches/?$" % self._meta.resource_name,
                 self.wrap_view('update_temp_batches'), name="update_temp_batches"),
-            url(r"^(?P<resource_name>%s)/get_part_processed_multiple_batch/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/get_part_processed_multiple_batch/?$" % self._meta.resource_name,
                 self.wrap_view('get_part_processed_multiple_batch'), name="api_get_part_processed_multiple_batch"),
-            url(r"^(?P<resource_name>%s)/get_list_elasticsearch/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/get_list_elasticsearch/?$" % self._meta.resource_name,
                 self.wrap_view('get_list_elasticsearch'), name="api_get_list_elasticsearch"),
-            url(r"^(?P<resource_name>%s)/get_chembl_ids/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/get_chembl_ids/?$" % self._meta.resource_name,
                 self.wrap_view('get_chembl_ids'), name="api_get_chembl_ids"),
-            url(r"^(?P<resource_name>%s)/get_elasticsearch_ids/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/get_elasticsearch_ids/?$" % self._meta.resource_name,
                 self.wrap_view('get_elasticsearch_ids'), name="api_get_elasticsearch_ids"),
-            url(r"^(?P<resource_name>%s)/reindex_elasticsearch/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/reindex_elasticsearch/?$" % self._meta.resource_name,
                 self.wrap_view('reindex_elasticsearch'), name="api_compounds_reindex_elasticsearch"),
-            url(r"^(?P<resource_name>%s)/reindex_compound/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/reindex_compound/?$" % self._meta.resource_name,
                 self.wrap_view('reindex_compound'), name="api_reindex_compound"),
-            url(r"^(?P<resource_name>%s)/get_elasticsearch_autocomplete/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/get_elasticsearch_autocomplete/?$" % self._meta.resource_name,
                 self.wrap_view('get_elasticsearch_autocomplete'), name="api_get_elasticsearch_autocomplete"),
-            url(r"^(?P<resource_name>%s)/validate/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/validate/?$" % self._meta.resource_name,
                 self.wrap_view('post_validate'), name="api_validate_compound_batch"),
-            url(r"^(?P<resource_name>%s)/validate_list/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/validate_list/?$" % self._meta.resource_name,
                 self.wrap_view('post_validate_list'), name="api_validate_compound_list"),
-            url(r"^(?P<resource_name>%s)/validate_drawn/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/validate_drawn/?$" % self._meta.resource_name,
                 self.wrap_view('post_validate_drawn'), name="api_validate_compound_drawn"),
-            url(r"^(?P<resource_name>%s)/multi_batch_save/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/multi_batch_save/?$" % self._meta.resource_name,
                 self.wrap_view('multi_batch_save'), name="multi_batch_save"),
-            url(r"^(?P<resource_name>%s)/multi_batch_custom_fields/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/multi_batch_custom_fields/?$" % self._meta.resource_name,
                 self.wrap_view('multi_batch_custom_fields'), name="multi_batch_custom_fields"),
-            url(r"^(?P<resource_name>%s)/validate_files/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/validate_files/?$" % self._meta.resource_name,
                 self.wrap_view('post_validate_files'), name="api_compound_validate_files"),
-            url(r"^(?P<resource_name>%s)/export_file/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/export_file/?$" % self._meta.resource_name,
                 self.wrap_view('export_file'), name="api_compound_export_file"), 
-            url(r"^(?P<resource_name>%s)/get_saved_searches/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/get_saved_searches/?$" % self._meta.resource_name,
                 self.wrap_view('get_saved_search'), name="api_compound_get_saved_searches"), 
-            url(r"^(?P<resource_name>%s)/post_saved_searches/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/post_saved_searches/?$" % self._meta.resource_name,
                 self.wrap_view('post_saved_search'), name="api_compound_post_saved_searches"), ]
 
 
@@ -603,7 +600,7 @@ class CBHCompoundBatchResource(ModelResource):
             elasticsearch_client.get_temp_index_name(request, mb.id))
         batch_dicts = self.batches_to_es_ready(to_be_saved, request)
         index_name = elasticsearch_client.get_main_index_name()
-        elasticsearch_client.create_temporary_index(
+        print elasticsearch_client.create_temporary_index(
             batch_dicts, request, index_name)
         self.after_save_and_index_hook(request, id)
         # this needs to be the main elasticsearch compound index
@@ -1759,7 +1756,7 @@ class CBHCompoundBatchUpload(ModelResource):
 
     def prepend_urls(self):
         return [
-            url(r"^(?P<resource_name>%s)/headers/$" % self._meta.resource_name,
+            url(r"^(?P<resource_name>%s)/headers/?$" % self._meta.resource_name,
                 self.wrap_view('return_headers'), name="api_compound_batch_headers"),
         ]
 
