@@ -348,7 +348,10 @@ class ChemregProjectResource(UserHydrate, ModelResource):
         include_resource_uri = True
         default_format = 'application/json'
         serializer = CustomFieldsSerializer()
-        filtering = {'project_key': ALL_WITH_RELATIONS}
+        filtering = {
+            'project_key': ALL_WITH_RELATIONS,
+            'project_type': ALL_WITH_RELATIONS,
+        }
         always_return_data=True
 
 
@@ -437,40 +440,33 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                           }}},
             #add a simple form for the save search interface to allow uiselect of projects and groups
             'savesearch_form': [
-                {
-                    'key': 'project__project_key__in',
-                    'placeholder': 'Select project',
-                    'htmlClass': 'col-xs-12',
-                    'feedback': False,
-                    #'description': 'Search for projects in order to limit the choice of fields on show. Select a single project if you want to edit data.',
-                    'disableSuccessState': True,
-                    #'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
-                },
+                # {
+                #     'key': 'project__project_key__in',
+                #     'placeholder': 'Select project',
+                #     'htmlClass': 'col-xs-12',
+                #     'feedback': False,
+                #     #'description': 'Search for projects in order to limit the choice of fields on show. Select a single project if you want to edit data.',
+                #     'disableSuccessState': True,
+                #     #'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
+                # },
                 {
                     'key': 'alias',
                     'placeholder': 'e.g. My Saved Search',
                     'htmlClass': 'col-xs-12',
-                    'feedback': False,
-                    #'description': 'Search for projects in order to limit the choice of fields on show. Select a single project if you want to edit data.',
-                    'disableSuccessState': True,
-                    #'validationMessage': {'default': 'Please select a project if you wish to edit data.'}
+                    'validationMessage': 'Please add an alias for this search',
                 },
             ],
-            'savesearch_schema': {'required': [], 'type': 'object',
-                          'properties': {'project__project_key__in': {
-                                    'title': 'Project',
-                                    'type': 'array',
-                                    'format': 'uiselect',
-                                    'items': [{'label': p.obj.name,
-                                               'value': p.obj.project_key} for p in
-                                              bundle['objects']],
-                                },
+            'savesearch_schema': {
+                          
+                          'type': 'object',
+                          'properties': {
                                 'alias': {
-                                    'title': 'Save search as',
+                                    'title': 'Save search as...',
                                     'type': 'string',
-                                    'default': '',
                                 },
-                            }},
+                            },
+                            'required': ['alias'], 
+                        },
             'simple_form': [
 
                 {
