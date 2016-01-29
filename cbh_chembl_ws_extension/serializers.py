@@ -129,7 +129,7 @@ class XLSXSerializer(Serializer):
                 worksheet.insert_image(cell_name, filename, {"x_offset": 27, "y_offset": 10, "x_scale": 1.29245283, "y_scale": 1.330188679})
                 files.append(filename)
             else:
-                worksheet.set_row(newindex-1, None, format)
+                worksheet.set_row(index+1, None, format)
                 
 
 

@@ -3,29 +3,7 @@ import json
 from django.contrib.auth.models import User, Group
 
 
-@given('I have a valid molfile')
-def step(context):
-    context.post_data["ctab"] = """
 
-
-  8  8  0  0  0  0            999 V2000
-    0.0000    1.0000    0.0000 C   0  0  0  0  0  0
-    0.8660    0.5000    0.0000 C   0  0  0  0  0  0
-    0.8660   -0.5000    0.0000 C   0  0  0  0  0  0
-    0.0000   -1.0000    0.0000 C   0  0  0  0  0  0
-   -0.8660   -0.5000    0.0000 C   0  0  0  0  0  0
-   -0.8660    0.5000    0.0000 C   0  0  0  0  0  0
-    0.0000    2.0000    0.0000 O   0  0  0  0  0  0
-    0.0000   -2.0000    0.0000 O   0  0  0  0  0  0
-  1  21  0     0  0
-  2  32  0     0  0
-  3  41  0     0  0
-  4  51  0     0  0
-  5  62  0     0  0
-  6  11  0     0  0
-  1  72  0     0  0
-  4  82  0     0  0
-M  END"""
 
 
 @given("I have a valid list of SMILES")
