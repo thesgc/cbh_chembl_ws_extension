@@ -74,18 +74,22 @@ class XLSXSerializer(Serializer):
         # make a pandas dataframe from the data here
         # then export as xls or to xlsxwriter
         data = self.to_simple(data, {})
+
         try:
             if data.get("traceback", False):
-                raise ImmediateHttpResponse(BadRequest(json.dumps(data.data)))
+                print data
+                raise ImmediateHttpResponse(BadRequest("Data not preformatted correctly for the Serializer: %s" % json.dumps(data)))
         except AttributeError:
             pass
         try:
             exp_json = json.loads(data.get('export', None))
         except:
-            raise ImmediateHttpResponse(BadRequest(data))
+            print data
+            raise ImmediateHttpResponse(BadRequest("Data not preformatted correctly for the Serializer: %s" % json.dumps(data)))
 
         if exp_json is None:
-             raise ImmediateHttpResponse(BadRequest("Data not preformatted correctly for the Serializer: %s" % json.dumps(data)))
+            print data
+            raise ImmediateHttpResponse(BadRequest("Data not preformatted correctly for the Serializer: %s" % json.dumps(data)))
         ordered_fields = [
            'Structure Image', 'UOx ID', 'Project']
         headers = data.get('headers', {})
@@ -154,7 +158,7 @@ class XLSXSerializer(Serializer):
                 width = 15
             worksheet.set_column(index, index, width)
         writer.save()
-        for fi in files:
+        for fi in list(set(files)):
             os.remove(fi)
         return output.getvalue()
 
