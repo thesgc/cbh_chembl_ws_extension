@@ -602,13 +602,13 @@ class CBHCompoundBatchResource(ModelResource):
         index_name = elasticsearch_client.get_main_index_name()
         print elasticsearch_client.create_temporary_index(
             batch_dicts, request, index_name)
-        self.after_save_and_index_hook(request, id)
+        self.after_save_and_index_hook(request, id, mb.project.project_key)
         # this needs to be the main elasticsearch compound index
         # and should update any existing records in there? That might be in
         # another method
         return self.create_response(request, bundle, response_class=http.HttpCreated)
 
-    def after_save_and_index_hook(self, request, multi_batch_id):
+    def after_save_and_index_hook(self, request, multi_batch_id, project_key):
         pass
 
     def alter_batch_data_after_save(self, batch_list, python_file_object,request, multi_batch):
@@ -1298,13 +1298,14 @@ class CBHCompoundBatchResource(ModelResource):
 
                 # we need sd format exported results to retain stereochemistry
                 # - use mol instaed of smiles
-                print "processing"
                 if(request.GET.get("format") == "sdf"):
                     new_data['ctab'] = olddata['ctab']
                 elif (self.determine_format(request) == 'chemical/x-mdl-sdfile' ):
                     new_data['ctab'] = olddata['ctab']
                 # dummy
                 # not every row has a value for every custom field
+                if permanent_data :
+                    print olddata["custom_fields"]
                 if permanent_data:
                     for item in deduplicated_cfs:
                         cf_value = olddata["custom_fields"].get(item["name"], "")
@@ -1330,6 +1331,7 @@ class CBHCompoundBatchResource(ModelResource):
                     b.data = new_data
                 except AttributeError:
                     pass
+
                 df_data.append(new_data)
             df = pd.DataFrame(df_data)
             data['export'] = df.to_json()
