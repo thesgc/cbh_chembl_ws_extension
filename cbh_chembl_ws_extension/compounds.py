@@ -600,7 +600,7 @@ class CBHCompoundBatchResource(ModelResource):
             elasticsearch_client.get_temp_index_name(request, mb.id))
         batch_dicts = self.batches_to_es_ready(to_be_saved, request)
         index_name = elasticsearch_client.get_main_index_name()
-        print elasticsearch_client.create_temporary_index(
+        elasticsearch_client.create_temporary_index(
             batch_dicts, request, index_name)
         self.after_save_and_index_hook(request, id, mb.project.project_key)
         # this needs to be the main elasticsearch compound index
@@ -1304,8 +1304,7 @@ class CBHCompoundBatchResource(ModelResource):
                     new_data['ctab'] = olddata['ctab']
                 # dummy
                 # not every row has a value for every custom field
-                if permanent_data :
-                    print olddata["custom_fields"]
+
                 if permanent_data:
                     for item in deduplicated_cfs:
                         cf_value = olddata["custom_fields"].get(item["name"], "")
