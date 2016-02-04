@@ -969,3 +969,11 @@ class ChemregProjectResource(UserHydrate, ModelResource):
             rc['Content-Disposition'] = \
                 'attachment; filename=project_data_explanation.xlsx'
         return rc
+
+
+
+class NoCustomFieldsChemregProjectResource(ChemregProjectResource):
+    custom_field_config = fields.ForeignKey(ChemRegCustomFieldConfigResource,
+                                            'custom_field_config', blank=False, null=False)
+    class Meta(ChemregProjectResource.Meta):
+        pass
