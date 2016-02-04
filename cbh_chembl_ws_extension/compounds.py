@@ -352,7 +352,8 @@ class CBHCompoundBatchResource(ModelResource):
             es_reindex = elasticsearch_client.create_temporary_index(
                 batch_dicts, request, index_name)
             if es_reindex.get("errors"):
-                raise Exception("errors when reindexing : \n" + json.dumps(es_reindex))
+                print "ERRORS"
+                print json.dumps(es_reindex)
             # here you can do what you want with the row
             
             print "done page %d of %d" % (page ,paginator.num_pages)
