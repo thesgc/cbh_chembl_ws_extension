@@ -332,7 +332,6 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                                             'custom_field_config', blank=False, null=False, full=True)
     valid_cache_get_keys = ['format', 'limit', 'project_key',
                             'schemaform']
-    
     assays_configured = fields.BooleanField(default=False)
     created_by = fields.ForeignKey(
         "cbh_core_ws.resources.UserResource", 'created_by')
@@ -547,17 +546,12 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                                                          kwargs={'resource_name': 'cbh_compound_batches',
                                                                  'api_name': settings.WEBSERVICES_NAME})}},
                 },
-                
-
                 {
                     'key': 'multiple_batch_id',
                     'htmlClass': 'col-md-6 col-xs-6',
                     'disableSuccessState': True,
                     'feedback': False,
                 },
-                
-                
-
                 {
                     'key': 'dateStart',
                     'type': 'datepicker',
@@ -579,8 +573,7 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                     'feedback': False,
                     'pickadate': {'selectYears': True,
                                   'selectMonths': True},
-                },
-                
+                }, 
                 {
                     'htmlClass': 'col-md-6 col-xs-6',
                     'disableSuccessState': True,
@@ -609,7 +602,6 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                                  {'value': 'flexmatch',
                                   'name': 'Exact Match'}],
                 },
-
                 {
                     'key': 'archived',
                     'style': {'selected': 'btn-success',
@@ -625,7 +617,6 @@ class ChemregProjectResource(UserHydrate, ModelResource):
                                   'name': 'Archive mode'},]
                                  
                 },
-
             ],
             'schema': {'required': [], 'type': 'object', 'properties': {
                 'related_molregno__chembl__chembl_id__in': {
@@ -978,3 +969,11 @@ class ChemregProjectResource(UserHydrate, ModelResource):
             rc['Content-Disposition'] = \
                 'attachment; filename=project_data_explanation.xlsx'
         return rc
+
+
+
+class NoCustomFieldsChemregProjectResource(ChemregProjectResource):
+    custom_field_config = fields.ForeignKey(ChemRegCustomFieldConfigResource,
+                                            'custom_field_config', blank=False, null=False)
+    class Meta(ChemregProjectResource.Meta):
+        pass

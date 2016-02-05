@@ -32,7 +32,7 @@ try:
 except AttributeError:
     WS_DEBUG = False
 from cbh_core_ws.authorization import ProjectAuthorization
-from cbh_chembl_ws_extension.projects import ChemregProjectResource, ChemRegCustomFieldConfigResource
+from cbh_chembl_ws_extension.projects import ChemregProjectResource, ChemRegCustomFieldConfigResource, NoCustomFieldsChemregProjectResource
 from cbh_chembl_ws_extension.serializers import CBHCompoundBatchSerializer, CBHCompoundBatchElasticSearchSerializer, get_key_from_field_name
 from tastypie.utils import dict_strip_unicode_keys
 from tastypie.serializers import Serializer
@@ -73,7 +73,7 @@ class CBHCompoundBatchResource(ModelResource):
         ChemregProjectResource, 'project', blank=False, null=False)
     creator = SimpleResourceURIField(UserResource, 'created_by_id', null=True, readonly=True)
     projectfull = fields.ForeignKey(
-         ChemregProjectResource, 'project', blank=False, null=False, full=True, readonly=True)
+         NoCustomFieldsChemregProjectResource, 'project', blank=False, null=False, full=True, readonly=True)
 
     class Meta:
         filtering = {
@@ -351,6 +351,9 @@ class CBHCompoundBatchResource(ModelResource):
             index_name = elasticsearch_client.get_main_index_name()
             es_reindex = elasticsearch_client.create_temporary_index(
                 batch_dicts, request, index_name)
+            if es_reindex.get("errors"):
+                print "ERRORS"
+                print json.dumps(es_reindex)
             # here you can do what you want with the row
             
             print "done page %d of %d" % (page ,paginator.num_pages)
@@ -1424,6 +1427,7 @@ class CBHCompoundBatchResource(ModelResource):
                 else:
                     ready = es_serializer.to_es_ready_data(
                         bun.data, options={"underscorize": True})
+
                 batch_dicts.append(ready)
             else:
                 # preserve the line number of the batch that could not be

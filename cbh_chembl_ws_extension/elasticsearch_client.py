@@ -210,8 +210,7 @@ def create_temporary_index(batches, request, index_name):
         "mappings": {
             "_default_": {
                 "_all": {"enabled": False},
-                
-
+                "date_detection": False,
                 "dynamic_templates": [{
                     "ignored_fields": {
                         "match": "ctab|std_ctab|canonical_smiles|original_smiles",
@@ -236,6 +235,7 @@ def create_temporary_index(batches, request, index_name):
                     "string_fields": {
                         "match": "*",
                         "match_mapping_type": "string",
+
                         "mapping": {
                             "type": "string", "store": "no", "index_options": "docs", "index": "analyzed", "omit_norms": True,
                             "fields": {
