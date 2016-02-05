@@ -31,7 +31,7 @@ class ProjectAdmin(CreatedByAdmin, ModelAdmin):
 
         cbr = CBHCompoundBatchResource()
         cbr.reindex_elasticsearch(request)
-        self.message_user(request, "Successfully reindexed ChemReg compounds")
+        self.message_user(request, "Successfully reindexed ChemiReg compounds")
     reindex.short_description = "Reindex all compounds"
 
 from cbh_core_model.models import post_save, sync_permissions

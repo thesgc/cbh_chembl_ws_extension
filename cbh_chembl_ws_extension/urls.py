@@ -57,7 +57,7 @@ urlpatterns = patterns('',
                        url(r'^%s/password_change_done' %
                            api_name, password_change_done, {'template_name': 'cbh_chembl_ws_extension/password_change_done.html'}, name="password_change_done"),
                        url(r'^%s/password_reset' %
-                           api_name, password_reset, {'from_email': 'no-reply-chemreg@chembiohub.ox.ac.uk', 'template_name':'cbh_chembl_ws_extension/password_reset.html'}, name="password_reset"),
+                           api_name, password_reset, {'from_email': 'no-reply-chemireg@chembiohub.ox.ac.uk', 'template_name':'cbh_chembl_ws_extension/password_reset.html'}, name="password_reset"),
                        url(r'^%s/reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})' %
                            api_name, password_reset_confirm, {'template_name': 'cbh_chembl_ws_extension/password_reset_confirm.html'}, name="password_reset_confirm"),
                        url(r'^%s/password_reset/done' %
