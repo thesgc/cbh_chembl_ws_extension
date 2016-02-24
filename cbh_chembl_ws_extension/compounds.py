@@ -1642,7 +1642,7 @@ class CBHCompoundBatchResource(ModelResource):
                     { 
                         "type": "phrase_prefix", 
                         "fields": ["custom_field_list.value",] , 
-                        "query" : textsearch
+                        "query" : textsearch 
                     }
                 }]
         multiple_batch_id = request.GET.get("multiple_batch_id", None)

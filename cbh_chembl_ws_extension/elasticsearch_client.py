@@ -228,7 +228,7 @@ def create_temporary_index(batches, request, index_name):
                 },
                 {
                     "sortable": {
-                        "match": "*___sortable",
+                        "match": "customFields.*___sortable",
                         "match_mapping_type": "string",
                         "mapping":  {
                             "type": "string", 
@@ -252,7 +252,12 @@ def create_temporary_index(batches, request, index_name):
                         "match": "*",
                         "match_mapping_type": "string",
                         "mapping": {
-                            "type": "string", "store": "no", "index_options": "docs", "index": "analyzed", "omit_norms": True, 
+                            "type": "string", 
+                            "store": "no", 
+                            "index_options": "positions", 
+                            "index": "analyzed", 
+                            "omit_norms": True, 
+                            "analyzer" : "whitespace",
                             "fields": {
                                 "raw": {"type": "string", "store": "no", "index": "not_analyzed", "ignore_above": 256}
                             }
