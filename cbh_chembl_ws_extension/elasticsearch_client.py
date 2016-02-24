@@ -211,6 +211,12 @@ def create_temporary_index(batches, request, index_name):
             "_default_": {
                 "_all": {"enabled": False},
                 "date_detection": False,
+                "properties":{
+                    "created": {
+                        "type" : "string",
+                        "index": "not_analyzed"
+                    }
+                },
                 "dynamic_templates": [{
                     "ignored_fields": {
                         "match": "ctab|std_ctab|canonical_smiles|original_smiles",
@@ -221,23 +227,32 @@ def create_temporary_index(batches, request, index_name):
                     }
                 },
                 {
+                    "sortable": {
+                        "match": "*___sortable",
+                        "match_mapping_type": "string",
+                        "mapping":  {
+                            "type": "string", 
+                            "store": "no", 
+                            "index": "not_analyzed", 
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                {
                     "uncurated_fields": {
-                        "match": "uncuratedFields.*|image|bigimage",
+                        "match": "uncuratedFields.*|image|bigimage|customFields.*",
                         "match_mapping_type": "string",
                         "mapping": {
                             "type": "string", "index": "no", "include_in_all": False
                         }
                     }
                 },
-
-
-                    {
+                {
                     "string_fields": {
                         "match": "*",
                         "match_mapping_type": "string",
-
                         "mapping": {
-                            "type": "string", "store": "no", "index_options": "docs", "index": "analyzed", "omit_norms": True,
+                            "type": "string", "store": "no", "index_options": "docs", "index": "analyzed", "omit_norms": True, 
                             "fields": {
                                 "raw": {"type": "string", "store": "no", "index": "not_analyzed", "ignore_above": 256}
                             }

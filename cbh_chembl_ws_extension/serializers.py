@@ -393,7 +393,7 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
             newItem = {}
             for sort, direction in item.items():
                 if ("." in sort):
-                    newItem[sort + ".raw"] = direction
+                    newItem[sort + "___sortable"] = direction
                 else:
                     new_key = re.sub(r"[a-z][A-Z]", camelToUnderscore, sort)
                     if new_key != "id":
@@ -425,6 +425,9 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
                 #     except:
                 #         pass
                 value[k] = unicode(v)
+
+
+
 
     def to_es_ready_data(self, data, options=None):
         options = options or {}
@@ -508,14 +511,33 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
         self.to_es_ready_data(data, options=options)
         return json.dumps(data, sort_keys=True)
 
+    def make_sortable_data(self, value):
+        "Zero pad an integers or floats"
+        if type(value) is list:
+            return [make_sortable_data(item) for item in value]
+        if isinstance(value, basestring):
+            value = value.strip()
+            if value.replace(".", "", 1).isdigit():
+                splitup = value.split(".")
+                if len(splitup) == 2:
+                    return "%s.%s" % (splitup[0].zfill(14) , splitup[1] )
+                return value.zfill(14)
+        return value
+
+
+
     def underscorize_fields(self, dictionary):
-        return {
+        data = {
             get_key_from_field_name(key): value
             for key, value in dictionary.items()
         }
+        for key, value in data.items():
+            data[key + "___sortable"] = self.make_sortable_data(value)
+        return data
+
 
     def deunderscorize_fields(self, dictionary):
         return {
             get_field_name_from_key(key): value
-            for key, value in dictionary.items()
+            for key, value in dictionary.items() if not value.endswith("___sortable")
         }
