@@ -436,24 +436,25 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
         self.handle_data_from_django_hstore(data["custom_fields"])
 
         for key, value in data["custom_fields"].items():
-            if type(value) == list:
-                for val in value:
-                    if val:
-                        val = val.replace(u"\n|\r", " ")
+            if not key.endswith("___sortable"):
+                if type(value) == list:
+                    for val in value:
+                        if val:
+                            val = val.replace(u"\n|\r", " ")
+                            data['custom_field_list'].append(
+                                {'name': key,
+                                 'value': val,
+                                 'searchable_name': key.split(" ")[0].lower(),
+                                 'aggregation': get_agg(key, val)}
+                            )
+                else:
+                    if value:
+                        value = value.replace(u"\n|\r", " ")
                         data['custom_field_list'].append(
                             {'name': key,
-                             'value': val,
+                             'value': value,
                              'searchable_name': key.split(" ")[0].lower(),
-                             'aggregation': get_agg(key, val)}
-                        )
-            else:
-                if value:
-                    value = value.replace(u"\n|\r", " ")
-                    data['custom_field_list'].append(
-                        {'name': key,
-                         'value': value,
-                         'searchable_name': key.split(" ")[0].lower(),
-                         'aggregation': get_agg(key, value)})
+                             'aggregation': get_agg(key, value)})
 
         for key, value in data.items():
             if key in ["custom_fields", "uncurated_fields"]:
@@ -473,20 +474,21 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
         self.handle_data_from_django_hstore(data["custom_fields"])
 
         for key, value in data["custom_fields"].items():
-            if type(value) == list:
-                for val in value:
-                    if val:
-                        v = val.replace('\n', ' ').replace('\r', '')
+            if not key.endswith("___sortable"):
+                if type(value) == list:
+                    for val in value:
+                        if val:
+                            v = val.replace('\n', ' ').replace('\r', '')
+                            agg = '%s|%s' % (key, v)
+                            newdata['custom_field_list'].append(
+                                {'name': key, 'value': v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg})
+                else:
+                    if value:
+                        v = value.replace('\n', ' ').replace('\r', '')
                         agg = '%s|%s' % (key, v)
+
                         newdata['custom_field_list'].append(
                             {'name': key, 'value': v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg})
-            else:
-                if value:
-                    v = value.replace('\n', ' ').replace('\r', '')
-                    agg = '%s|%s' % (key, v)
-
-                    newdata['custom_field_list'].append(
-                        {'name': key, 'value': v, 'searchable_name': key.split(" ")[0].lower(), 'aggregation': agg})
 
         # newdata['custom_field_list'].append({'name': "Project", 'value':newdata['project'], 'searchable_name': 'project', 'aggregation': '%s|%s' % ('Project', newdata['project']) })
         # newdata['custom_field_list'].append({'name': "Upload Id", 'value':newdata['multiple_batch_id'], 'searchable_name': 'upload', 'aggregation': '%s|%d' % ('Upload', newdata['multiple_batch_id']) })
