@@ -541,5 +541,7 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
     def deunderscorize_fields(self, dictionary):
         return {
             get_field_name_from_key(key): value
-            for key, value in dictionary.items() if not value.endswith("___sortable")
+            for key, value in dictionary.items() if not key.endswith("___sortable")
         }
+
+
