@@ -514,7 +514,7 @@ class CBHCompoundBatchElasticSearchSerializer(Serializer):
     def make_sortable_data(self, value):
         "Zero pad an integers or floats"
         if type(value) is list:
-            return [make_sortable_data(item) for item in value]
+            return [self.make_sortable_data(item) for item in value]
         if isinstance(value, basestring):
             value = value.strip()
             if value.replace(".", "", 1).isdigit():
