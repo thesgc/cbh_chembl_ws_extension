@@ -204,18 +204,31 @@ def create_temporary_index(batches, request, index_name):
 
     create_body = {
         "settings": {
-            "index.store.type": store_type
+            "index.store.type": store_type,
+            "analysis" : {
+                    "analyzer" : {
+                        "default_index" : {
+                            "tokenizer" : "whitespace",
+                            "filter" : [
+                                "lowercase"
+                            ],
+                            "char_filter" : [
+                                "html_strip"
+                            ]
+                        }
+                    }
+                },
         },
-
         "mappings": {
             "_default_": {
                 "_all": {"enabled": False},
                 "date_detection": False,
+                
                 "properties":{
                     "created": {
                         "type" : "string",
                         "index": "not_analyzed"
-                    }
+                    },
                 },
                 "dynamic_templates": [{
                     "ignored_fields": {
@@ -240,7 +253,7 @@ def create_temporary_index(batches, request, index_name):
                 },
                 {
                     "uncurated_fields": {
-                        "match": "uncuratedFields.*|image|bigimage|customFields.*",
+                        "match": "uncuratedFields.*|image|bigimage",
                         "match_mapping_type": "string",
                         "mapping": {
                             "type": "string", "index": "no", "include_in_all": False
@@ -257,7 +270,7 @@ def create_temporary_index(batches, request, index_name):
                             "index_options": "positions", 
                             "index": "analyzed", 
                             "omit_norms": True, 
-                            "analyzer" : "whitespace",
+                            "analyzer" : "default_index",
                             "fields": {
                                 "raw": {"type": "string", "store": "no", "index": "not_analyzed", "ignore_above": 256}
                             }
