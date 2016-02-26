@@ -78,7 +78,7 @@ class XLSXSerializer(Serializer):
         try:
             if data.get("traceback", False):
                 print data
-                raise ImmediateHttpResponse(BadRequest("Data not preformatted correctly for the Serializer: %s" % json.dumps(data)))
+                raise ImmediateHttpResponse(BadRequest(data))
         except AttributeError:
             pass
         try:
@@ -96,6 +96,7 @@ class XLSXSerializer(Serializer):
         ordered_fields += headers["custom_fields"]
         ordered_fields += headers["uncurated_fields"]
         df = pd.DataFrame(exp_json)
+        print df
 
         df.fillna('', inplace=True)
 
@@ -104,11 +105,20 @@ class XLSXSerializer(Serializer):
         # this way you end up with your core fields at the start and custom
         # fields at the end.
 
-        for idx, item in enumerate(ordered_fields):
-            cols.insert(idx, cols.pop(cols.index(item)))
+        if len(df) > 0:
+            for idx, item in enumerate(ordered_fields):
+                
+                index = cols.index(item)
+                cols.insert(idx, cols.pop(index, []))
+            df = df.ix[:, cols]
+        else:
+            print ordered_fields
+            emptydict = {field : "" for field in ordered_fields}
+            df = pd.DataFrame.from_records([emptydict])
+            
 
         # reindex the dataframe
-        df = df.ix[:, cols]
+        
 
         widths = coreparser.get_widths(df)
 
