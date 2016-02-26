@@ -903,12 +903,15 @@ class CBHCompoundBatchResource(ModelResource):
         # first assume smiles
         allmols = [(obj, Chem.MolFromSmiles(str(obj))) for obj in objects]
         # Next test for inchi
-        for m in allmols:
+        for index, m in enumerate(allmols):
             if m[1] is None:
                 inchimol = Chem.MolFromInchi(
                     str(m[0].encode('ascii', 'ignore')))
+                print "inch"
+                
+
                 if inchimol is not None:
-                    m = (Chem.MolToSmiles(inchimol), inchimol)
+                    allmols[index] = (Chem.MolToSmiles(inchimol), inchimol)
         for m in allmols:
             if(m[1]):
                 Compute2DCoords(m[1])
