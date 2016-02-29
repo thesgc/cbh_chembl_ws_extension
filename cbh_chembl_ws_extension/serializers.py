@@ -96,7 +96,6 @@ class XLSXSerializer(Serializer):
         ordered_fields += headers["custom_fields"]
         ordered_fields += headers["uncurated_fields"]
         df = pd.DataFrame(exp_json)
-        print df
 
         df.fillna('', inplace=True)
 
@@ -109,17 +108,12 @@ class XLSXSerializer(Serializer):
             for idx, item in enumerate(ordered_fields):
                 
                 index = cols.index(item)
-                cols.insert(idx, cols.pop(index, []))
+                cols.insert(idx, cols.pop(index))
             df = df.ix[:, cols]
         else:
-            print ordered_fields
             emptydict = {field : "" for field in ordered_fields}
             df = pd.DataFrame.from_records([emptydict])
             
-
-        # reindex the dataframe
-        
-
         widths = coreparser.get_widths(df)
 
         writer = pd.ExcelWriter('temp.xlsx', engine='xlsxwriter')
