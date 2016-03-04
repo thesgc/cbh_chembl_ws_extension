@@ -1392,8 +1392,8 @@ class CBHCompoundBatchResource(ModelResource):
                                             0], last_name=bundle.obj.created_by.split[" "][1])
                 except:
                     user = None
-        mynames = [ "uncurated_fields","editable_by",
-                   "warnings", "properties", "custom_fields", "errors"]
+        mynames = [ "uncurated_fields",
+                   "warnings", "properties", "custom_fields", ]
         for name in mynames:
             bundle.data[name] = json.loads(bundle.data[name])
             
